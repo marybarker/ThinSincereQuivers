@@ -5,7 +5,14 @@ Generate and manipulate flow polytopes and their associated graphs. In particula
 This code was written to replicate the results in [1](#main_paper). Currently, it produces the quivers associated to a given dimension *d*, although not uniquely up to graph isomorphism yet. Further, it can analyze a quiver (directed graph with weights) and give information about the associated polytope. 
 There are 2 major files at the moment:
 * **graph\_cal.py** contains routines for generating all of the directed graphs that satisfy conditions to generate a flow polytope in dimension *d*
-* **quiver\_cal.py** contains routines for looking at the quivers generated in **graph\_cal.py**. 
+* **quiver\_cal.py** contains routines for studying at the quivers generated in **graph\_cal.py**.  It contains the following routines:
+
+Inpute is a weighted matrix, so the weights in the arrows
+subquivers(M): Given a quiver, it generates all its subquivers with the same set of vertices. 
+subsets_closed(M): Give you all the possible subquivers of M such that it is closed under arrows. 
+theta(M): returns the weights of the vertices.
+is_stable(M, subM): returns true with a subquiver is stable. 
+
 
 ## [Generate Quivers](#generate-quivers)
 
