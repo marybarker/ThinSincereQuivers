@@ -1,5 +1,5 @@
 # [Analyzing Flow Polytopes](#analyzing-flow_polytopes)
-Generate and manipulate flow polytopes and their associated graphs
+Generate and manipulate flow polytopes and their associated graphs. In particular, it generates all possible toric quivers for a given dimension. Although, currently is overcounting them.
 
 ## [Getting Started](#getting-started)
 This code was written to replicate the results in [1](#main_paper). Currently, it produces the quivers associated to a given dimension *d*, although not uniquely up to graph isomorphism yet. Further, it can analyze a quiver (directed graph with weights) and give information about the associated polytope. 
