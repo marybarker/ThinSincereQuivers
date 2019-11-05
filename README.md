@@ -1,3 +1,7 @@
+<script type="text/javascript" async
+
+src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+
 # [Analyzing Flow Polytopes](#analyzing-flow_polytopes)
 Generate and manipulate flow polytopes and their associated graphs. In particular, it generates all possible toric quivers for a given dimension. Although, currently is overcounting them.
 
