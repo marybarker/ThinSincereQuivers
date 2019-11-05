@@ -1,5 +1,5 @@
 import numpy as np
-from itertools import product
+from itertools import product, combinations
 from itertools import combinations_with_replacement as all_combos
 import collections
 
@@ -97,8 +97,11 @@ def exists_path_to(p, q, edge_list):
              break
         else:
             new_edge_list = edge_list[:i] + edge_list[i+1:]
-            return exists_path_to(v, q, new_edge_list)
+            if exists_path_to(v, q, new_edge_list):
+                is_path = True
+                break
     return is_path
+
 
 def in_a_cycle(e_index, edge_list):
     """
@@ -158,6 +161,8 @@ def is_connected(node_list, edge_list):
             break
     return not disconnected
 
+
+
 # returns list of tuples of the form (node1, node2) that corresponds to 
 # an edge between node1 and node2. Loops are represented as (node1,node1)
 def edges_of_graph(A, oriented=False):
@@ -176,6 +181,97 @@ def edges_of_graph(A, oriented=False):
 
 
 
+def spanning_tree(Q):
+    """ Returns a spanning tree of the quiver Q with |Q_1| - |Q_0| + 1 edges removed. 
+        NOTE: if such a spanning tree is not possible, then it returns empty lists
+
+        input: 
+            - Q(numpy matrix): Matrix representation of quiver
+        outputs:
+            - edges_kept(list of tuples): list of the edges in the spanning tree
+            - edges_removed(list of tuples)): list of the edges in the complement of the spanning tree
+    """
+
+    # edges of quiver Q represented as a list of tuples
+    all_edges = edges_of_graph(Q, True)
+    all_nodes = range(Q.shape[0])
+
+    # number of edges to remove from spanning tree
+    d = Q.shape[1] - Q.shape[0] + 1
+
+    d_tuples_to_remove = list(combinations(range(len(all_edges)), d))
+    for d_tuple in d_tuples_to_remove:
+        edges_kept = [e for i, e in enumerate(all_edges) if i not in d_tuple]
+        edges_removed = [all_edges[d] for d in d_tuple]
+        if is_connected(all_nodes, edges_kept):
+            return edges_kept, edges_removed
+    return [], []
+
+
+def get_directed_path_to(p, q, edge_list, edges_added):
+    """ checks if there exists a path from vertex p to vertex q that 
+        can be obtained by stringing together edges from edge_list, 
+        and returns that list of edges. 
+    """
+    is_path = False
+    edges_to_add = list(edges_added)
+    for edge in edges_out_of(p, edge_list):
+        i, e = edge
+        # extract endpoints of edge
+        v = e[0]
+        if p == e[0]:
+            v = e[1]
+
+        # check if there's an edge between p & q
+        if q == v:
+             is_path = True
+             edges_to_add.append((p,q))
+             break
+        else:
+            new_edge_list = edge_list[:i] + edge_list[i+1:]
+            a, b = get_directed_path_to(v, q, new_edge_list, edges_to_add + [(p,v)])
+            if a:
+                is_path = True
+                edges_to_add = b
+                break
+    return is_path, edges_to_add
+
+
+def primal_undirected_cycle(G):
+    """gives the edges that comprise a cycle in the graph G, 
+       which is assumed to contain a single cycle
+
+        input: G(list of tuples): edges of graph G
+        output: cycle(list of tuples): tuple representation of the edges contained in the cycle
+    """
+    for i, edge in enumerate(G):
+        is_cycle, cycle = get_directed_path_to(edge[1], edge[0], G[:i]+G[i+1:], [edge])
+        if is_cycle:
+            return cycle
+    return[]
+
+
+
+def flow_polytope(Q, W=None):
+    """ return the vertices of the flow polytope associated to the quiver Q
+    input: Q(numpy matrix): #vertices x #arrows matrix corresponding to quiver Q
+    output: vertices: list of vertices comprising the convex hull of the flow polytope
+    """
+
+    T, edges_removed = spanning_tree(Q)
+    edges = T + edges_removed
+
+    # make sure the weights are the canonical ones. 
+    if not W:
+        W = [1 for x in range(len(edges))]
+
+    f = []
+    for i, edge in enumerate(edges_removed):
+        cycle = primal_undirected_cycle(T+[edge])
+        f.append([W[ji] if j in cycle else (-W[ji] if (j[1], j[0]) in cycle else 0) for ji, j in enumerate(edges)])
+
+    vertices = [list(f[i][j] for i in range(len(edges_removed))) for j in range(len(edges))]
+    return vertices
 
 
 def Step1(n):
