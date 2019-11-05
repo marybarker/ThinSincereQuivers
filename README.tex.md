@@ -5,8 +5,7 @@ Generate and manipulate flow polytopes and their associated graphs. In particula
 This code was written to replicate the results in [\[1\]](#main_paper). Currently, it produces the quivers associated to a given dimension *d*, although not uniquely up to graph isomorphism yet. Further, it can analyze a quiver (directed graph with weights) and give information about the associated polytope. 
 
 The main data structures that are dealt with are Graphs, Quivers, and polytopes at the moment. For graphs and quivers, there are two main representations in python code: 
-1. Matrix representation: for a graph $G$ with edge set $G_1$ and vertex set $G_0$, the matrix associated to $G$ is the $|G_0|\times|G_1|$ matrix $A$ with 
-$$A_{i,j}=\left\{\begin{matrix}1&\text{if edge }j\text{ contains vertex }i\\0&\text{ otherwise}\end{matrix}\right.$$ Note: for oriented graphs/quivers, we use 1 for the head of an edge and -1 for the tail. 
+1. Matrix representation: for a graph $G$ with edge set $G_1$ and vertex set $G_0$, the matrix associated to $G$ is the $|G_0|\times|G_1|$ matrix $A$ with $$A_{i,j}=\left\{\begin{matrix}1&\text{if edge }j\text{ contains vertex }i\\0&\text{ otherwise}\end{matrix}\right.$$ Note: for oriented graphs/quivers, we use 1 for the head of an edge and -1 for the tail. 
 2. Edge representation: For $G$ as above, define each edge as a pair $(v_0, v_1)$ of endpoints (ordered by tail/head if it is an oriented graph), and thus we can represent $G$ as a list of all such pairs. 
 
 There are 2 major files at the moment:
@@ -26,15 +25,23 @@ Note that the input *M* is a weighted matrix, so the weights in the arrows
 
 
 ## [Generate Quivers](#generate-quivers)
-To create the list of all quivers satisfying requirements for flow polytopes in [\[1\]], can run: 
+To create the list of all quivers satisfying requirements for flow polytopes in [\[1\]](#main_paper), can run: 
+
 > `python create_all_possible_graphs.py`
+
 and enter the value for `d` when prompted. 
+
 This generates a set of files in the folder `outputs/d=*/` corresponding to the 4 steps above, together with the list of all quivers, and 2 plots that outline the growth pattern of quivers from initial starting graphs. 
 
 To load these outputs into a list of matrices(matrix representations of all of the different quivers), use the function 
 `read_step_file(filename)` from the file `create_all_possible_graphs.py`
 
 ## [Flow Polytopes](#flow-polytopes)
+At the moment, the code generates the vertices of the dual of the polytope associated to the quiver $Q$ input. Need to change that.
+
+TODO: 
+[ ] change dual to actual polytope
+[ ] visualize polytopes (simple matplotlib implementation)
 
 ## [References](#references)
 <a id='main_paper'>\[1\]
@@ -43,5 +50,4 @@ Klaus Altmann, Benjamin Nill, Sabine Schwentner, and Izolda Wiercinska, *Flow po
 
 <a id='neighborly_polytopes'>\[2\]
 Patricio Gallardo and Daniel Mckenzie, *On the neighborliness of dual flow polytopes of quivers*, 2018, <a href='http://arxiv.org/abs/1811.01993'>arXiv:1811.01993</a>
-}
 </a>
