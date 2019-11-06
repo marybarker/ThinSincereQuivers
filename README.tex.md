@@ -5,11 +5,11 @@ Generate and manipulate flow polytopes and their associated graphs. In particula
 This code was written to replicate the results in [\[1\]](#main_paper). Currently, it produces the quivers associated to a given dimension *d*, although not uniquely up to graph isomorphism yet. Further, it can analyze a quiver (directed graph with weights) and give information about the associated polytope. 
 
 The main data structures that are dealt with are Graphs, Quivers, and polytopes at the moment. For graphs and quivers, there are two main representations in python code: 
-1. Matrix representation: for a graph <img src="/tex/5201385589993766eea584cd3aa6fa13.svg?invert_in_darkmode&sanitize=true" align=middle width=12.92464304999999pt height=22.465723500000017pt/> with edge set <img src="/tex/0e0fff175b21e36dc5c4cae2cb36897c.svg?invert_in_darkmode&sanitize=true" align=middle width=19.477190699999987pt height=22.465723500000017pt/> and vertex set <img src="/tex/b3f35df4c36a139a959bb2514490cd1d.svg?invert_in_darkmode&sanitize=true" align=middle width=19.477190699999987pt height=22.465723500000017pt/>, the matrix associated to <img src="/tex/5201385589993766eea584cd3aa6fa13.svg?invert_in_darkmode&sanitize=true" align=middle width=12.92464304999999pt height=22.465723500000017pt/> is the <img src="/tex/62e34e95c7c57ce3b9c407f67922d3e6.svg?invert_in_darkmode&sanitize=true" align=middle width=78.95429354999999pt height=24.65753399999998pt/> matrix <img src="/tex/53d147e7f3fe6e47ee05b88b166bd3f6.svg?invert_in_darkmode&sanitize=true" align=middle width=12.32879834999999pt height=22.465723500000017pt/> with <p align="center"><img src="/tex/af61bd1b82d4f93087079adbbc7d2672.svg?invert_in_darkmode&sanitize=true" align=middle width=273.28447079999995pt height=49.315569599999996pt/></p> Note: for oriented graphs/quivers, we use 1 for the <img src="/tex/3e384b223dce750e6c98aa501355f00b.svg?invert_in_darkmode&sanitize=true" align=middle width=20.679527549999985pt height=21.68300969999999pt/> entry corresponding to the head of an edge and -1 for the tail. 
-2. Edge representation: For <img src="/tex/5201385589993766eea584cd3aa6fa13.svg?invert_in_darkmode&sanitize=true" align=middle width=12.92464304999999pt height=22.465723500000017pt/> as above, define each edge as a pair <img src="/tex/b31116e7405741aa8eaa5adaa6b31484.svg?invert_in_darkmode&sanitize=true" align=middle width=50.77636904999999pt height=24.65753399999998pt/> of endpoints (ordered by tail/head if it is an oriented graph), and thus we can represent <img src="/tex/5201385589993766eea584cd3aa6fa13.svg?invert_in_darkmode&sanitize=true" align=middle width=12.92464304999999pt height=22.465723500000017pt/> as a list of all such pairs. 
+1. Matrix representation: for a graph $G$ with edge set $G_1$ and vertex set $G_0$, the matrix associated to $G$ is the $|G_0|\times|G_1|$ matrix $A$ with $$A_{i,j}=\begin{cases}1&\text{if edge }j\text{ contains vertex }i\\0&\text{ otherwise}\end{cases}$$ Note: for oriented graphs/quivers, we use 1 for the $i, j$ entry corresponding to the head of an edge and -1 for the tail. 
+2. Edge representation: For $G$ as above, define each edge as a pair $(v_0, v_1)$ of endpoints (ordered by tail/head if it is an oriented graph), and thus we can represent $G$ as a list of all such pairs. 
 
 There are 2 major files at the moment:
-* **graph\_cal.py** contains routines for generating all of the directed graphs that satisfy conditions to generate a flow polytope in dimension <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/>
+* **graph\_cal.py** contains routines for generating all of the directed graphs that satisfy conditions to generate a flow polytope in dimension $d$
 The main routines in this file are: 
     * `Step1(d)`: creates all connected undirected graphs up to isomorphism for a given $d$ satisfying $|G_0|\le 2d-1$ and $|G_1|=|G_0|d-1$ such that the valence of any vertex $v\in G_0$ is $\ge 3$. 
     * `Step2(M)`: removes the loops from an undirected, connected graph given in matrix form as $M$.
@@ -21,7 +21,7 @@ The main routines in this file are:
     * `subsets_closed(M)`: Give you all the possible subquivers of M such that it is closed under arrows. 
     * `theta(M)`: returns the weights of the vertices.
     * `is_stable(M, subM)`: returns true with a subquiver is stable. 
-Note that the input <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.73973739999999pt height=22.465723500000017pt/> is a weighted matrix, so the weights in the arrows
+Note that the input $M$ is a weighted matrix, so the weights in the arrows
 
 
 ## [Generate Quivers](#generate-quivers)
@@ -37,7 +37,7 @@ To load these outputs into a list of matrices(matrix representations of all of t
 `read_step_file(filename)` from the file `create_all_possible_graphs.py`
 
 ## [Flow Polytopes](#flow-polytopes)
-At the moment, the code generates the vertices of the dual of the polytope associated to the quiver <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/> input. Need to change that.
+At the moment, the code generates the vertices of the dual of the polytope associated to the quiver $Q$ input. Need to change that.
 
 TODO: 
 - [ ] change dual to actual polytope

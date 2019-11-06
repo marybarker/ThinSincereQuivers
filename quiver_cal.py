@@ -41,7 +41,7 @@ def theta(M):
 
 
 
-def is_stable(M, subM): # CHECK!! (with paper)
+def is_stable(M, subM):
     """
     inputs: M(numpy matrix): weighted connectivity matrix of some quiver Q
             subM(list): subset of the indices[0,...,#columns of M] corresponding to the arrows of the subquiver
