@@ -366,39 +366,40 @@ def Step4(mat):
         mats = [np.column_stack((base_mat, np.column_stack(A))) for A in [[possible_columns[i][y] for i, y in enumerate(x)] for x in col_choices]]
 
     #save only the graphs that are cycle-free
-    mats = [x for x in mats if not exists_cycle(edges_of_graph(x, True), range(x.shape[0]))]
+    mats = [-x for x in mats if not exists_cycle(edges_of_graph(x, True), range(x.shape[0]))]
     return unique_up_to_isomorphism(mats)
 
 
 
 def Step5(mats):
-    # take a list of quivers/directed graphs and return the unique ones up to isomorphism. 
+    # take a list of quivers/directed graphs and return a list unique up to isomorphism.
 
-    to_remove = []
+    to_remove = np.zeros(len(mats))
     for iM, M in enumerate(mats):
         M_shape = M.shape
         M_valences = sorted(list(M.sum(axis=1)))
 
         # go through remaining matrices to see if there is a match
         for iN in range(iM+1, len(mats)):
-            N = mats[iN]
+            if not to_remove[iN]:
+                N = mats[iN]
 
-            if np.all(N == M):
-                # check if they're equal as matrices
-                to_remove.append(iN)
+                if np.all(N == M):
+                    # check if they're equal as matrices
+                    to_remove[iN] = 1
 
-            elif N.shape == M_shape:
-                # check if shapes are the same (least expensive)
-                N_valences = sorted(list(N.sum(axis=1)))
+                elif N.shape == M_shape:
+                    # check if shapes are the same (least expensive)
+                    N_valences = sorted(list(N.sum(axis=1)))
 
-                # then check graph valency the same
-                if N_valences == M_valences:
+                    # then check graph valency the same
+                    if N_valences == M_valences:
 
-                    # finally see if one is a permutation of the vertices of the other
-                    possible_permutations = list(permutations(range(N.shape[0])))
-                    for possible in possible_permutations:
-                        N_p = N[possible,:]
-                        if np.all(N_p == M) or np.all(-N_p == M):
-                            to_remove.append(iN)
-                            break
-    return [m for i, m in enumerate(mats) if i not in to_remove]
+                        # finally see if one is a permutation of the vertices of the other
+                        possible_permutations = list(permutations(range(N.shape[0])))
+                        for possible in possible_permutations:
+                            N_p = N[possible,:]
+                            if is_a_column_permutation_of(N_p, M):
+                                to_remove[iN] = 1
+                                break
+    return [m for i, m in enumerate(mats) if not to_remove[i]]

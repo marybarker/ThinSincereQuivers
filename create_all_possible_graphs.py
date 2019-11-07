@@ -98,7 +98,6 @@ with open(filename+"5","w") as f:
         f.write("\n")
 
 
-
 # now generate graphic that shows growth of 
 G = nx.Graph()
 G.add_nodes_from(["1_%d"%x for x in range(len(graphs))])
