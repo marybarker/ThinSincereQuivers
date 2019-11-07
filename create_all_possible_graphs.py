@@ -89,10 +89,10 @@ with open(filename+"4","w") as f:
 
 
 
-no_cycles_oriented_graphs = [x for x in step4_graphs if not gc.exists_cycle(gc.edges_of_graph(x, True), range(x.shape[0]))]
+step5_graphs = gc.Step5(step4_graphs)
 print("step 5: ")
 with open(filename+"5","w") as f:
-    for g in no_cycles_oriented_graphs:
+    for g in step5_graphs:
         for line in g:
             np.savetxt(f, line, fmt='%d')
         f.write("\n")
