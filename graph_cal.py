@@ -220,20 +220,18 @@ def get_directed_path_to(p, q, edge_list, edges_added):
     for edge in edges_out_of(p, edge_list):
         i, e = edge
         # extract endpoints of edge
-        coef = -1
         v = e[0]
         if p == e[0]:
             v = e[1]
-            coef=1
 
         # check if there's an edge between p & q
         if q == v:
              is_path = True
-             edges_to_add.append(coef*(i+1))#(p, q))
+             edges_to_add.append((p, q))
              break
         else:
             new_edge_list = edge_list[:i] + edge_list[i + 1:]
-            a, b = get_directed_path_to(v, q, new_edge_list, edges_to_add + [coef*(i+1)])#[(p, v)])
+            a, b = get_directed_path_to(v, q, new_edge_list, edges_to_add + [(p, v)])
             if a:
                 is_path = True
                 edges_to_add = b
@@ -249,9 +247,24 @@ def primal_undirected_cycle(G):
         output: cycle(list of tuples): tuple representation of the edges contained in the cycle
     """
     for i, edge in enumerate(G):
-        is_cycle, cycle = get_directed_path_to(edge[1], edge[0], G[:i] + G[i + 1:], [i+1])
+        is_cycle, cycle = get_directed_path_to(edge[1], edge[0], G[:i] + G[i + 1:], [edge])
         if is_cycle:
-            return cycle
+
+            # go through and index each edge so as to allow for multiple edges between vertices
+            edge_indices = []
+            met_edges = []
+            for c_e in cycle:
+                for g_i, g_e in enumerate(G):
+                    if g_i not in met_edges :
+                        if g_e == c_e: 
+                            met_edges.append(g_i)
+                            edge_indices.append(g_i)
+                            break
+                        elif (g_e[1], g_e[0]) == c_e:
+                            met_edges.append(g_i)
+                            edge_indices.append(-(g_i+1))
+                            break
+            return edge_indices
     return []
 
 
@@ -272,12 +285,17 @@ def flow_polytope(Q, W=None):
     f = []
     for i, edge in enumerate(edges_removed):
         cycle = primal_undirected_cycle(T+[edge])
+
+        # now replace the indices in cycle that are for edge so as to match indexing on list(edges)
+        #to_replace = {len(T):len(T)+i, -(len(T)+1):-(len(T)+i+1)}
+        cycle = [x+i if x == len(T) else -(len(T) + i + 1) if x == -(len(T) + 1) else x for x in cycle]
+
         fi = np.zeros(len(edges))
         for j in cycle:
-            if j > 0:
-                fi[j-1] = W[j-1]
+            if j >= 0:
+                fi[j] = W[j]
             elif j < 0:
-                fi[1 - j] = -W[1 - j]
+                fi[-(1 + j)] = -W[-(1 + j)]
         f.append(fi)
     vertices = [list(f[i][j] for i in range(len(edges_removed))) for j in range(len(edges))]
     return vertices
