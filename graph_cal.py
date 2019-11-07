@@ -220,18 +220,20 @@ def get_directed_path_to(p, q, edge_list, edges_added):
     for edge in edges_out_of(p, edge_list):
         i, e = edge
         # extract endpoints of edge
+        coef = -1
         v = e[0]
         if p == e[0]:
             v = e[1]
+            coef=1
 
         # check if there's an edge between p & q
         if q == v:
              is_path = True
-             edges_to_add.append((p, q))
+             edges_to_add.append(coef*(i+1))#(p, q))
              break
         else:
             new_edge_list = edge_list[:i] + edge_list[i + 1:]
-            a, b = get_directed_path_to(v, q, new_edge_list, edges_to_add + [(p, v)])
+            a, b = get_directed_path_to(v, q, new_edge_list, edges_to_add + [coef*(i+1)])#[(p, v)])
             if a:
                 is_path = True
                 edges_to_add = b
@@ -247,7 +249,7 @@ def primal_undirected_cycle(G):
         output: cycle(list of tuples): tuple representation of the edges contained in the cycle
     """
     for i, edge in enumerate(G):
-        is_cycle, cycle = get_directed_path_to(edge[1], edge[0], G[:i] + G[i + 1:], [edge])
+        is_cycle, cycle = get_directed_path_to(edge[1], edge[0], G[:i] + G[i + 1:], [i+1])
         if is_cycle:
             return cycle
     return []
@@ -270,8 +272,13 @@ def flow_polytope(Q, W=None):
     f = []
     for i, edge in enumerate(edges_removed):
         cycle = primal_undirected_cycle(T+[edge])
-        f.append([W[ji] if j in cycle else (-W[ji] if (j[1], j[0]) in cycle else 0) for ji, j in enumerate(edges)])
-
+        fi = np.zeros(len(edges))
+        for j in cycle:
+            if j > 0:
+                fi[j-1] = W[j-1]
+            elif j < 0:
+                fi[1 - j] = -W[1 - j]
+        f.append(fi)
     vertices = [list(f[i][j] for i in range(len(edges_removed))) for j in range(len(edges))]
     return vertices
 

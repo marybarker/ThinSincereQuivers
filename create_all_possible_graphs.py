@@ -98,6 +98,14 @@ with open(filename+"5","w") as f:
         f.write("\n")
 
 
+flow_polytopes = []
+for i, g in enumerate(step5_graphs):
+    flow_polytopes.append(gc.flow_polytope(g))
+with open(filename+"_polytope","w") as f:
+    for v in flow_polytopes:
+        np.savetxt(f, v, fmt='%d')
+        f.write('\n')
+
 # now generate graphic that shows growth of 
 G = nx.Graph()
 G.add_nodes_from(["1_%d"%x for x in range(len(graphs))])
