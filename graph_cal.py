@@ -1,5 +1,5 @@
 import numpy as np
-from itertools import product, combinations
+from itertools import product, combinations, permutations
 from itertools import combinations_with_replacement as all_combos
 import collections
 
@@ -31,7 +31,7 @@ def unique_up_to_isomorphism(list_of_graphs):
         for i, gi in enumerate(list_of_graphs):
             for j in range(i+1, len(list_of_graphs)):
                 gj = list_of_graphs[j]
-                if (gi == gj) or (gi == -gj) or is_a_column_permutation_of(gi, gj):
+                if np.all((gi == gj)) or np.all((gi == -gj)) or is_a_column_permutation_of(gi, gj):
                     to_remove.append(j)
 
         to_remove = list(set(to_remove))
@@ -249,7 +249,22 @@ def primal_undirected_cycle(G):
     for i, edge in enumerate(G):
         is_cycle, cycle = get_directed_path_to(edge[1], edge[0], G[:i] + G[i + 1:], [edge])
         if is_cycle:
-            return cycle
+
+            # go through and index each edge so as to allow for multiple edges between vertices
+            edge_indices = []
+            met_edges = []
+            for c_e in cycle:
+                for g_i, g_e in enumerate(G):
+                    if g_i not in met_edges :
+                        if g_e == c_e: 
+                            met_edges.append(g_i)
+                            edge_indices.append(g_i)
+                            break
+                        elif (g_e[1], g_e[0]) == c_e:
+                            met_edges.append(g_i)
+                            edge_indices.append(-(g_i+1))
+                            break
+            return edge_indices
     return []
 
 
@@ -270,8 +285,18 @@ def flow_polytope(Q, W=None):
     f = []
     for i, edge in enumerate(edges_removed):
         cycle = primal_undirected_cycle(T+[edge])
-        f.append([W[ji] if j in cycle else (-W[ji] if (j[1], j[0]) in cycle else 0) for ji, j in enumerate(edges)])
 
+        # now replace the indices in cycle that are for edge so as to match indexing on list(edges)
+        #to_replace = {len(T):len(T)+i, -(len(T)+1):-(len(T)+i+1)}
+        cycle = [x+i if x == len(T) else -(len(T) + i + 1) if x == -(len(T) + 1) else x for x in cycle]
+
+        fi = np.zeros(len(edges))
+        for j in cycle:
+            if j >= 0:
+                fi[j] = W[j]
+            elif j < 0:
+                fi[-(1 + j)] = -W[-(1 + j)]
+        f.append(fi)
     vertices = [list(f[i][j] for i in range(len(edges_removed))) for j in range(len(edges))]
     return vertices
 
@@ -364,4 +389,42 @@ def Step4(mat):
         col_choices = list(all_combos([0,1], len(possible_columns)))
 
         mats = [np.column_stack((base_mat, np.column_stack(A))) for A in [[possible_columns[i][y] for i, y in enumerate(x)] for x in col_choices]]
+
+    #save only the graphs that are cycle-free
+    mats = [-x for x in mats if not exists_cycle(edges_of_graph(x, True), range(x.shape[0]))]
     return unique_up_to_isomorphism(mats)
+
+
+
+def Step5(mats):
+    # take a list of quivers/directed graphs and return a list unique up to isomorphism.
+
+    to_remove = np.zeros(len(mats))
+    for iM, M in enumerate(mats):
+        M_shape = M.shape
+        M_valences = sorted(list(M.sum(axis=1)))
+
+        # go through remaining matrices to see if there is a match
+        for iN in range(iM+1, len(mats)):
+            if not to_remove[iN]:
+                N = mats[iN]
+
+                if np.all(N == M):
+                    # check if they're equal as matrices
+                    to_remove[iN] = 1
+
+                elif N.shape == M_shape:
+                    # check if shapes are the same (least expensive)
+                    N_valences = sorted(list(N.sum(axis=1)))
+
+                    # then check graph valency the same
+                    if N_valences == M_valences:
+
+                        # finally see if one is a permutation of the vertices of the other
+                        possible_permutations = list(permutations(range(N.shape[0])))
+                        for possible in possible_permutations:
+                            N_p = N[possible,:]
+                            if is_a_column_permutation_of(N_p, M):
+                                to_remove[iN] = 1
+                                break
+    return [m for i, m in enumerate(mats) if not to_remove[i]]
