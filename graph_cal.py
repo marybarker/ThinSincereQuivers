@@ -23,6 +23,7 @@ def is_a_column_permutation_of(A, B):
     return not any(d.values())#itervalues())
 
 
+
 # take a list of graphs (matrices, really) and return the unique elements. 
 # i.e. a generalization of set() for lists of matrices
 def unique_up_to_isomorphism(list_of_graphs):
@@ -30,13 +31,18 @@ def unique_up_to_isomorphism(list_of_graphs):
         to_remove = []
         for i, gi in enumerate(list_of_graphs):
             for j in range(i+1, len(list_of_graphs)):
-                gj = list_of_graphs[j]
-                if np.all((gi == gj)) or np.all((gi == -gj)) or is_a_column_permutation_of(gi, gj):
-                    to_remove.append(j)
+                if j in to_remove:
+                    pass
+                else:
+                    gj = list_of_graphs[j]
+                    if np.all((gi == gj)) or is_a_column_permutation_of(gi, gj):
+                        to_remove.append(j)
 
         to_remove = list(set(to_remove))
         return [x for i, x in enumerate(list_of_graphs) if not (i in to_remove)]
     return list_of_graphs
+
+
 
 # generate all graphs (unique up to isomorphism) that have the 
 # appropriate number of edges and vertices for a given value d
@@ -62,6 +68,7 @@ def generate_graphs(d):
     return connectivity_matrices
 
 
+
 # This set of functions deals with part d in the theorem.
 # namely, it checks that each edge is contained in a cycle.
 def edges_out_of(p, edge_list, oriented=False):
@@ -78,6 +85,8 @@ def edges_out_of(p, edge_list, oriented=False):
     if oriented:
         return [(i, e) for i, e in enumerate(edge_list) if p == e[0]]
     return [(i, e) for i, e in enumerate(edge_list) if p in e]
+
+
 
 def exists_path_to(p, q, edge_list):
     """ checks if there exists a path from vertex p to vertex q that 
@@ -101,6 +110,7 @@ def exists_path_to(p, q, edge_list):
                 is_path = True
                 break
     return is_path
+
 
 
 def in_a_cycle(e_index, edge_list):
@@ -132,8 +142,10 @@ def in_a_cycle(e_index, edge_list):
     return success
 
 
+
 def all_edges_in_a_cycle(edge_list):
     return np.all([in_a_cycle(e, edge_list) for e in range(len(edge_list))])
+
 
 
 # FOR ORIENTED GRAPH CYCLE CHECKING
@@ -142,6 +154,7 @@ def exists_cycle(edge_list, vertex_list):
     v = edge_list[0][0]
     visited[v] = 1
     return dfs_find_cycle(v, visited, edge_list)
+
 
 
 # FOR ORIENTED GRAPH CYCLE CHECKING
@@ -154,6 +167,7 @@ def dfs_find_cycle(starting_vertex, visited, edge_list):
     return False
 
 
+
 # checks if a graph(represented by node_list and edge_list)is connected
 def is_connected(node_list, edge_list):
     disconnected = False
@@ -163,6 +177,7 @@ def is_connected(node_list, edge_list):
             disconnected = True
             break
     return not disconnected
+
 
 
 # returns list of tuples of the form (node1, node2) that corresponds to 
@@ -184,7 +199,8 @@ def edges_of_graph(A, oriented=False):
 
 
 def spanning_tree(Q):
-    """ Returns a spanning tree of the quiver Q with |Q_1| - |Q_0| + 1 edges removed. 
+    """ Returns a spanning tree(the first one that is encountered) of 
+        the quiver Q with |Q_1| - |Q_0| + 1 edges removed. 
         NOTE: if such a spanning tree is not possible, then it returns empty lists
 
         input: 
@@ -208,6 +224,7 @@ def spanning_tree(Q):
         if is_connected(all_nodes, edges_kept):
             return edges_kept, edges_removed
     return [], []
+
 
 
 def get_directed_path_to(p, q, edge_list, edges_added):
@@ -237,6 +254,7 @@ def get_directed_path_to(p, q, edge_list, edges_added):
                 edges_to_add = b
                 break
     return is_path, edges_to_add
+
 
 
 def primal_undirected_cycle(G):
@@ -299,6 +317,7 @@ def flow_polytope(Q, W=None):
         f.append(fi)
     vertices = [list(f[i][j] for i in range(len(edges_removed))) for j in range(len(edges))]
     return vertices
+
 
 
 def Step1(n):
