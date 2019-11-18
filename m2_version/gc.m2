@@ -138,7 +138,7 @@ allPossibleBaseGraphsForPair = (x) -> (
 undirectedGraphs = (d) -> (
    gPairs = apply((1..2*(d - 1)), i -> {i, i+d-1});
    connectivityMatrices = allPossibleBaseGraphsForPair \ gPairs;
-   connectivityMatrices
+   flatten(connectivityMatrices)
 )
 ------------------------------------------------------------
 
@@ -158,7 +158,7 @@ graphEdges = {Oriented => false, RavelLoops => false} >> opts -> (G) -> (
             positions(e, i -> (i > 0 or i < 0))
         );
         if opts.RavelLoops == true then (
-            E = for e in E list(if #e > 1 then (e) else ({2:e#0}));
+            E = for e in E list(if #e > 1 then e else toList(2:e#0));
         );
     );
     E
@@ -166,18 +166,24 @@ graphEdges = {Oriented => false, RavelLoops => false} >> opts -> (G) -> (
 ------------------------------------------------------------
 
 
+replaceInList = (i, v, l) -> (
+    insert(i, v, drop(l, {i,i}))
+)
+
 ------------------------------------------------------------
 -- yield the matrix rep of graph, given a list of edges as ordered 
 -- pairs (this is the opposite of graphEdges() function. 
-graphFromEdges = {Oriented = false} >> opts -> E -> (
+graphFromEdges = {Oriented => false} >> opts -> E -> (
     -- first, if oriented graph, then make sure this is reflected. 
     tailVal = 1;
-    if opts.Oriented then (tailVal = -1);
+    if opts.Oriented == true then (
+        tailVal = -1;
+    );
 
-    nVerts = max(flatten(E));
+    nVerts = max(flatten(E))+1;
     cols = for i in E list(
-        row = {nVerts:0};
-        replace(i#0, tailVal, replace(i#1, 1, row))
+        row = (nVerts:0);
+        aslist(replaceInList(i#0, tailVal, replaceInList(i#1, 1, row)))
     );
     transpose(matrix(cols))
 )
@@ -209,8 +215,8 @@ edgesOutOfPoint = {Oriented => false} >> opts -> (p, E) -> (
         for i from 0 to #E - 1 list(e = E#i; if p != e#0 then (continue;) else (i, e))
     )
     else (
-        for i from 0 to #E - 1 list(e = E#i; if (p != e#0 and p != e#1) then (continue;) else (i, e))
-    );
+        for i from 0 to #E - 1 list(e = E#i; if (#e == #delete(e, p)) then (continue;) else (i, e))
+    )
 )
 ------------------------------------------------------------
 
@@ -223,9 +229,9 @@ edgesOutOfPoint = {Oriented => false} >> opts -> (p, E) -> (
 -- -- SavePath(true/false) = whether or not to return the edges involved in the path
 -- -- EdgesAdded(list) = internal mechanism for computing for SavePath
 pathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -> (p, q, E) -> (
-
     existsPath = false;
     currentPath = {};
+
     for edge in edgesOutOfPoint(p, E, Oriented => opts.Oriented) do (
 
         --- get the edge index and enpoints
@@ -236,7 +242,7 @@ pathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -
             v = e#0;
         );
         if opts.SavePath then (
-            currentEdges = append(list(opts.EdgesAdded), {p, v})
+            currentEdges = append(toList(opts.EdgesAdded), {p, v});
         );
 
         if q == v then (
@@ -245,10 +251,17 @@ pathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -
         )
         else (
             remainingEdges = for j from 0 to #E - 1 list(if j == i then (continue;) else E#j);
-            if pathBetween(v, q remainingEdges, Oriented => opts.Oriented, SavePath => opts.SavePath, EdgesAdded => currentEdges) then (
+
+            if opts.SavePath then (
+                (ifPath, Path) = pathBetween(v, q, remainingEdges, Oriented => opts.Oriented, SavePath => true, EdgesAdded => currentEdges);
+            )
+            else (
+                ifPath = pathBetween(v, q, remainingEdges, Oriented => opts.Oriented, EdgesAdded => currentEdges);
+            );
+            if ifPath then (
                 existsPath = true;
                 break;
-            )
+            );
         );
     );
     if opts.SavePath then (
@@ -264,9 +277,21 @@ pathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -
 ------------------------------------------------------------
 -- checks if there is a cycle containing given edge. 
 edgeInCycle = (i, E) -> (
-    e = E#i
-    indicesToSave = for j from 0 to #E - 1 list(if (j == i) then (continue;) else j);
-    pathBetween(e#0, e#1, E_indicesToSave)
+    if #E > 1 then (
+        e = E#i;
+        if #e > 1 then (
+            p = e#0;
+            q = e#1;
+            indicesToSave = drop(toList(0..(#E-1)), {i,i});
+            pathBetween(p, q, E_indicesToSave)
+        )
+        else (
+            true
+        )
+    )
+    else (
+        false
+    )
 )
 ------------------------------------------------------------
 
@@ -274,10 +299,12 @@ edgeInCycle = (i, E) -> (
 ------------------------------------------------------------
 -- create all addmissable base graphs for a given dimension n
 Step1 = (n) -> (
-    for m in allPossibleBaseGraphsForPair(n) list(
-        es = graphEdges(m);
-        inCycle = for i from 0 to #es - 1 list(edgeInCycle(i, es));
-        if all(inCycle, true) then (m) else (continue;)
+    for m in undirectedGraphs(n) list(
+        es = graphEdges(m, RavelLoops => true);
+        if #es > 0 then (
+            inCycle = for i from 0 to #es - 1 list( edgeInCycle(i, es) );
+            if all(inCycle, i -> i == true) then (m) else (continue;)
+        )
     )
 )
 ------------------------------------------------------------
@@ -287,26 +314,27 @@ Step1 = (n) -> (
 splitLoops = m -> (
     Es = graphEdges(m);
     nVerts = #entries(m);
-    newEdges, loopsBroken = for i from 0 to #Es list(
+    loopsBroken = for i from 0 to #Es - 1 list(
         e = Es#i;
-        if #e < 2 then (
-            {(e#0, nVerts), (nVerts, e#0)}, i
-        ) else if e#0 == e#1 then (
-            {(e#0, nVerts), (nVerts, e#0)}, i
-        );
+        if (#e < 2) or #(delete(e#0, e)) < 1 then (
+            i
+        )
+        else (continue;)
     );
-    if #loopsBroken > 0 then (
-        newM = entries(m);
-        for i in loopsBroken do (
-            e0, e1 = newEdges#i;
-            newM = replace(i, e0, newM);
-            newM = append(newM, e1);
-        );
-        graphFromEdges(newM), loopsBroken
-    )
-    else (
-        m, {}
-    );
+    altLB = flatten(for i in loopsBroken list(i));
+    newEdges = flatten(for i from 0 to #Es - 1 list (
+        e = Es#i;
+        if #loopsBroken != #delete(i, loopsBroken) then (
+            p = position(loopsBroken, x -> x == i);
+            altLB = append(replaceInList(p, loopsBroken_p + p, altLB), loopsBroken_p + p + 1);
+            {{e#0, nVerts+p}, {nVerts+p, e#0}}
+        )
+        else (
+            {e}
+        )
+    ));
+    m = graphFromEdges(newEdges);
+    m, altLB
 )
 ------------------------------------------------------------
 
@@ -316,8 +344,8 @@ splitEdges = (m, E) -> (
     Es = graphEdges(m);
     nVerts = #entries(m);
 
-    for i from 0 to #E do(
-        e = E#i;
+    for i in E do (
+        e = Es#i;
         Es = append(replace(i, {e#0, nVerts+i}, Es), {nVerts+i, e#1});
     );
     graphFromEdges(Es)
@@ -330,18 +358,24 @@ splitEdges = (m, E) -> (
 -- and return the set of all loop-free copies with every 
 -- combination of the remaining edges split
 Step2 = (m) -> (
-    origNumEdges = #graphEdges(M);
-    M, loops = splitLoops(m);
-    originalLooplessEdges = set(0..origNumEdges) - set(loops);
-    otherEdgeCombs = for i from 1 to #originalLooplessEdges list(
-        combinations(tolist(originalLooplessEdges), i)
-    );
-    outputs = flatten(for i from 0 to #loops list(
-        for comb in otherEdgeCombs#i list(
-            splitEdges(M, comb)
+    origNumEdges = #graphEdges(m);
+    (M, loops) = splitLoops(m);
+    originalLooplessEdges = set(0..origNumEdges - 1) - set(loops);
+
+    if #originalLooplessEdges > 0 then (
+        otherEdgeCombs = for i from 1 to #originalLooplessEdges list(
+            aslist(combinations(aslist(originalLooplessEdges), i))
         );
-    ));
-    unorientedUniqueUpToPermutation(outputs)
+        outputs = flatten(for i from 0 to #originalLooplessEdges - 1 list(
+            for comb in otherEdgeCombs#i list(
+                splitEdges(M, aslist(comb))
+            )
+        ));
+        unorientedUniqueUpToPermutation(outputs)
+    )
+    else (
+        {M}
+    )
 )
 ------------------------------------------------------------
 
@@ -350,9 +384,10 @@ Step2 = (m) -> (
 -- put set of all admissable orientations on the matrix m
 Step4 = (m) -> (
     rows = entries(m);
+
     -- first make all vertices of valence 2 into sinks. 
-    m = matrix(for i from 0 to #rows - 1 list(
-        if sumlist(rows#i) == 2 then (-1*i) else (i)
+    m = matrix(for i in rows list(
+        if sumlist(i) == 2 then (-1*i) else (i)
     ));
     cols = entries(transpose(m));
     es = graphEdges(m);
@@ -362,31 +397,33 @@ Step4 = (m) -> (
     columnsToChange = for i from 0 to #cols - 1 list(
         if sumlist(cols#i) == 0 then (continue;) else (i)
     );
+
     if #columnsToChange > 0 then (
         columnChoices = for i in columnsToChange list(
             edge = es#i;
             tail = edge#0;
             head = edge#1;
-            {replace(tail, -1, cols#i), replace(head, -1, cols#i)}
+            {replaceInList(tail, -1, cols#i), replaceInList(head, -1, cols#i)}
         );
+
         combinationsOfChoices = combinations({0, 1}, #columnsToChange, R=>true);
-        for choice in combinationsOfChoices list(matrix(
+        for choice in combinationsOfChoices list(-1*transpose(matrix(
             for c from 0 to #cols - 1 list(
-                p = position(columnsToChange(i -> i == c));
-                if p == null then (
+                if #columnsToChange == #delete(c, columnsToChange) then (
                     cols#c
                 )
                 else (
+                    p = position(columnsToChange,i -> i == c);
                     colOpts = columnChoices#p;
                     choiceForCol = choice#p;
                     colOpts#choiceForCol
                 )
             )
-        ));
+        )))
     )
     else (
-        {m}
-    );
+        {-1*m}
+    )
 )
 ------------------------------------------------------------
 
@@ -397,22 +434,22 @@ Step4 = (m) -> (
 Step5 = (M) -> (
     if #M > 1 then(
         toSave = (0..(#M - 1));
-        for im from 0 to #M - 2 do(
-            m = M#im;
+        for mi from 0 to #M - 2 do(
+            m = M#mi;
             mShape = {numgens(target(m)), numgens(source(m))};
             mValences = sort(sumlist(m, Axis => "row"));
 
-            for in from im + 1 to #M - 1 do(
-                if position(toSave, i -> i == in) == null then (continue;) else (
-                    n = M#in;
+            for ni from mi + 1 to #M - 1 do(
+                if position(toSave, i -> i == ni) == null then (continue;) else (
+                    n = M#ni;
                     nShape = {numgens(target(m)), numgens(source(m))};
                     nValences = sort(sumlist(n, Axis => "row"));
                     if nShape == mShape and nValences == mValences then (
                         possiblePermutations = combinations((0..(nshape#0-1)), nShape#0, R => false);
                         for p in possiblePermutations do (
-                            nPoss = n_p
+                            nPoss = n_p;
                             if isPerm(nPoss, m) then(
-                                toSave = delete(in, toSave);
+                                toSave = delete(ni, toSave);
                             );
                         );
                     );
