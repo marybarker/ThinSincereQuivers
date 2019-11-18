@@ -364,7 +364,7 @@ Step2 = (m) -> (
 
     if #originalLooplessEdges > 0 then (
         otherEdgeCombs = for i from 1 to #originalLooplessEdges list(
-            aslist(combinations(aslist(originalLooplessEdges), i))
+            aslist(combinations(aslist(originalLooplessEdges), i, R => false))
         );
         outputs = flatten(for i from 0 to #originalLooplessEdges - 1 list(
             for comb in otherEdgeCombs#i list(
