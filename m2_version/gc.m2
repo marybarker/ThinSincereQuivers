@@ -40,7 +40,8 @@ sumlist = {Axis => "None"} >> opts -> x -> (
 -- -- R(true/false) = with replacement
 -- -- Minsum(numeric value) = exclude all combinations with sum below Minsum
 -- -- Maxsum(numeric value) = exclude all combinations with sum above Maxsum
-combinations = {R => true, Minsum => -1000, Maxsum => -1000} >> opts -> (l, k) -> (
+-- -- Order(true/false) = whether or not the ordering of combination values matters
+combinations = {R => true, Minsum => -1000, Maxsum => -1000, Order => true} >> opts -> (l, k) -> (
     if k > 1 then (
         -- if we are using combinations with replacement -- 
         if opts.R then (
@@ -67,6 +68,11 @@ combinations = {R => true, Minsum => -1000, Maxsum => -1000} >> opts -> (l, k) -
     );
     if opts.Maxsum != -1000 then (
        combs = for i in combs list(if sumlist(i) > opts.Maxsum then (continue;) else (i));
+    );
+    if opts.Order != true then (
+        combs = unique(
+            for i in combs list(sort(i))
+        );
     );
     combs
 )
@@ -245,7 +251,7 @@ edgesOutOfPoint = {Oriented => false} >> opts -> (p, E) -> (
         for i from 0 to #E - 1 list(e = E#i; if p != e#0 then (continue;) else (i, e))
     )
     else (
-        for i from 0 to #E - 1 list(e = E#i; if (#e == #delete(e, p)) then (continue;) else (i, e))
+        for i from 0 to #E - 1 list(e = E#i; if (#positions(e, j -> j == p) < 1) then (continue;) else (i, e))
     )
 )
 ------------------------------------------------------------
@@ -261,9 +267,9 @@ edgesOutOfPoint = {Oriented => false} >> opts -> (p, E) -> (
 pathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -> (p, q, E) -> (
     existsPath = false;
     currentPath = {};
+    pathsToSee = edgesOutOfPoint(p, E, Oriented => opts.Oriented);
 
-    for edge in edgesOutOfPoint(p, E, Oriented => opts.Oriented) do (
-
+    for edge in pathsToSee do (
         --- get the edge index and enpoints
         i = edge#0;
         e = edge#1;
@@ -312,12 +318,13 @@ edgeInCycle = (i, E) -> (
         if #e > 1 then (
             p = e#0;
             q = e#1;
-            indicesToSave = drop(toList(0..(#E-1)), {i,i});
-            pathBetween(p, q, E_indicesToSave)
         )
         else (
-            true
-        )
+            p = e#0;
+            q = e#0;
+        );
+        indicesToSave = drop(toList(0..(#E-1)), {i,i});
+        pathBetween(p, q, E_indicesToSave)
     )
     else (
         false
@@ -395,7 +402,7 @@ Step2 = (m) -> (
 
     if #originalLooplessEdges > 0 then (
         otherEdgeCombs = for i from 1 to #originalLooplessEdges list(
-            aslist(combinations(aslist(originalLooplessEdges), i, R => false))
+            aslist(combinations(aslist(originalLooplessEdges), i, R => false, Order => false))
         );
         outputs = flatten(for i from 0 to #originalLooplessEdges - 1 list(
             for comb in otherEdgeCombs#i list(
@@ -438,7 +445,7 @@ Step4 = (m) -> (
             {replaceInList(tail, -1, cols#i), replaceInList(head, -1, cols#i)}
         );
 
-        combinationsOfChoices = combinations({0, 1}, #columnsToChange, R=>true);
+        combinationsOfChoices = combinations({0, 1}, #columnsToChange, R=>true, Order=>false);
         for choice in combinationsOfChoices list(-1*transpose(matrix(
             for c from 0 to #cols - 1 list(
                 if #columnsToChange == #delete(c, columnsToChange) then (
@@ -464,15 +471,15 @@ Step4 = (m) -> (
 -- take a list of quivers(directed graphs) and return the 
 -- unique up to isomorphism list 
 Step5 = (M) -> (
-    if #M > 1 then(
-        toSave = (0..(#M - 1));
-        for mi from 0 to #M - 2 do(
+    if #M > 1 then (
+        toSave = aslist(0..(#M - 1));
+        for mi from 0 to #M - 2 do (
             m = M_mi;
             mShape = {numgens(target(m)), numgens(source(m))};
             mValences = sort(sumlist(entries(m), Axis => "row"));
 
             for ni from mi + 1 to #M - 1 do(
-                if #toSave == #delete(ni, toSave) then (
+                if #positions(toSave, jj -> jj == ni) < 1 then (
                     continue;
                 )
                 else (
@@ -484,7 +491,7 @@ Step5 = (M) -> (
                         nShape = {numgens(target(m)), numgens(source(m))};
                         nValences = sort(sumlist(entries(n), Axis => "row"));
                         if nShape == mShape and nValences == mValences then (
-                            possiblePermutations = combinations((0..(nShape#1-1)),nShape#1,R=>false);
+                            possiblePermutations = combinations((0..(nShape#1-1)), nShape#1, R=>false);
                             for p in possiblePermutations do (
                                 nPoss = n_p;
                                 if isPerm(nPoss, m) or isPerm(nPoss, -1*m) then(
@@ -496,7 +503,7 @@ Step5 = (M) -> (
                 );
             );
         );
-        for i in toSave list(M#i)
+        M_toSave
     )
     else M
 )
