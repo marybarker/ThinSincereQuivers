@@ -59,7 +59,7 @@ combinations = {R => true, Minsum => -1000, Maxsum => -1000} >> opts -> (l, k) -
         );
     )
     else
-        combs = for i in l list(i);
+        combs = for i in l list(aslist(i));
 
     -- if we are using restricting either by a minimum or maximum sum -- 
     if opts.Minsum != -1000 then (
@@ -74,20 +74,48 @@ combinations = {R => true, Minsum => -1000, Maxsum => -1000} >> opts -> (l, k) -
 
 
 ------------------------------------------------------------
+-- return the indices of the list l in order the values occur 
+-- in the sorted list sort(l)
+sortedIndices = (l) -> (
+    sortedVals = unique(sort(l));
+    flatten(for i in sortedVals list(positions(l, x -> x == i)))
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 isPerm = (x, y) -> (
     toRet = false;
-    ax = entries(transpose(x));
-    ay = entries(transpose(y));
-    vals = toList (0..#ax - 1);
-    allPermutations = permutations(vals);
-    for perm in allPermutations do (
-        if ax_perm == ay then (
-            toRet = true;
-            break;
+
+    xrows = entries(x);
+    yrows = sort(entries(y));
+    xcols = entries(transpose(x));
+    ycols = entries(transpose(y));
+
+    if #xrows == #yrows and #xcols == #ycols then (
+        rs = toList(0..#xrows - 1);
+        rowPermutations = permutations(rs);
+        for rPerm in rowPermutations do (
+            if xrows_rPerm == yrows then (
+                toRet = true;
+                break;
+            )
+            else (
+                xrowsP = matrix(xrows_rPerm);
+                cs = toList(0..#xcols - 1);
+                colPermutations = permutations(cs);
+                for cPerm in colPermutations do (
+                    if sort(entries(xrowsP_cPerm)) == yrows then (
+                        toRet = true;
+                        break;
+                    );
+                );
+            );
         );
     );
     toRet
 )
+------------------------------------------------------------
 ------------------------------------------------------------
 
 
@@ -98,11 +126,13 @@ unorientedUniqueUpToPermutation = x -> (
         toSave = (0..(#x - 1));
         for i from 0 to #x - 2 do (
             for j from i + 1 to #x - 1 do (
-                if isPerm(x#i, x#j) == false then (
-                    continue;
-                )
-                else (
-                    toSave = delete(j, toSave);
+                if #positions(toSave, a -> a == j) > 0 then (
+                    if isPerm(x#i, x#j) == false then (
+                        continue;
+                    )
+                    else (
+                        toSave = delete(j, toSave);
+                    )
                 )
             )
         );
@@ -344,8 +374,9 @@ splitEdges = (m, E) -> (
     Es = graphEdges(m);
     nVerts = #entries(m);
 
-    for i in E do (
-        e = Es#i;
+    for i from 0 to #E - 1 do (
+        ei = E#i;
+        e = Es#ei;
         Es = append(replace(i, {e#0, nVerts+i}, Es), {nVerts+i, e#1});
     );
     graphFromEdges(Es)
@@ -371,6 +402,7 @@ Step2 = (m) -> (
                 splitEdges(M, aslist(comb))
             )
         ));
+        outputs = append(outputs, M);
         unorientedUniqueUpToPermutation(outputs)
     )
     else (
@@ -435,21 +467,29 @@ Step5 = (M) -> (
     if #M > 1 then(
         toSave = (0..(#M - 1));
         for mi from 0 to #M - 2 do(
-            m = M#mi;
+            m = M_mi;
             mShape = {numgens(target(m)), numgens(source(m))};
-            mValences = sort(sumlist(m, Axis => "row"));
+            mValences = sort(sumlist(entries(m), Axis => "row"));
 
             for ni from mi + 1 to #M - 1 do(
-                if position(toSave, i -> i == ni) == null then (continue;) else (
-                    n = M#ni;
-                    nShape = {numgens(target(m)), numgens(source(m))};
-                    nValences = sort(sumlist(n, Axis => "row"));
-                    if nShape == mShape and nValences == mValences then (
-                        possiblePermutations = combinations((0..(nshape#0-1)), nShape#0, R => false);
-                        for p in possiblePermutations do (
-                            nPoss = n_p;
-                            if isPerm(nPoss, m) then(
-                                toSave = delete(ni, toSave);
+                if #toSave == #delete(ni, toSave) then (
+                    continue;
+                )
+                else (
+                    n = M_ni;
+                    if n == m or n == -1*m then (
+                        toSave = delete(ni, toSave);
+                    )
+                    else (
+                        nShape = {numgens(target(m)), numgens(source(m))};
+                        nValences = sort(sumlist(entries(n), Axis => "row"));
+                        if nShape == mShape and nValences == mValences then (
+                            possiblePermutations = combinations((0..(nShape#1-1)),nShape#1,R=>false);
+                            for p in possiblePermutations do (
+                                nPoss = n_p;
+                                if isPerm(nPoss, m) or isPerm(nPoss, -1*m) then(
+                                    toSave = delete(ni, toSave);
+                                );
                             );
                         );
                     );
