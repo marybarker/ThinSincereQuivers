@@ -1,13 +1,13 @@
 loadPackage "Graphs"
 ------------------------------------------------------------
-aslist = x -> (
-    if class(x) === List then(
+asList = x -> (
+    if instance(x, List) then(
         x
     )
-    else if class(x) === Sequence then(
+    else if instance(x, Sequence) then(
         toList(x)
     )
-    else if class(x) === Set then(
+    else if instance(x, Set) then(
         toList(x)
     )
     else
@@ -18,16 +18,16 @@ aslist = x -> (
 
 ------------------------------------------------------------
 -- add all elements of a list together -- 
-sumlist = {Axis => "None"} >> opts -> x -> (
+sumList = {Axis => "None"} >> opts -> x -> (
     if opts.Axis == "None" then (
-        s = sum(aslist(x));
+        s = sum(asList(x));
     )
-    else if opts.Axis == "row" then (
-        s = flatten(for i in x list(sumlist(i)));
+    else if opts.Axis == "Row" then (
+        s = flatten(for i in x list(sumList(i)));
     )
-    else if opts.Axis == "col" then (
+    else if opts.Axis == "Col" then (
        pivoted = entries(transpose(matrix(x)));
-       s = flatten(for i in pivoted list(sumlist(i)));
+       s = flatten(for i in pivoted list(sumList(i)));
     );
     s
 )
@@ -37,14 +37,14 @@ sumlist = {Axis => "None"} >> opts -> x -> (
 ------------------------------------------------------------
 -- take all possible combinations of length k from list l -- 
 -- optional arguments: 
--- -- R(true/false) = with replacement
--- -- Minsum(numeric value) = exclude all combinations with sum below Minsum
--- -- Maxsum(numeric value) = exclude all combinations with sum above Maxsum
+-- -- Replacement(true/false) = with replacement
+-- -- MinSum(numeric value) = exclude all combinations with sum below MinSum
+-- -- MaxSum(numeric value) = exclude all combinations with sum above MaxSum
 -- -- Order(true/false) = whether or not the ordering of combination values matters
-combinations = {R => true, Minsum => -1000, Maxsum => -1000, Order => true} >> opts -> (l, k) -> (
+combinations = {Replacement => true, MinSum => -1000, MaxSum => -1000, Order => true} >> opts -> (l, k) -> (
     if k > 1 then (
         -- if we are using combinations with replacement -- 
-        if opts.R then (
+        if opts.Replacement then (
            mylist = flatten(join(for i in l list(for j from 0 to k - 1 list(i))));
            combs1 = unique(subsets(mylist, k));
            combs2 = unique(subsets(mylist, k));
@@ -60,14 +60,14 @@ combinations = {R => true, Minsum => -1000, Maxsum => -1000, Order => true} >> o
         );
     )
     else
-        combs = for i in l list(aslist(i));
+        combs = for i in l list(asList(i));
 
     -- if we are using restricting either by a minimum or maximum sum -- 
-    if opts.Minsum != -1000 then (
-       combs = for i in combs list(if sumlist(i) < opts.Minsum then (continue;) else (i));
+    if opts.MinSum != -1000 then (
+       combs = for i in combs list(if sumList(i) < opts.MinSum then (continue;) else (i));
     );
-    if opts.Maxsum != -1000 then (
-       combs = for i in combs list(if sumlist(i) > opts.Maxsum then (continue;) else (i));
+    if opts.MaxSum != -1000 then (
+       combs = for i in combs list(if sumList(i) > opts.MaxSum then (continue;) else (i));
     );
     if opts.Order != true then (
         combs = unique(
@@ -90,7 +90,7 @@ sortedIndices = (l) -> (
 
 
 ------------------------------------------------------------
-isPerm = (x, y) -> (
+isPermutation = (x, y) -> (
     toRet = false;
 
     xrows = entries(x);
@@ -133,7 +133,7 @@ unorientedUniqueUpToPermutation = x -> (
         for i from 0 to #x - 2 do (
             for j from i + 1 to #x - 1 do (
                 if #positions(toSave, a -> a == j) > 0 then (
-                    if isPerm(x#i, x#j) == false then (
+                    if isPermutation(x#i, x#j) == false then (
                         continue;
                     )
                     else (
@@ -156,15 +156,15 @@ allPossibleBaseGraphsForPair = (x) -> (
    g1 = x#1;
 
    -- get all possible columns for connectivity matrix (entries must be 0,1, or 2)
-   possibleCols = combinations({0,1,2}, g0, R=>true, Minsum=>2, Maxsum=>2);
+   possibleCols = combinations({0,1,2}, g0, Replacement=>true, MinSum=>2, MaxSum=>2);
 
    -- all combinations of columns to create rows
-   rowCombs = combinations((0..(#possibleCols - 1)), g1, R=>true);
-   candidateMats = for i in rowCombs list(for j in i list(aslist(possibleCols#j)));
+   rowCombs = combinations((0..(#possibleCols - 1)), g1, Replacement=>true);
+   candidateMats = for i in rowCombs list(for j in i list(asList(possibleCols#j)));
    candidateMats = for i in candidateMats list(transpose(matrix(i)));
-   candidateMats = for i in candidateMats list(if min(sumlist(entries(i), Axis=>"row")) >= 3 then (i) else continue);
+   candidateMats = for i in candidateMats list(if min(sumList(entries(i), Axis=>"Row")) >= 3 then (i) else continue);
    candidateMats = unorientedUniqueUpToPermutation(candidateMats);
-   for m in candidateMats list(if graphIsConnected(m) then (m) else (continue;))
+   for m in candidateMats list(if isGraphConnected(m) then (m) else (continue;))
 )
 ------------------------------------------------------------
 
@@ -172,8 +172,8 @@ allPossibleBaseGraphsForPair = (x) -> (
 ------------------------------------------------------------
 -- create all possible undirected base graphs for quiver generation in dimension d-- 
 undirectedGraphs = (d) -> (
-   gPairs = apply((1..2*(d - 1)), i -> {i, i+d-1});
-   connectivityMatrices = allPossibleBaseGraphsForPair \ gPairs;
+   graphPairs = apply((1..2*(d - 1)), i -> {i, i+d-1});
+   connectivityMatrices = allPossibleBaseGraphsForPair \ graphPairs;
    flatten(connectivityMatrices)
 )
 ------------------------------------------------------------
@@ -219,7 +219,7 @@ graphFromEdges = {Oriented => false} >> opts -> E -> (
     nVerts = max(flatten(E))+1;
     cols = for i in E list(
         row = (nVerts:0);
-        aslist(replaceInList(i#0, tailVal, replaceInList(i#1, 1, row)))
+        asList(replaceInList(i#0, tailVal, replaceInList(i#1, 1, row)))
     );
     transpose(matrix(cols))
 )
@@ -228,7 +228,7 @@ graphFromEdges = {Oriented => false} >> opts -> E -> (
 
 ------------------------------------------------------------
 -- check if graph is connected
-graphIsConnected = (G) -> (
+isGraphConnected = (G) -> (
     gEdges = graphEdges(G);
     if max(for e in gEdges list(#e)) > 1 then (
         isConnected(graph(gEdges))
@@ -264,7 +264,7 @@ edgesOutOfPoint = {Oriented => false} >> opts -> (p, E) -> (
 -- -- Oriented(true/false) = whether or not the graph should be oriented
 -- -- SavePath(true/false) = whether or not to return the edges involved in the path
 -- -- EdgesAdded(list) = internal mechanism for computing for SavePath
-pathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -> (p, q, E) -> (
+isPathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -> (p, q, E) -> (
     existsPath = false;
     currentPath = {};
     pathsToSee = edgesOutOfPoint(p, E, Oriented => opts.Oriented);
@@ -289,10 +289,10 @@ pathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -
             remainingEdges = for j from 0 to #E - 1 list(if j == i then (continue;) else E#j);
 
             if opts.SavePath then (
-                (ifPath, Path) = pathBetween(v, q, remainingEdges, Oriented => opts.Oriented, SavePath => true, EdgesAdded => currentEdges);
+                (ifPath, Path) = isPathBetween(v, q, remainingEdges, Oriented => opts.Oriented, SavePath => true, EdgesAdded => currentEdges);
             )
             else (
-                ifPath = pathBetween(v, q, remainingEdges, Oriented => opts.Oriented, EdgesAdded => currentEdges);
+                ifPath = isPathBetween(v, q, remainingEdges, Oriented => opts.Oriented, EdgesAdded => currentEdges);
             );
             if ifPath then (
                 existsPath = true;
@@ -312,7 +312,7 @@ pathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -
 
 ------------------------------------------------------------
 -- checks if there is a cycle containing given edge. 
-edgeInCycle = (i, E) -> (
+isEdgeInCycle = (i, E) -> (
     if #E > 1 then (
         e = E#i;
         if #e > 1 then (
@@ -324,7 +324,7 @@ edgeInCycle = (i, E) -> (
             q = e#0;
         );
         indicesToSave = drop(toList(0..(#E-1)), {i,i});
-        pathBetween(p, q, E_indicesToSave)
+        isPathBetween(p, q, E_indicesToSave)
     )
     else (
         false
@@ -339,7 +339,7 @@ Step1 = (n) -> (
     for m in undirectedGraphs(n) list(
         es = graphEdges(m, RavelLoops => true);
         if #es > 0 then (
-            inCycle = for i from 0 to #es - 1 list( edgeInCycle(i, es) );
+            inCycle = for i from 0 to #es - 1 list( isEdgeInCycle(i, es) );
             if all(inCycle, i -> i == true) then (m) else (continue;)
         )
     )
@@ -402,11 +402,11 @@ Step2 = (m) -> (
 
     if #originalLooplessEdges > 0 then (
         otherEdgeCombs = for i from 1 to #originalLooplessEdges list(
-            aslist(combinations(aslist(originalLooplessEdges), i, R => false, Order => false))
+            asList(combinations(asList(originalLooplessEdges), i, Replacement => false, Order => false))
         );
         outputs = flatten(for i from 0 to #originalLooplessEdges - 1 list(
             for comb in otherEdgeCombs#i list(
-                splitEdges(M, aslist(comb))
+                splitEdges(M, asList(comb))
             )
         ));
         outputs = append(outputs, M);
@@ -426,7 +426,7 @@ Step4 = (m) -> (
 
     -- first make all vertices of valence 2 into sinks. 
     m = matrix(for i in rows list(
-        if sumlist(i) == 2 then (-1*i) else (i)
+        if sumList(i) == 2 then (-1*i) else (i)
     ));
     cols = entries(transpose(m));
     es = graphEdges(m);
@@ -434,7 +434,7 @@ Step4 = (m) -> (
     -- now take every combination of +-1 for the columns that do 
     -- not yet add up to 0
     columnsToChange = for i from 0 to #cols - 1 list(
-        if sumlist(cols#i) == 0 then (continue;) else (i)
+        if sumList(cols#i) == 0 then (continue;) else (i)
     );
 
     if #columnsToChange > 0 then (
@@ -445,7 +445,7 @@ Step4 = (m) -> (
             {replaceInList(tail, -1, cols#i), replaceInList(head, -1, cols#i)}
         );
 
-        combinationsOfChoices = combinations({0, 1}, #columnsToChange, R=>true, Order=>false);
+        combinationsOfChoices = combinations({0, 1}, #columnsToChange, Replacement=>true, Order=>false);
         for choice in combinationsOfChoices list(-1*transpose(matrix(
             for c from 0 to #cols - 1 list(
                 if #columnsToChange == #delete(c, columnsToChange) then (
@@ -472,11 +472,11 @@ Step4 = (m) -> (
 -- unique up to isomorphism list 
 Step5 = (M) -> (
     if #M > 1 then (
-        toSave = aslist(0..(#M - 1));
+        toSave = asList(0..(#M - 1));
         for mi from 0 to #M - 2 do (
             m = M_mi;
             mShape = {numgens(target(m)), numgens(source(m))};
-            mValences = sort(sumlist(entries(m), Axis => "row"));
+            mValences = sort(sumList(entries(m), Axis => "Row"));
 
             for ni from mi + 1 to #M - 1 do(
                 if #positions(toSave, jj -> jj == ni) < 1 then (
@@ -489,12 +489,12 @@ Step5 = (M) -> (
                     )
                     else (
                         nShape = {numgens(target(m)), numgens(source(m))};
-                        nValences = sort(sumlist(entries(n), Axis => "row"));
+                        nValences = sort(sumList(entries(n), Axis => "Row"));
                         if nShape == mShape and nValences == mValences then (
-                            possiblePermutations = combinations((0..(nShape#1-1)), nShape#1, R=>false);
+                            possiblePermutations = combinations((0..(nShape#1-1)), nShape#1, Replacement=>false);
                             for p in possiblePermutations do (
                                 nPoss = n_p;
-                                if isPerm(nPoss, m) or isPerm(nPoss, -1*m) then(
+                                if isPermutation(nPoss, m) or isPermutation(nPoss, -1*m) then(
                                     toSave = delete(ni, toSave);
                                 );
                             );
@@ -508,19 +508,3 @@ Step5 = (M) -> (
     else M
 )
 ------------------------------------------------------------
-
-
-------------------------------------------------------------
--- optionally if NautyGraphs generateGraphs() were working, we could do: 
----- 
----- undirectedGraphs = (d) -> (
-----    gPairs = apply((1..2*(d - 1)), i -> {i, i+d-1});
-----    connectivityMatrices = apply(gPairs, i -> generateGraphs(n, e, MinDegree=>3, OnlyConnected=>true));
----- )
--- but unfortunately, it is not. 
-------------------------------------------------------------
---- to run this in the M2 terminal, type: 
--- > input "gc.m2"
---- Now you have all of the functions in this module!!!
---- so, for example to get all possible graphs with 2 vertices and 4 edges, type: 
--- > gs = allPossibleBaseGraphsForPair({2,4})
