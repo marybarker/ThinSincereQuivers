@@ -1,7 +1,7 @@
 import numpy as np
+import collections
 from itertools import product, combinations, permutations
 from itertools import combinations_with_replacement as all_combos
-import collections
 
 
 def is_a_column_permutation_of(A, B):
@@ -20,28 +20,25 @@ def is_a_column_permutation_of(A, B):
         d[tuple(x)] += 1
     for x in b:
         d[tuple(x)] -= 1
-    return not any(d.values())#itervalues())
-
+    return not any(d.values())
 
 
 # take a list of graphs (matrices, really) and return the unique elements. 
 # i.e. a generalization of set() for lists of matrices
-def unique_up_to_isomorphism(list_of_graphs):
+def unoriented_unique_up_to_isomorphism(list_of_graphs):
     if len(list_of_graphs) > 1:
-        to_remove = []
+        to_remove = np.zeros(len(list_of_graphs))
         for i, gi in enumerate(list_of_graphs):
             for j in range(i+1, len(list_of_graphs)):
-                if j in to_remove:
+                if to_remove[j]:
                     pass
                 else:
                     gj = list_of_graphs[j]
                     if np.all((gi == gj)) or is_a_column_permutation_of(gi, gj):
-                        to_remove.append(j)
+                        to_remove[j] = 1
 
-        to_remove = list(set(to_remove))
-        return [x for i, x in enumerate(list_of_graphs) if not (i in to_remove)]
+        return [x for i, x in enumerate(list_of_graphs) if not (to_remove[i])]
     return list_of_graphs
-
 
 
 # generate all graphs (unique up to isomorphism) that have the 
@@ -57,16 +54,14 @@ def generate_graphs(d):
         list_of_aij_possibilities = [[0, 1, 2] for x in range(G0)]
         all_possible_columns = [x for x in product(*list_of_aij_possibilities) if sum(x) == 2]
         list_of_col_indices = [list(range(len(all_possible_columns))) for x in range(G1)]
-        all_col_combinations = list(product(*list_of_col_indices))
-
+        all_col_combinations = all_combos(range(len(all_possible_columns)), G1)
         As = [np.matrix(np.column_stack([all_possible_columns[j] for j in i])) for i in all_col_combinations]
         As = [A for A in As if np.all(np.array((A.sum(axis=1)) >= 3))]
 
         # now make sure the graphs are unique up to graph isomorphism
-        As = unique_up_to_isomorphism(As)
+        As = unoriented_unique_up_to_isomorphism(As)
         connectivity_matrices.extend(As)
     return connectivity_matrices
-
 
 
 # This set of functions deals with part d in the theorem.
@@ -87,30 +82,41 @@ def edges_out_of(p, edge_list, oriented=False):
     return [(i, e) for i, e in enumerate(edge_list) if p in e]
 
 
-
-def exists_path_to(p, q, edge_list):
+def exists_path_to(p, q, edge_list, oriented=False, returnPath=False, savedPath=[]):
     """ checks if there exists a path from vertex p to vertex q that 
         can be obtained by stringing together edges from edge_list. 
     """
     is_path = False
-    for edge in edges_out_of(p, edge_list):
+    currentPath = []
+
+    for edge in edges_out_of(p, edge_list, oriented=oriented):
         i, e = edge
         # extract endpoints of edge
         v = e[0]
         if p == e[0]:
             v = e[1]
 
+        if returnPath:
+            currentPath = savedPath + [(p, v)]
+
         # check if there's an edge between p & q
         if q == v:
              is_path = True
              break
         else:
-            new_edge_list = edge_list[:i] + edge_list[i + 1:]
-            if exists_path_to(v, q, new_edge_list):
+            path = []
+            remaining_edges = edge_list[:i] + edge_list[i + 1:]
+            if returnPath:
+                success, path = exists_path_to(v, q, remaining_edges, oriented, returnPath, savedPath)
+            else:
+                success = exists_path_to(v, q, remaining_edges, oriented, False)
+            if success:
                 is_path = True
+                currentPath += path
                 break
+    if returnPath:
+        return is_path, currentPath
     return is_path
-
 
 
 def in_a_cycle(e_index, edge_list):
@@ -142,10 +148,8 @@ def in_a_cycle(e_index, edge_list):
     return success
 
 
-
 def all_edges_in_a_cycle(edge_list):
     return np.all([in_a_cycle(e, edge_list) for e in range(len(edge_list))])
-
 
 
 # FOR ORIENTED GRAPH CYCLE CHECKING
@@ -156,7 +160,6 @@ def exists_cycle(edge_list, vertex_list):
     return dfs_find_cycle(v, visited, edge_list)
 
 
-
 # FOR ORIENTED GRAPH CYCLE CHECKING
 def dfs_find_cycle(starting_vertex, visited, edge_list):
     for e_index, e in edges_out_of(starting_vertex, edge_list, oriented=True):
@@ -165,7 +168,6 @@ def dfs_find_cycle(starting_vertex, visited, edge_list):
         visited[e[1]] = 1
         return dfs_find_cycle(e[1], visited, edge_list)
     return False
-
 
 
 # checks if a graph(represented by node_list and edge_list)is connected
@@ -197,7 +199,6 @@ def edges_of_graph(A, oriented=False):
     return edge_list
 
 
-
 def spanning_tree(Q):
     """ Returns a spanning tree(the first one that is encountered) of 
         the quiver Q with |Q_1| - |Q_0| + 1 edges removed. 
@@ -226,37 +227,6 @@ def spanning_tree(Q):
     return [], []
 
 
-
-def get_directed_path_to(p, q, edge_list, edges_added):
-    """ checks if there exists a path from vertex p to vertex q that 
-        can be obtained by stringing together edges from edge_list, 
-        and returns that (re-oriented) list of edges. 
-    """
-    is_path = False
-    edges_to_add = list(edges_added)
-    for edge in edges_out_of(p, edge_list):
-        i, e = edge
-        # extract endpoints of edge
-        v = e[0]
-        if p == e[0]:
-            v = e[1]
-
-        # check if there's an edge between p & q
-        if q == v:
-             is_path = True
-             edges_to_add.append((p, q))
-             break
-        else:
-            new_edge_list = edge_list[:i] + edge_list[i + 1:]
-            a, b = get_directed_path_to(v, q, new_edge_list, edges_to_add + [(p, v)])
-            if a:
-                is_path = True
-                edges_to_add = b
-                break
-    return is_path, edges_to_add
-
-
-
 def primal_undirected_cycle(G):
     """gives the edges that comprise an undirected cycle in the graph G, 
        (which is assumed to contain a single cycle) and returns the ordered cycle
@@ -265,7 +235,7 @@ def primal_undirected_cycle(G):
         output: cycle(list of tuples): tuple representation of the edges contained in the cycle
     """
     for i, edge in enumerate(G):
-        is_cycle, cycle = get_directed_path_to(edge[1], edge[0], G[:i] + G[i + 1:], [edge])
+        is_cycle, cycle = exists_path_to(edge[1], edge[0], G[:i] + G[i + 1:], False, True, [edge])
         if is_cycle:
 
             # go through and index each edge so as to allow for multiple edges between vertices
@@ -284,7 +254,6 @@ def primal_undirected_cycle(G):
                             break
             return edge_indices
     return []
-
 
 
 def flow_polytope(Q, W=None):
@@ -317,8 +286,6 @@ def flow_polytope(Q, W=None):
         f.append(fi)
     vertices = [list(f[i][j] for i in range(len(edges_removed))) for j in range(len(edges))]
     return vertices
-
-
 
 def Step1(n):
     # obtain matrices for all graphs with d=n
@@ -411,7 +378,7 @@ def Step4(mat):
 
     #save only the graphs that are cycle-free
     mats = [-x for x in mats if not exists_cycle(edges_of_graph(x, True), range(x.shape[0]))]
-    return unique_up_to_isomorphism(mats)
+    return unoriented_unique_up_to_isomorphism(mats)
 
 
 
@@ -421,7 +388,7 @@ def Step5(mats):
     to_remove = np.zeros(len(mats))
     for iM, M in enumerate(mats):
         M_shape = M.shape
-        M_valences = sorted(list(M.sum(axis=1)))
+        M_valences = sorted(list(abs(M).sum(axis=1)))
 
         # go through remaining matrices to see if there is a match
         for iN in range(iM+1, len(mats)):
@@ -434,14 +401,13 @@ def Step5(mats):
 
                 elif N.shape == M_shape:
                     # check if shapes are the same (least expensive)
-                    N_valences = sorted(list(N.sum(axis=1)))
+                    N_valences = sorted(list(abs(N).sum(axis=1)))
 
                     # then check graph valency the same
                     if N_valences == M_valences:
 
                         # finally see if one is a permutation of the vertices of the other
-                        possible_permutations = list(permutations(range(N.shape[0])))
-                        for possible in possible_permutations:
+                        for possible in permutations(range(N.shape[0])):
                             N_p = N[possible,:]
                             if is_a_column_permutation_of(N_p, M):
                                 to_remove[iN] = 1

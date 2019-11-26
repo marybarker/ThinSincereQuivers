@@ -23,12 +23,14 @@ def read_step_file(filename):
                 if len(A) > 0:
                     graphs.append(np.matrix(A))
                     A = []
-    return gc.unique_up_to_isomorphism(graphs)
+    return gc.unoriented_unique_up_to_isomorphism(graphs)
 
 
 if os.path.exists(filename+"1"):
     graphs = read_step_file(filename+"1")
 else:
+    if not os.path.exists(folder):
+        os.mkdir(folder)
     graphs = gc.Step1(n)
 print("step 1: ")
 with open(filename+"1","w") as f:
@@ -62,7 +64,7 @@ for i, A in enumerate(step2_graphs):
                 step3_graphs.append(gc.Step3(A, list(edge_list)))
     else:
         step3_graphs.append(A)
-step3_graphs = gc.unique_up_to_isomorphism(step3_graphs)
+step3_graphs = gc.unoriented_unique_up_to_isomorphism(step3_graphs)
 
 print("step 3: ")
 with open(filename+"3","w") as f:
@@ -77,7 +79,7 @@ with open(filename+"3","w") as f:
 step4_graphs = []
 for A in step3_graphs:
     step4_graphs.extend(gc.Step4(A))
-step4_graphs = gc.unique_up_to_isomorphism(step4_graphs)
+step4_graphs = gc.unoriented_unique_up_to_isomorphism(step4_graphs)
 #step4_graphs = gc.unique_up_to_isomorphism([y for y in gc.Step4(A) for A in step3_graphs])
 print("step 4: ")
 with open(filename+"4","w") as f:
@@ -105,6 +107,7 @@ with open(filename+"_polytope","w") as f:
     for v in flow_polytopes:
         np.savetxt(f, v, fmt='%d')
         f.write('\n')
+
 
 # now generate graphic that shows growth of 
 G = nx.Graph()
@@ -149,3 +152,4 @@ plt.clf()
 cs = [len(x.split('_')) for x in G.nodes]
 nx.draw(G, node_size=20, node_color=cs)
 plt.savefig(folder+"graph_of_connections.png")
+
