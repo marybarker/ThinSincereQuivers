@@ -85,6 +85,17 @@ def edges_out_of(p, edge_list, oriented=False):
 def exists_path_to(p, q, edge_list, oriented=False, returnPath=False, savedPath=[]):
     """ checks if there exists a path from vertex p to vertex q that 
         can be obtained by stringing together edges from edge_list. 
+        optionally saves and returns the path of edges as well.
+        inputs:
+            - p(int): starting vertex to find path from
+            - q(int): ending vertex to find path to
+            - edge_list(list): list of tuples (v1, v2) corresponding to edges containing vertices
+            - oriented(bool): T/F of statement "ordering of vertices as edge endpoints matters"
+            - returnPath(bool): whether or not to return the path between p and q
+            - savedPath(list): internal storage for constructing the path for returnPath=True
+        outputs:
+            - is_path(bool): True/False of statement "there exists a path from p to q
+            - currentPath(optional, list): edges of path between p and q
     """
     is_path = False
     currentPath = []
