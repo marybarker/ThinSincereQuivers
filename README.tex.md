@@ -11,15 +11,22 @@ The main data structures that are dealt with are Graphs, Quivers, and polytopes 
 There are 2 major files at the moment:
 * **graph\_cal.py** contains routines for generating all of the directed graphs that satisfy conditions to generate a flow polytope in dimension $d$. 
 The main routines in this file are: 
-    * `Step1(d)`: creates all connected undirected graphs up to isomorphism for a given $d$ satisfying $|G_0|\le 2d-1$ and $|G_1|=|G_0|d-1$ such that the valence of any vertex $v\in G_0$ is $\ge 3$. 
-    * `Step2(M)`: removes the loops from an undirected, connected graph given in matrix form as $M$.
-    * `Step3(M, edges)`: takes a graph in matrix form $M$ and a subset of the edges in $M$ to split by adding a vertex.
-    * `Step4(M)`: produces all possible oriented quivers $Q$ for a graph $M$, such that valence 2 vertices in $Q$ are sinks and there are no oriented cycles. 
-    * `Step5(Ms)`: Takes a list $Ms$ of quivers (in matrix form) and returns a list of the ones that are unique(up to directed graph isomorphism)
-    * `flow_polytope(Q)`: computes the vertices for the convex hull defining the polytope associated to the dual of the quiver $Q$. This algorithm is taken from the procedure outlined in [\[2\]](#neighborly_polytopes) section 3. 
+    * `Step1(d)`: 
+creates all connected undirected graphs up to isomorphism for a given $d$ satisfying $|G_0|\le 2d-1$ and $|G_1|=|G_0|d-1$ such that the valence of any vertex $v\in G_0$ is $\ge 3$. 
+    * `Step2(M)`: 
+removes the loops from an undirected, connected graph given in matrix form as $M$.
+    * `Step3(M, edges)`: 
+takes a graph in matrix form $M$ and a subset of the edges in $M$ to split by adding a vertex.
+    * `Step4(M)`: 
+produces all possible oriented quivers $Q$ for a graph $M$, such that valence 2 vertices in $Q$ are sinks and there are no oriented cycles. 
+    * `Step5(Ms)`: 
+Takes a list $Ms$ of quivers (in matrix form) and returns a list of the ones that are unique(up to directed graph isomorphism)
+    * `flow_polytope(Q)`: 
+computes the vertices for the convex hull defining the polytope associated to the dual of the quiver $Q$. This algorithm is taken from the procedure outlined in [\[2\]](#neighborly_polytopes) section 3. 
 * **quiver\_cal.py** contains routines for studying at the quivers generated in **graph\_cal.py**.  It contains the following routines:
     * `subquivers(M)`: Given a quiver, it generates all its subquivers with the same set of vertices. 
-    * `subsets_closed(M)`: Give you all the possible subquivers of M such that it is closed under arrows. 
+    * `subsets_closed(M)`: 
+Give you all the possible subquivers of M such that it is closed under arrows. 
     * `theta(M)`: returns the weights of the vertices.
     * `is_stable(M, subM)`: returns true with a subquiver is stable. 
 Note that the input $M$ is a weighted matrix, so the weights in the arrows
