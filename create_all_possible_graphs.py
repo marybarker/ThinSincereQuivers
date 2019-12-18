@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 n = int(input("Enter value for d -> "))
 
+base_folder = "./outputs/"
 folder = "./outputs/d=%d/"%n
 filename = folder+"step"
 
@@ -29,6 +30,8 @@ def read_step_file(filename):
 if os.path.exists(filename+"1"):
     graphs = read_step_file(filename+"1")
 else:
+    if not os.path.exists(base_folder):
+        os.mkdir(base_folder)
     if not os.path.exists(folder):
         os.mkdir(folder)
     graphs = gc.Step1(n)
@@ -108,7 +111,6 @@ with open(filename+"_polytope","w") as f:
         np.savetxt(f, v, fmt='%d')
         f.write('\n')
 
-
 # now generate graphic that shows growth of 
 G = nx.Graph()
 G.add_nodes_from(["1_%d"%x for x in range(len(graphs))])
@@ -152,4 +154,3 @@ plt.clf()
 cs = [len(x.split('_')) for x in G.nodes]
 nx.draw(G, node_size=20, node_color=cs)
 plt.savefig(folder+"graph_of_connections.png")
-
