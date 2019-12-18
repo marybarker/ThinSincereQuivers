@@ -12,7 +12,7 @@ There are 2 major files at the moment:
 * **graph\_cal.py** contains routines for generating all of the directed graphs that satisfy conditions to generate a flow polytope in dimension $d$. 
 The main routines in this file are: 
     * `Step1(d)`: 
-creates all connected undirected graphs up to isomorphism for a given $d$ satisfying $|G_0|\le 2d-1$ and $|G_1|=|G_0|d-1$ such that the valence of any vertex $v\in G_0$ is $\ge 3$. 
+creates all connected undirected graphs up to isomorphism for a given $d$ satisfying $|G_0|\le 2d-1$ and $|G_1|=|G_0|+d-1$ such that the valence of any vertex $v\in G_0$ is $\ge 3$. 
     * `Step2(M)`: 
 removes the loops from an undirected, connected graph given in matrix form as $M$.
     * `Step3(M, edges)`: 
@@ -48,6 +48,7 @@ To load these outputs into a list of matrices(matrix representations of all of t
 At the moment, the code generates the vertices of the dual of the polytope associated to the quiver $Q$ input. Need to change that.
 
 TODO: 
+- [ ] add cycle detection to M2 version (for step4)
 - [ ] change dual to actual polytope
 - [ ] visualize polytopes (simple matplotlib implementation)
 - [ ] restructure code for clarity
