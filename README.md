@@ -12,7 +12,7 @@ There are 2 major files at the moment:
 * **graph\_cal.py** contains routines for generating all of the directed graphs that satisfy conditions to generate a flow polytope in dimension <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/>. 
 The main routines in this file are: 
     * `Step1(d)`: 
-creates all connected undirected graphs up to isomorphism for a given <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/> satisfying <img src="/tex/b50f7d37801bbbfa4f855ee8ad3bc566.svg?invert_in_darkmode&sanitize=true" align=middle width=96.43475654999999pt height=24.65753399999998pt/> and <img src="/tex/bb1e1643378cae03dae622a29cbcfaab.svg?invert_in_darkmode&sanitize=true" align=middle width=117.64709715pt height=24.65753399999998pt/> such that the valence of any vertex <img src="/tex/edc38764d2b249d54559b8fd1f3bced4.svg?invert_in_darkmode&sanitize=true" align=middle width=48.12617039999999pt height=22.465723500000017pt/> is <img src="/tex/7e70ada5b76b03379a57d8aca40f296b.svg?invert_in_darkmode&sanitize=true" align=middle width=25.570741349999988pt height=21.18721440000001pt/>. 
+creates all connected undirected graphs up to isomorphism for a given <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/> satisfying <img src="/tex/b50f7d37801bbbfa4f855ee8ad3bc566.svg?invert_in_darkmode&sanitize=true" align=middle width=96.43475654999999pt height=24.65753399999998pt/> and <img src="/tex/5bfc9b4f236354b527d35f72b3bedb28.svg?invert_in_darkmode&sanitize=true" align=middle width=137.73828914999999pt height=24.65753399999998pt/> such that the valence of any vertex <img src="/tex/edc38764d2b249d54559b8fd1f3bced4.svg?invert_in_darkmode&sanitize=true" align=middle width=48.12617039999999pt height=22.465723500000017pt/> is <img src="/tex/7e70ada5b76b03379a57d8aca40f296b.svg?invert_in_darkmode&sanitize=true" align=middle width=25.570741349999988pt height=21.18721440000001pt/>. 
     * `Step2(M)`: 
 removes the loops from an undirected, connected graph given in matrix form as <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.73973739999999pt height=22.465723500000017pt/>.
     * `Step3(M, edges)`: 
@@ -48,6 +48,7 @@ To load these outputs into a list of matrices(matrix representations of all of t
 At the moment, the code generates the vertices of the dual of the polytope associated to the quiver <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/> input. Need to change that.
 
 TODO: 
+- [ ] add cycle detection to M2 version (for step4)
 - [ ] change dual to actual polytope
 - [ ] visualize polytopes (simple matplotlib implementation)
 - [ ] restructure code for clarity
