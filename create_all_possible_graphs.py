@@ -132,7 +132,7 @@ for n1, graph in enumerate(graphs):
                         step3_graphs.append(gc.Step3(g2, list(edge_list)))
         else:
             step3_graphs.append(g2)
-        g3s = gc.unique_up_to_isomorphism(step3_graphs)
+        g3s = gc.unoriented_unique_up_to_isomorphism(step3_graphs)
 
         for n3, g3 in enumerate(g3s):
             G.add_edge("1_%d_2_%d"%(n1,n2), "1_%d_2_%d_3_%d"%(n1,n2,n3), color="g")
@@ -145,7 +145,7 @@ for n1, graph in enumerate(graphs):
                 for n5, g5 in enumerate(g5s):
                     G.add_edge("1_%d_2_%d_3_%d_4_%d"%(n1,n2,n3,n4), "1_%d_2_%d_3_%d_4_%d_5_%d"%(n1,n2,n3,n4,n5), color="b")
                 all_of_them.extend(g5s)
-    nums[n1] = len(gc.unique_up_to_isomorphism(all_of_them))
+    nums[n1] = len(gc.unoriented_unique_up_to_isomorphism(all_of_them))
 
 plt.scatter(range(len(nums)), nums)
 plt.savefig(folder+"graph_growth_rate.png")
