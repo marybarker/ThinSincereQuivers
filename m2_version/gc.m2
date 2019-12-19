@@ -122,7 +122,6 @@ isPermutation = (x, y) -> (
     toRet
 )
 ------------------------------------------------------------
-------------------------------------------------------------
 
 
 ------------------------------------------------------------
@@ -253,6 +252,39 @@ edgesOutOfPoint = {Oriented => false} >> opts -> (p, E) -> (
     else (
         for i from 0 to #E - 1 list(e = E#i; if (#positions(e, j -> j == p) < 1) then (continue;) else (i, e))
     )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+-- DFS search to find cycle in directed graph:
+findCycleDFS = (startV, visited, E) -> (
+    edgesOut = edgesOutOfPoint(startV);
+    for i from 0 to #edgesOut - 1 do(
+        edge = edgesOut#i;
+        v = edge#1;
+        if visited#v == 1 then (
+            return true
+        );
+        visited = replaceInList(v, 1, visited);
+        findCycleDFS(v, visited, E)
+    );
+    return false
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+-- check if there exists a cycle in a (possibly unconnected)
+-- oriented graph, passed in matrix form. 
+existsOrientedCycle = (G) -> (
+    E = graphEdges(G);
+    V = asList(0..#entries(G));
+    visited = #V:0;
+    firstV = first(E)#0;
+    visited = replaceInList(firstV, 1, visited);
+
+    findCycleDFS(firstV, visited, E)
 )
 ------------------------------------------------------------
 
