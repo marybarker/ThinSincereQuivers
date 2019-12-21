@@ -259,17 +259,20 @@ edgesOutOfPoint = {Oriented => false} >> opts -> (p, E) -> (
 ------------------------------------------------------------
 -- DFS search to find cycle in directed graph:
 findCycleDFS = (startV, visited, E) -> (
-    edgesOut = edgesOutOfPoint(startV);
-    for i from 0 to #edgesOut - 1 do(
-        edge = edgesOut#i;
-        v = edge#1;
-        if visited#v == 1 then (
-            return true
+    retVal = false;
+    edgesOut = edgesOutOfPoint(startV, E, Oriented => true);
+    for edge in edgesOut do (
+        currentVisited = asList(visited);
+        edgeVerts = edge#1;
+        endV = edgeVerts#1;
+        if visited#endV == 1 then (
+            retVal = true;
+            break;
         );
-        visited = replaceInList(v, 1, visited);
-        findCycleDFS(v, visited, E)
+        currentVisited = replaceInList(endV, 1, visited);
+        retVal = findCycleDFS(endV, currentVisited, E);
     );
-    return false
+    retVal
 )
 ------------------------------------------------------------
 
@@ -278,13 +281,18 @@ findCycleDFS = (startV, visited, E) -> (
 -- check if there exists a cycle in a (possibly unconnected)
 -- oriented graph, passed in matrix form. 
 existsOrientedCycle = (G) -> (
-    E = graphEdges(G);
-    V = asList(0..#entries(G));
-    visited = #V:0;
-    firstV = first(E)#0;
-    visited = replaceInList(firstV, 1, visited);
-
-    findCycleDFS(firstV, visited, E)
+    retVal = false;
+    E = graphEdges(G, Oriented => true);
+    V = asList(0..#entries(G)-1);
+    for firstV in V do (
+        visited = insert(firstV, 1, asList((#V - 1):0));
+        result = findCycleDFS(firstV, visited, E);
+        if result then (
+            retVal = true;
+            break;
+        )
+    );
+    retVal
 )
 ------------------------------------------------------------
 
@@ -453,7 +461,7 @@ Step2 = (m) -> (
 
 ------------------------------------------------------------
 -- put set of all admissable orientations on the matrix m
-Step4 = (m) -> (
+Step3 = (m) -> (
     rows = entries(m);
 
     -- first make all vertices of valence 2 into sinks. 
@@ -494,6 +502,22 @@ Step4 = (m) -> (
     )
     else (
         {-1*m}
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+-- take a list of quivers(directed graphs) and return the ones
+-- that do not contain any oriented cycles. 
+Step4 = (l) -> (
+    for m in l list(
+        if existsOrientedCycle(m) then (
+            continue;
+        )
+        else (
+            m
+        )
     )
 )
 ------------------------------------------------------------
