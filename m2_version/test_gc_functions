@@ -1,6 +1,7 @@
 input "gc.m2"
 as = Step1(2)
 bs = flatten(for i in as list(Step2(i)));
-cs = flatten(for i in bs list(Step4(i)));
-ds = Step5(cs);
+cs = flatten(for i in bs list(Step3(i)));
+ds = Step4(cs);
+es = Step5(ds);
 
