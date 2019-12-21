@@ -48,7 +48,7 @@ To load these outputs into a list of matrices(matrix representations of all of t
 At the moment, the code generates the vertices of the dual of the polytope associated to the quiver <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/> input. Need to change that.
 
 TODO: 
-- [ ] add cycle detection to M2 version (for step4)
+- [x] add cycle detection to M2 version (for step4)
 - [ ] change dual to actual polytope
 - [ ] visualize polytopes (simple matplotlib implementation)
 - [ ] restructure code for clarity(quiver_cal depends on graph_cal)
