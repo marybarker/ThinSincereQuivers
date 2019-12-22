@@ -201,9 +201,12 @@ graphEdges = {Oriented => false, RavelLoops => false} >> opts -> (G) -> (
 ------------------------------------------------------------
 
 
+------------------------------------------------------------
 replaceInList = (i, v, l) -> (
     insert(i, v, drop(l, {i,i}))
 )
+------------------------------------------------------------
+
 
 ------------------------------------------------------------
 -- yield the matrix rep of graph, given a list of edges as ordered 
@@ -562,5 +565,125 @@ Step5 = (M) -> (
         M_toSave
     )
     else M
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+-- yield the subquivers of a given quiver Q
+subquivers = (Q) -> (
+    numArrows = #entries(transpose(Q));
+    arrows = 0..(numArrows - 1);
+
+    for i from 1 to numArrows - 1 list (
+        for c in combinations(arrows, i, Order => false, Replacement => false) list (
+            Q_c
+        )
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+-- list the subsets of a quiver Q that are closed under arrows
+subsetsClosedUnderArrows = (Q) -> (
+    numVertices = #entries(Q);
+    currentVertices = 0..(numVertices - 1);
+    Qt = transpose(Q);
+
+    for i from 1 to numVertices - 1 list(
+        for c in combinations(currentVertices, i, Order => false, Replacement => false) list(
+            sQ = entries(Qt_c);
+            if all(sumList(sQ, Axis => "Row"), x -> x >= 0) then (
+                transpose(matrix(sQ));
+                c
+            )
+            else (continue;)
+        )
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+-- return ordered list of the weights for the vertices of quiver Q
+theta = (Q) -> (
+    sumList(entries(Q), Axis => "Row")
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+isStable = (Q, subQ) -> (
+    -- get the vertices in the subquiver
+    subQVertices = apply(entries(Q_subQ), x -> any(x, y -> y != 0));
+    -- weights of the original quiver
+    Qtheta = theta(Q);
+    -- inherited weights on the subquiver
+    weights = Qtheta_subQVertices;
+    subMat = Q_subQVertices;
+    subMat = transpose(transpose(subMat)_subQ);
+
+    sums = list(
+        for subset in subsetsClosedUnderArrows(subMat) list(
+            sumList(weights_subset)
+        )
+    );
+    all(sums, x -> x >0)
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+unstableSubquivers = (Q) -> (
+    numArrows = #entries(transpose(Q));
+    arrows = asList(0..numArrows);
+
+    L = for i from 1 to numArrows - 1 list (
+        combinations(arrows, i, Replacement => false) 
+    );
+
+    for sQ in L list(
+        if not isStable(Q, sQ) then (
+            sQ
+        )
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+isProperSubset = (Q1, Q2) -> (
+    if set(Q1) === set(Q2) then (
+        false
+    ) else (
+        isSubset(set(Q1), set(Q2))
+    );
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+maximalUnstableSubquivers = (Q) -> (
+    unstableList = unstableSubquivers(Q);
+    for subQ1 in unstableList list (
+        isMaximal = true;
+        for subQ2 in unstableList do (
+            if isProperSubset(subQ1, subQ2) then (
+                isMaximal = false;
+            );
+        );
+        if isMaximal then (
+            subQ1
+        )
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+isTight = (Q) -> (
+    numArrows = #entries(transpose(Q));
+    all(maximalUnstableSubquivers(Q), x -> #x != (numArrows - 1))
 )
 ------------------------------------------------------------
