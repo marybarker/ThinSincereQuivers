@@ -595,10 +595,8 @@ subsetsClosedUnderArrows = (Q) -> (
         for c in combinations(currentVertices, i, Order => false, Replacement => false) list(
             sQ = entries(Qt_c);
             if all(sumList(sQ, Axis => "Row"), x -> x >= 0) then (
-                transpose(matrix(sQ));
                 c
             )
-            else (continue;)
         )
     )
 )
@@ -629,7 +627,7 @@ isStable = (Q, subQ) -> (
             sumList(weights_subset)
         )
     );
-    all(sums, x -> x >0)
+    all(sums, x -> x > 0)
 )
 ------------------------------------------------------------
 
