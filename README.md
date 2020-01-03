@@ -11,15 +11,22 @@ The main data structures that are dealt with are Graphs, Quivers, and polytopes 
 There are 2 major files at the moment:
 * **graph\_cal.py** contains routines for generating all of the directed graphs that satisfy conditions to generate a flow polytope in dimension <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/>. 
 The main routines in this file are: 
-    * `Step1(d)`: creates all connected undirected graphs up to isomorphism for a given $d$ satisfying $|G_0|\le 2d-1$ and $|G_1|=|G_0|d-1$ such that the valence of any vertex $v\in G_0$ is $\ge 3$. 
-    * `Step2(M)`: removes the loops from an undirected, connected graph given in matrix form as $M$.
-    * `Step3(M, edges)`: takes a graph in matrix form $M$ and a subset of the edges in $M$ to split by adding a vertex.
-    * `Step4(M)`: produces all possible oriented quivers $Q$ for a graph $M$, such that valence 2 vertices in $Q$ are sinks and there are no oriented cycles. 
-    * `Step5(Ms)`: Takes a list $Ms$ of quivers (in matrix form) and returns a list of the ones that are unique(up to directed graph isomorphism)
-    * `flow_polytope(Q)`: computes the vertices for the convex hull defining the polytope associated to the dual of the quiver $Q$. This algorithm is taken from the procedure outlined in [\[2\]](#neighborly_polytopes) section 3. 
+    * `Step1(d)`: 
+creates all connected undirected graphs up to isomorphism for a given <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/> satisfying <img src="/tex/b50f7d37801bbbfa4f855ee8ad3bc566.svg?invert_in_darkmode&sanitize=true" align=middle width=96.43475654999999pt height=24.65753399999998pt/> and <img src="/tex/5bfc9b4f236354b527d35f72b3bedb28.svg?invert_in_darkmode&sanitize=true" align=middle width=137.73828914999999pt height=24.65753399999998pt/> such that the valence of any vertex <img src="/tex/edc38764d2b249d54559b8fd1f3bced4.svg?invert_in_darkmode&sanitize=true" align=middle width=48.12617039999999pt height=22.465723500000017pt/> is <img src="/tex/7e70ada5b76b03379a57d8aca40f296b.svg?invert_in_darkmode&sanitize=true" align=middle width=25.570741349999988pt height=21.18721440000001pt/>. 
+    * `Step2(M)`: 
+removes the loops from an undirected, connected graph given in matrix form as <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.73973739999999pt height=22.465723500000017pt/>.
+    * `Step3(M, edges)`: 
+takes a graph in matrix form <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.73973739999999pt height=22.465723500000017pt/> and a subset of the edges in <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.73973739999999pt height=22.465723500000017pt/> to split by adding a vertex.
+    * `Step4(M)`: 
+produces all possible oriented quivers <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/> for a graph <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.73973739999999pt height=22.465723500000017pt/>, such that valence 2 vertices in <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/> are sinks and there are no oriented cycles. 
+    * `Step5(Ms)`: 
+Takes a list <img src="/tex/b1a9dbac8eac63ce661a58d7dfca05f4.svg?invert_in_darkmode&sanitize=true" align=middle width=25.44519449999999pt height=22.465723500000017pt/> of quivers (in matrix form) and returns a list of the ones that are unique(up to directed graph isomorphism)
+    * `flow_polytope(Q)`: 
+computes the vertices for the convex hull defining the polytope associated to the dual of the quiver <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/>. This algorithm is taken from the procedure outlined in [\[2\]](#neighborly_polytopes) section 3. 
 * **quiver\_cal.py** contains routines for studying at the quivers generated in **graph\_cal.py**.  It contains the following routines:
     * `subquivers(M)`: Given a quiver, it generates all its subquivers with the same set of vertices. 
-    * `subsets_closed(M)`: Give you all the possible subquivers of M such that it is closed under arrows. 
+    * `subsets_closed(M)`: 
+Give you all the possible subquivers of M such that it is closed under arrows. 
     * `theta(M)`: returns the weights of the vertices.
     * `is_stable(M, subM)`: returns true with a subquiver is stable. 
 Note that the input <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.73973739999999pt height=22.465723500000017pt/> is a weighted matrix, so the weights in the arrows
@@ -41,9 +48,11 @@ To load these outputs into a list of matrices(matrix representations of all of t
 At the moment, the code generates the vertices of the dual of the polytope associated to the quiver <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/> input. Need to change that.
 
 TODO: 
+- [x] add cycle detection to M2 version (for step4)
 - [ ] change dual to actual polytope
 - [ ] visualize polytopes (simple matplotlib implementation)
-- [ ] restructure code for clarity
+- [ ] restructure code for clarity(quiver_cal depends on graph_cal)
+- [ ] add quiver_cal functionality to M2 version
 
 ## [References](#references)
 <a id='main_paper'>\[1\]

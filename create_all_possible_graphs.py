@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 n = int(input("Enter value for d -> "))
 
+base_folder = "./outputs/"
 folder = "./outputs/d=%d/"%n
 filename = folder+"step"
 
@@ -29,6 +30,8 @@ def read_step_file(filename):
 if os.path.exists(filename+"1"):
     graphs = read_step_file(filename+"1")
 else:
+    if not os.path.exists(base_folder):
+        os.mkdir(base_folder)
     if not os.path.exists(folder):
         os.mkdir(folder)
     graphs = gc.Step1(n)
@@ -108,7 +111,6 @@ with open(filename+"_polytope","w") as f:
         np.savetxt(f, v, fmt='%d')
         f.write('\n')
 
-
 # now generate graphic that shows growth of 
 G = nx.Graph()
 G.add_nodes_from(["1_%d"%x for x in range(len(graphs))])
@@ -130,7 +132,7 @@ for n1, graph in enumerate(graphs):
                         step3_graphs.append(gc.Step3(g2, list(edge_list)))
         else:
             step3_graphs.append(g2)
-        g3s = gc.unique_up_to_isomorphism(step3_graphs)
+        g3s = gc.unoriented_unique_up_to_isomorphism(step3_graphs)
 
         for n3, g3 in enumerate(g3s):
             G.add_edge("1_%d_2_%d"%(n1,n2), "1_%d_2_%d_3_%d"%(n1,n2,n3), color="g")
@@ -143,7 +145,7 @@ for n1, graph in enumerate(graphs):
                 for n5, g5 in enumerate(g5s):
                     G.add_edge("1_%d_2_%d_3_%d_4_%d"%(n1,n2,n3,n4), "1_%d_2_%d_3_%d_4_%d_5_%d"%(n1,n2,n3,n4,n5), color="b")
                 all_of_them.extend(g5s)
-    nums[n1] = len(gc.unique_up_to_isomorphism(all_of_them))
+    nums[n1] = len(gc.unoriented_unique_up_to_isomorphism(all_of_them))
 
 plt.scatter(range(len(nums)), nums)
 plt.savefig(folder+"graph_growth_rate.png")
@@ -152,4 +154,3 @@ plt.clf()
 cs = [len(x.split('_')) for x in G.nodes]
 nx.draw(G, node_size=20, node_color=cs)
 plt.savefig(folder+"graph_of_connections.png")
-
