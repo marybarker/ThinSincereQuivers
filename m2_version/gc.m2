@@ -571,13 +571,19 @@ Step5 = (M) -> (
 
 ------------------------------------------------------------
 -- yield the subquivers of a given quiver Q
-subquivers = (Q) -> (
+subquivers = {Format => "indices"} >> opts -> (Q) -> (
     numArrows = #entries(transpose(Q));
     arrows = 0..(numArrows - 1);
 
-    for i from 1 to numArrows - 1 list (
-        for c in combinations(arrows, i, Order => false, Replacement => false) list (
-            Q_c
+    flatten(
+        for i from 1 to numArrows - 1 list (
+            for c in combinations(arrows, i, Order => false, Replacement => false) list (
+                if opts.Format == "indices" then (
+                    c
+                ) else (
+                    Q_c
+                )
+            )
         )
     )
 )
@@ -591,14 +597,17 @@ subsetsClosedUnderArrows = (Q) -> (
     currentVertices = 0..(numVertices - 1);
     Qt = transpose(Q);
 
-    for i from 1 to numVertices - 1 list(
+    flatten(for i from 1 to numVertices - 1 list(
         for c in combinations(currentVertices, i, Order => false, Replacement => false) list(
             sQ = entries(Qt_c);
             if all(sumList(sQ, Axis => "Row"), x -> x >= 0) then (
                 c
             )
+            else(
+                continue;
+            )
         )
-    )
+    ))
 )
 ------------------------------------------------------------
 
@@ -614,15 +623,16 @@ theta = (Q) -> (
 ------------------------------------------------------------
 isStable = (Q, subQ) -> (
     -- get the vertices in the subquiver
-    subQVertices = apply(entries(Q_subQ), x -> any(x, y -> y != 0));
+    subQVertices = positions(entries(Q_subQ), x -> any(x, y -> y != 0));
     -- weights of the original quiver
     Qtheta = theta(Q);
     -- inherited weights on the subquiver
     weights = Qtheta_subQVertices;
-    subMat = Q_subQVertices;
-    subMat = transpose(transpose(subMat)_subQ);
+    subMat = Q_subQ;
+    tSubMat = transpose(subMat);
+    subMat = transpose(tSubMat_subQVertices);
 
-    sums = list(
+    sums = asList(
         for subset in subsetsClosedUnderArrows(subMat) list(
             sumList(weights_subset)
         )
@@ -635,15 +645,17 @@ isStable = (Q, subQ) -> (
 ------------------------------------------------------------
 unstableSubquivers = (Q) -> (
     numArrows = #entries(transpose(Q));
-    arrows = asList(0..numArrows);
+    arrows = asList(0..numArrows - 1);
 
-    L = for i from 1 to numArrows - 1 list (
+    L = flatten(for i from 1 to numArrows - 1 list (
         combinations(arrows, i, Replacement => false) 
-    );
+    ));
 
     for sQ in L list(
-        if not isStable(Q, sQ) then (
+        if not isStable(Q, asList(sQ)) then (
             sQ
+        ) else (
+            continue;
         )
     )
 )
@@ -656,7 +668,7 @@ isProperSubset = (Q1, Q2) -> (
         false
     ) else (
         isSubset(set(Q1), set(Q2))
-    );
+    )
 )
 ------------------------------------------------------------
 
@@ -673,6 +685,8 @@ maximalUnstableSubquivers = (Q) -> (
         );
         if isMaximal then (
             subQ1
+        ) else (
+            continue;
         )
     )
 )

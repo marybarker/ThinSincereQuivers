@@ -5,3 +5,25 @@ cs = flatten(for i in bs list(Step3(i)));
 ds = Step4(cs);
 es = Step5(ds);
 
+sampleE = es#3;
+sampleE
+
+subquivers(sampleE, Format => "vertices")
+
+subsetsClosedUnderArrows(sampleE)
+
+theta(sampleE)
+
+for sq in subquivers(sampleE) do (
+    if isStable(sampleE, sq) then (
+        print(sq, " is a stable subquiver of ", sampleE)
+    ) else (
+        print(sq, " is NOT a stable subquiver of ", sampleE)
+    )
+)
+
+unstableSubquivers(sampleE)
+
+maximalUnstableSubquivers(sampleE)
+
+isTight(sampleE)
