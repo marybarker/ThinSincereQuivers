@@ -47,7 +47,7 @@
 
 * `Step5 (l)`: returns the values of l (where l is a list of directed graphs) that are unique up to isomorphism. 
 
-* `subquivers (Q)`: returns the subquivers of a quiver Q (given in weighted matrix form)
+* `subquivers {Format: "indices"/"arrows"} (Q)`: returns the subquivers of a quiver Q (given in weighted matrix form), and returns either as list of arrow indices or as a list of the arrows themselves.
 
 * `subsetsClosedUnderArrows (Q)`: returns the subquivers of Q that are closed under arrows.
 
