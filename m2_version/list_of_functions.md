@@ -49,7 +49,7 @@
 
 * `subquivers {Format: "indices"/"arrows"} (Q)`: returns the subquivers of a quiver Q (given in weighted matrix form), and returns either as list of arrow indices or as a list of the arrows themselves.
 
-* `subsetsClosedUnderArrows (Q)`: returns the subquivers of Q that are closed under arrows.
+* `subsetsClosedUnderArrows (Q)`: returns the subsets of vertices of Q that are closed under arrows.
 
 * `theta (Q)`: returns the vertex weights for quiver Q, where the canonical weights on arrows are given.
 
