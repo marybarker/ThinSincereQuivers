@@ -674,6 +674,19 @@ isProperSubset = (Q1, Q2) -> (
 
 
 ------------------------------------------------------------
+isMaximal = (Q, Qlist) -> (
+    returnVal = true;
+    for Q2 in Qlist do (
+        if isProperSubset(Q, Q2) then (
+            returnVal = false;
+        );
+    );
+    returnVal
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 maximalUnstableSubquivers = (Q) -> (
     unstableList = unstableSubquivers(Q);
     for subQ1 in unstableList list (
