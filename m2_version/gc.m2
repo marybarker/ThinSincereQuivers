@@ -637,7 +637,7 @@ isStable = (Q, subQ) -> (
             sumList(weights_subset)
         )
     );
-    all(sums, x -> x > 0)
+    all(sums, x -> x < 0)
 )
 ------------------------------------------------------------
 
