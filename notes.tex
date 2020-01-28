@@ -1,5 +1,5 @@
 \documentclass{article}
-\usepackage{amsmath, amssymb, changepage, pgfplots}
+\usepackage{amsmath, amssymb, changepage, pgfplots, fullpage}
 \newcommand{\C}{\mathbb{C}}
 \newcommand{\CP}{\mathbb{C P}}
 \newcommand{\N}{\mathbb{N}}
@@ -343,6 +343,7 @@
 				\end{tikzpicture}
 			}
 		\end{minipage}
+
 		Recall: $0\to Hom(A,\C^*)\to Hom(\Z^2,\C^*)\to Hom(L,\C^*)\to0$
 		and $G= Hom(A,\C^*)\subset(C^*)^2$. Want to know how this containment 
 		works. Let $t_1=Im(1,0)$, $t_2=Im(0,1)$. Then 
@@ -351,7 +352,7 @@
 		and so $G=\{(t_1,t_2):t_1^2t_2^{-2}=1\}=
 		\{(t_1,t_2)\in(\C^*)^2:t_1^2=t_2^2\}=\{(t_1,t_2)\in(\C^*)^2:t_1=\pm t_2\}$
 
-	\section{Polytope to Variety}
+	\section{From a polytope to Variety}
 	Let $\Lambda\subset\R^n$ be a lattice, i.e. $\Lambda\simeq\Z^n$. 
 	We say $P$ is a \textbf{lattice polytope} if every vertex of $P$ 
 	belongs to $\Lambda$. 
