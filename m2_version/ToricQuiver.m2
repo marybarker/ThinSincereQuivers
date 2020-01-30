@@ -12,51 +12,17 @@ newPackage(
     PackageImports => {"Graphs"}
 )
 export {
-"asList", 
-"sumList", 
-"combinations", 
-"sortedIndices", 
-"replaceInList", 
-"isPermutation", 
-"unorientedUniqueUpToPermutation", 
-"allPossibleBaseGraphsForPair", 
-"undirectedGraphs", 
-"graphEdges", 
-"graphFromEdges", 
-"edgesOutOfPoint", 
-"isGraphConnected", 
-"findCycleDFS", 
-"existsOrientedCycle", 
-"isPathBetween", 
-"isEdgeInCycle", 
-"splitLoops", 
-"splitEdges", 
-"undirectedBaseGraphs", 
-"splitLoopsAndEdges", 
-"allPossibleOrientations", 
-"removeOrientedCycles", 
-"uniqueUpToQuiverIsomorphism", 
-"toricQuivers", 
-"sampleQuiver", 
-"subquivers", 
-"subsetsClosedUnderArrows", 
-"theta", 
-"isStable", 
-"unstableSubquivers", 
-"isProperSubset", 
-"isMaximal", 
-"maximalUnstableSubquivers", 
-"isTight",
---
----- Methods/Functions
---    "sampleQuiver",
---    "toricQuivers", 
---    "isTight",
---    "subQuivers", 
---    "subsetsClosedUnderArrows",
---    "isStable",
---    "isMaximal",
----- Options
+-- Methods/Functions
+    "sampleQuiver",
+    "toricQuivers", 
+    "isTight",
+    "subQuivers", 
+    "subsetsClosedUnderArrows",
+    "isStable",
+    "isMaximal",
+    "maximalUnstableSubquivers",
+    "theta", 
+-- Options
     "Axis",
     "SavePath",
     "MaxSum",
@@ -726,7 +692,7 @@ subsetsClosedUnderArrows = (Q) -> (
 
 ------------------------------------------------------------
 -- return ordered list of the weights for the vertices of quiver Q
-theta = (Q) -> (
+theta = Q -> (
     sumList(entries(Q), Axis => "Row")
 )
 ------------------------------------------------------------
@@ -755,7 +721,7 @@ isStable = (Q, subQ) -> (
 
 
 ------------------------------------------------------------
-unstableSubquivers = (Q) -> (
+unstableSubquivers = Q -> (
     numArrows := #entries(transpose(Q));
     arrows := asList(0..numArrows - 1);
 

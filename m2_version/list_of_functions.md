@@ -1,3 +1,22 @@
+# Functions exported from `ToricQuiver.m2'
+* `sampleQuiver (d)' : returns a random quiver in dimension d
+
+* `toricQuivers (d)' : returns a list of all d-dimensinoal quivers
+
+* `isTight (Q)': answers question: is the quiver Q tight? (Q given in matrix form)
+
+* `subQuivers (Q)' : returns a list of the subquivers of Q, given as sets of vertices 
+
+* `subsetsClosedUnderArrows (Q)': returns the subsets of subQuivers(Q) satisfying the closed under arrows condition
+
+* `isStable (Q, sQ)' : answers the question: subQ is a stable subquiver of Q
+
+* `isMaximal (Q, listOfQs)': answers question: Q is maximal with respect to the list of quivers listOfQs
+
+* `maximalUnstableSubquivers (Q)' : returns the maximal Unstable subqivers of Q
+
+* `theta (Q)' : returns the weights on the vertices for a weighted quiver Q
+
 # Functions in `gc.m2`
 * `asList (x)` : turns x into a list 
 
