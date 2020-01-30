@@ -52,7 +52,7 @@ TODO:
 - [ ] change dual to actual polytope
 - [ ] visualize polytopes (simple matplotlib implementation)
 - [ ] restructure code for clarity(quiver_cal depends on graph_cal)
-- [ ] add quiver_cal functionality to M2 version
+- [x] add quiver_cal functionality to M2 version
 
 ## [References](#references)
 <a id='main_paper'>\[1\]
