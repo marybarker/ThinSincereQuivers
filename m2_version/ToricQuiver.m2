@@ -93,18 +93,17 @@ asList = x -> (
 
 ------------------------------------------------------------
 -- add all elements of a list x together, and specify Axis (row/col) if x is actually a matrix or list of lists -- 
--- sumList = method(Options => {Axis => "None"})
--- sumList List := opts -> x -> (
 sumList = {Axis => "None"} >> opts -> x -> (
+    s := 0;
     if opts.Axis == "Row" then (
-        s := flatten(for i in x list(sumList(i)));
+        s = flatten(for i in x list(sumList(i)));
     )
     else if opts.Axis == "Col" then (
        pivoted := entries(transpose(matrix(x)));
-       s := flatten(for i in pivoted list(sumList(i)));
+       s = flatten(for i in pivoted list(sumList(i)));
     )
     else (
-        s := sum(asList(x));
+        s = sum(asList(x));
     );
     return s
 )
@@ -119,35 +118,38 @@ sumList = {Axis => "None"} >> opts -> x -> (
 -- -- MaxSum(numeric value) = exclude all combinations with sum above MaxSum
 -- -- Order(true/false) = whether or not the ordering of combination values matters
 combinations = {Replacement => true, MinSum => -1000, MaxSum => -1000, Order => true} >> opts -> (k, l) -> (
+    combs := {};
+    combs1 := {};
+    combs2 := {};
     if k > 1 then (
         -- if we are using combinations with replacement -- 
         if opts.Replacement then (
-           mylist := flatten(join(for i in l list(for j from 0 to k - 1 list(i))));
-           combs1 := unique(subsets(mylist, k));
-           combs2 := unique(subsets(mylist, k));
-           for i in combs2 do (combs1 := append(combs1, reverse(i)));
-           combs := unique(combs1);
+           combs = flatten(join(for i in l list(for j from 0 to k - 1 list(i))));
+           combs1 = unique(subsets(combs, k));
+           combs2 = unique(subsets(combs, k));
+           for i in combs2 do (combs1 = append(combs1, reverse(i)));
+           combs = unique(combs1);
         )
         else (
-           mylist := flatten(for i in l list(i));
-           combs1 := unique(subsets(mylist, k));
-           combs2 := unique(subsets(mylist, k));
-           for i in combs2 do (combs1 := append(combs1, reverse(i)));
-           combs := unique(combs1);
+           combs = flatten(for i in l list(i));
+           combs1 = unique(subsets(combs, k));
+           combs2 = unique(subsets(combs, k));
+           for i in combs2 do (combs1 = append(combs1, reverse(i)));
+           combs = unique(combs1);
         );
     )
     else
-        combs := for i in l list(asList(i));
+        combs = for i in l list(asList(i));
 
     -- if we are using restricting either by a minimum or maximum sum -- 
     if opts.MinSum != -1000 then (
-       combs := for i in combs list(if sumList(i) < opts.MinSum then (continue;) else (i));
+       combs = for i in combs list(if sumList(i) < opts.MinSum then (continue;) else (i));
     );
     if opts.MaxSum != -1000 then (
-       combs := for i in combs list(if sumList(i) > opts.MaxSum then (continue;) else (i));
+       combs = for i in combs list(if sumList(i) > opts.MaxSum then (continue;) else (i));
     );
     if opts.Order != true then (
-        combs := unique(
+        combs = unique(
             for i in combs list(sort(i))
         );
     );
@@ -187,16 +189,16 @@ isPermutation = (x, y) -> (
         -- rowPermutations = permutations(rs);
         for rPerm in permutations(rs) do (
             if xrows_rPerm == yrows then (
-                toRet := true;
+                toRet = true;
                 break;
             )
             else (
                 xrowsP := matrix(xrows_rPerm);
                 cs := toList(0..#xcols - 1);
-                colPermutations := permutations(cs);
-                for cPerm in colPermutations do (
+                -- colPermutations := permutations(cs);
+                for cPerm in permutations(cs) do (
                     if sort(entries(xrowsP_cPerm)) == yrows then (
-                        toRet := true;
+                        toRet = true;
                         break;
                     );
                 );
@@ -220,7 +222,7 @@ unorientedUniqueUpToPermutation = x -> (
                         continue;
                     )
                     else (
-                        toSave := delete(j, toSave);
+                        toSave = delete(j, toSave);
                     )
                 )
             )
@@ -234,20 +236,20 @@ unorientedUniqueUpToPermutation = x -> (
 
 ------------------------------------------------------------
 -- create all possible undirected graphs with #vertices=x#0 and #edges=x#1 -- 
-allPossibleBaseGraphsForPair = (x) -> (
+allPossibleBaseGraphsForPair = x -> (
    g0 := x#0;
    g1 := x#1;
 
    -- get all possible columns for connectivity matrix (entries must be 0,1, or 2)
-   possibleCols := combinations({0,1,2}, g0, Replacement=>true, MinSum=>2, MaxSum=>2);
+   possibleCols := combinations(g0, {0,1,2}, Replacement => true, MinSum=>2, MaxSum=>2);
 
    -- all combinations of columns to create rows
-   rowCombs := combinations((0..(#possibleCols - 1)), g1, Replacement=>true);
+   rowCombs := combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
    candidateMats := for i in rowCombs list(for j in i list(asList(possibleCols#j)));
-   candidateMats := for i in candidateMats list(transpose(matrix(i)));
-   candidateMats := for i in candidateMats list(if min(sumList(entries(i), Axis=>"Row")) >= 3 then (i) else continue);
-   candidateMats := unorientedUniqueUpToPermutation(candidateMats);
-   for m in candidateMats list(if isGraphConnected(m) then (m) else (continue;))
+   candidateMats = for i in candidateMats list(transpose(matrix(i)));
+   candidateMats = for i in candidateMats list(if min(sumList(entries(i), Axis=>"Row")) >= 3 then (i) else continue);
+   candidateMats = unorientedUniqueUpToPermutation(candidateMats);
+   return for m in candidateMats list (if isGraphConnected(m) then (m) else (continue;));
 )
 ------------------------------------------------------------
 
@@ -266,21 +268,23 @@ undirectedGraphs = (d) -> (
 -- yield the edges of a graph in the form of a list of pairs 
 -- (v1, v2), where edge E is from v1 to v2
 graphEdges = {Oriented => false, RavelLoops => false} >> opts -> (G) -> (
+    E := {};
     if opts.Oriented == true then (
-        E := for e in entries(transpose(G)) list(
+        E = for e in entries(transpose(G)) list(
             {position(e, i -> i < 0), 
              position(e, i -> i > 0)}
         );
     )
     else (
-        E := for e in entries(transpose(G)) list(
+        E = for e in entries(transpose(G)) list(
             positions(e, i -> (i > 0 or i < 0))
         );
         if opts.RavelLoops == true then (
-            E := for e in E list(if #e > 1 then e else toList(2:e#0));
+            E = for e in E list(if #e > 1 then e else toList(2:e#0));
         );
     );
-    return E
+    lens := sortedIndices(for e in E list(-#e));
+    return E_lens
 )
 ------------------------------------------------------------
 
@@ -292,7 +296,7 @@ graphFromEdges = {Oriented => false} >> opts -> E -> (
     -- first, if oriented graph, then make sure this is reflected. 
     tailVal := 1;
     if opts.Oriented == true then (
-        tailVal := -1;
+        tailVal = -1;
     );
 
     nVerts := max(flatten(E))+1;
@@ -319,7 +323,7 @@ edgesOutOfPoint = {Oriented => false} >> opts -> (p, E) -> (
 
 ------------------------------------------------------------
 -- check if graph is connected
-isGraphConnected = (G) -> (
+isGraphConnected = G -> (
     gEdges := graphEdges(G);
     if max(for e in gEdges list(#e)) > 1 then (
         isConnected(graph(gEdges))
@@ -346,11 +350,11 @@ findCycleDFS = (startV, visited, E) -> (
         edgeVerts := edge#1;
         endV := edgeVerts#1;
         if visited#endV == 1 then (
-            retVal := true;
+            retVal = true;
             break;
         );
-        currentVisited := replaceInList(endV, 1, visited);
-        retVal := findCycleDFS(endV, currentVisited, E);
+        currentVisited = replaceInList(endV, 1, visited);
+        retVal = findCycleDFS(endV, currentVisited, E);
     );
     retVal
 )
@@ -368,7 +372,7 @@ existsOrientedCycle = (G) -> (
         visited := insert(firstV, 1, asList((#V - 1):0));
         result := findCycleDFS(firstV, visited, E);
         if result then (
-            retVal := true;
+            retVal = true;
             break;
         )
     );
@@ -387,6 +391,8 @@ existsOrientedCycle = (G) -> (
 
 ------------------------------------------------------------
 isPathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -> (p, q, E) -> (
+    ifPath := false;
+    Path := {};
     existsPath := false;
     currentPath := {};
     pathsToSee := edgesOutOfPoint(p, E, Oriented => opts.Oriented);
@@ -397,27 +403,27 @@ isPathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts
         e := edge#1;
         v := e#1;
         if p == e#1 then (
-            v := e#0;
+            v = e#0;
         );
         if opts.SavePath then (
             currentEdges := append(toList(opts.EdgesAdded), {p, v});
         );
 
         if q == v then (
-            existsPath := true;
+            existsPath = true;
             break;
         )
         else (
             remainingEdges := for j from 0 to #E - 1 list(if j == i then (continue;) else E#j);
 
             if opts.SavePath then (
-                (ifPath, Path) := isPathBetween(v, q, remainingEdges, Oriented => opts.Oriented, SavePath => true, EdgesAdded => currentEdges);
+                (ifPath, Path) = isPathBetween(v, q, remainingEdges, Oriented => opts.Oriented, SavePath => true, EdgesAdded => currentEdges);
             )
             else (
-                ifPath := isPathBetween(v, q, remainingEdges, Oriented => opts.Oriented, EdgesAdded => currentEdges);
+                ifPath = isPathBetween(v, q, remainingEdges, Oriented => opts.Oriented, EdgesAdded => currentEdges);
             );
             if ifPath then (
-                existsPath := true;
+                existsPath = true;
                 break;
             );
         );
@@ -442,8 +448,8 @@ isEdgeInCycle = (i, E) -> (
             q := e#1;
         )
         else (
-            p := e#0;
-            q := e#0;
+            p = e#0;
+            q = e#0;
         );
         indicesToSave := drop(toList(0..(#E-1)), {i,i});
         isPathBetween(p, q, E_indicesToSave)
@@ -471,15 +477,14 @@ splitLoops = m -> (
         e := Es#i;
         if #loopsBroken != #delete(i, loopsBroken) then (
             p := position(loopsBroken, x -> x == i);
-            altLB := append(replaceInList(p, loopsBroken_p + p, altLB), loopsBroken_p + p + 1);
+            altLB = append(replaceInList(p, loopsBroken_p + p, altLB), loopsBroken_p + p + 1);
             {{e#0, nVerts+p}, {nVerts+p, e#0}}
         )
         else (
             {e}
         )
     ));
-    m := graphFromEdges(newEdges);
-    m, altLB
+    (graphFromEdges(newEdges), altLB)
 )
 ------------------------------------------------------------
 
@@ -492,7 +497,7 @@ splitEdges = (m, E) -> (
     for i from 0 to #E - 1 do (
         ei := E#i;
         e := Es#ei;
-        Es := append(replace(i, {e#0, nVerts+i}, Es), {nVerts+i, e#1});
+        Es = append(replace(i, {e#0, nVerts+i}, Es), {nVerts+i, e#1});
     );
     graphFromEdges(Es)
 )
@@ -517,21 +522,24 @@ undirectedBaseGraphs = (n) -> (
 -- remove all loops from a given graph given in matrix form
 -- and return the set of all loop-free copies with every 
 -- combination of the remaining edges split
-splitLoopsAndEdges = (m) -> (
+splitLoopsAndEdges = m -> (
     origNumEdges := #graphEdges(m);
-    (M, loops) := splitLoops(m);
+    A := splitLoops(m);
+    M := A#0;
+    loops := A#1;
     originalLooplessEdges := set(0..origNumEdges - 1) - set(loops);
+
 
     if #originalLooplessEdges > 0 then (
         otherEdgeCombs := for i from 1 to #originalLooplessEdges list(
-            asList(combinations(asList(originalLooplessEdges), i, Replacement => false, Order => false))
+            asList(combinations(i, asList(originalLooplessEdges), Replacement => false, Order => false))
         );
         outputs := flatten(for i from 0 to #originalLooplessEdges - 1 list(
             for comb in otherEdgeCombs#i list(
                 splitEdges(M, asList(comb))
             )
         ));
-        outputs := append(outputs, M);
+        outputs = append(outputs, M);
         unorientedUniqueUpToPermutation(outputs)
     )
     else (
@@ -543,15 +551,15 @@ splitLoopsAndEdges = (m) -> (
 
 ------------------------------------------------------------
 -- put set of all admissable orientations on the matrix m
-allPossibleOrientations = (m) -> (
+allPossibleOrientations = m -> (
     rows := entries(m);
 
     -- first make all vertices of valence 2 into sinks. 
-    m := matrix(for i in rows list(
+    mat := matrix(for i in rows list(
         if sumList(i) == 2 then (-1*i) else (i)
     ));
-    cols := entries(transpose(m));
-    es := graphEdges(m);
+    cols := entries(transpose(mat));
+    es := graphEdges(mat);
 
     -- now take every combination of +-1 for the columns that do 
     -- not yet add up to 0
@@ -567,14 +575,14 @@ allPossibleOrientations = (m) -> (
             {replaceInList(tail, -1, cols#i), replaceInList(head, -1, cols#i)}
         );
 
-        combinationsOfChoices := combinations({0, 1}, #columnsToChange, Replacement=>true, Order=>false);
+        combinationsOfChoices := combinations(#columnsToChange, {0, 1}, Replacement=>true, Order=>false);
         for choice in combinationsOfChoices list(-1*transpose(matrix(
             for c from 0 to #cols - 1 list(
                 if #columnsToChange == #delete(c, columnsToChange) then (
                     cols#c
                 )
                 else (
-                    p := position(columnsToChange,i -> i == c);
+                    p := position(columnsToChange, i -> i == c);
                     colOpts := columnChoices#p;
                     choiceForCol := choice#p;
                     colOpts#choiceForCol
@@ -583,7 +591,7 @@ allPossibleOrientations = (m) -> (
         )))
     )
     else (
-        {-1*m}
+        {-1*mat}
     )
 )
 ------------------------------------------------------------
@@ -608,7 +616,7 @@ removeOrientedCycles = (l) -> (
 ------------------------------------------------------------
 -- take a list of quivers(directed graphs) and return the 
 -- unique up to isomorphism list 
-uniqueUpToQuiverIsomorphism = (M) -> (
+uniqueUpToQuiverIsomorphism = M -> (
     if #M > 1 then (
         toSave := asList(0..(#M - 1));
         for mi from 0 to #M - 2 do (
@@ -623,17 +631,17 @@ uniqueUpToQuiverIsomorphism = (M) -> (
                 else (
                     n := M_ni;
                     if n == m or n == -1*m then (
-                        toSave := delete(ni, toSave);
+                        toSave = delete(ni, toSave);
                     )
                     else (
                         nShape := {numgens(target(m)), numgens(source(m))};
                         nValences := sort(sumList(entries(n), Axis => "Row"));
                         if nShape == mShape and nValences == mValences then (
-                            possiblePermutations := combinations((0..(nShape#1-1)), nShape#1, Replacement=>false);
+                            possiblePermutations := combinations(nShape#1, (0..(nShape#1-1)), Replacement=>false);
                             for p in possiblePermutations do (
                                 nPoss := n_p;
                                 if isPermutation(nPoss, m) or isPermutation(nPoss, -1*m) then(
-                                    toSave := delete(ni, toSave);
+                                    toSave = delete(ni, toSave);
                                 );
                             );
                         );
@@ -650,12 +658,12 @@ uniqueUpToQuiverIsomorphism = (M) -> (
 
 ------------------------------------------------------------
 -- generates the Toric Quivers in dimension n
-toricQuivers = (n) -> (
+toricQuivers = n -> (
     gs := undirectedBaseGraphs(n);
-    gs := flatten(for i in gs list(splitLoopsAndEdges(i)));
-    gs := flatten(for i in gs list(allPossibleOrientations(i)));
+    gs = flatten(for i in gs list(splitLoopsAndEdges(i)));
+    gs = flatten(for i in gs list(allPossibleOrientations(i)));
     qs := removeOrientedCycles(gs);
-    qs := uniqueUpToQuiverIsomorphism(qs);
+    qs = uniqueUpToQuiverIsomorphism(qs);
     for q in qs list(
         q
     )
@@ -681,7 +689,7 @@ subquivers = {Format => "indices"} >> opts -> (Q) -> (
 
     flatten(
         for i from 1 to numArrows - 1 list (
-            for c in combinations(arrows, i, Order => false, Replacement => false) list (
+            for c in combinations(i, arrows, Order => false, Replacement => false) list (
                 if opts.Format == "indices" then (
                     c
                 ) else (
@@ -702,7 +710,7 @@ subsetsClosedUnderArrows = (Q) -> (
     Qt := transpose(Q);
 
     flatten(for i from 1 to numVertices - 1 list(
-        for c in combinations(currentVertices, i, Order => false, Replacement => false) list(
+        for c in combinations(i, currentVertices, Order => false, Replacement => false) list(
             sQ := entries(Qt_c);
             if all(sumList(sQ, Axis => "Row"), x -> x >= 0) then (
                 c
@@ -734,7 +742,7 @@ isStable = (Q, subQ) -> (
     weights := Qtheta_subQVertices;
     subMat := Q_subQ;
     tSubMat := transpose(subMat);
-    subMat := transpose(tSubMat_subQVertices);
+    subMat = transpose(tSubMat_subQVertices);
 
     sums := asList(
         for subset in subsetsClosedUnderArrows(subMat) list(
@@ -752,7 +760,7 @@ unstableSubquivers = (Q) -> (
     arrows := asList(0..numArrows - 1);
 
     L := flatten(for i from 1 to numArrows - 1 list (
-        combinations(arrows, i, Replacement => false) 
+        combinations(i, arrows, Replacement => false) 
     ));
 
     for sQ in L list(
@@ -816,7 +824,3 @@ isTight = (Q) -> (
     all(maximalUnstableSubquivers(Q), x -> #x != (numArrows - 1))
 )
 ------------------------------------------------------------
-
-
-
-
