@@ -790,3 +790,112 @@ isTight = (Q) -> (
     all(maximalUnstableSubquivers(Q), x -> #x != (numArrows - 1))
 )
 ------------------------------------------------------------
+
+
+------------------------------------------------------------
+-- Returns a spanning tree(the first one that is encountered) of 
+-- the quiver Q with |Q_1| - |Q_0| + 1 edges removed. 
+-- NOTE: if such a spanning tree is not possible, then it returns empty lists
+--
+-- input: 
+--     - Q: Matrix representation of quiver
+-- outputs:
+--     - edges_kept(list of tuples): list of the edges in the spanning tree
+--     - edges_removed(list of tuples)): list of the edges in the complement of the spanning tree
+--
+spanning_tree = (Q) -> (
+    Q0 := #entries(Q);
+    Q1 := #entries(transpose(Q));
+
+    --  edges of quiver Q represented as a list of tuples
+    allEdges := graphEdges(Q, True);
+    allNodes := asList(0..Q0-1);
+
+    -- number of edges to remove from spanning tree
+    d := Q1 - Q0 + 1;
+
+    dTuplesToRemove := combinations(asList(0..#allEdges-1), d);
+    for dTuple in dTuplesToRemove do (
+        edgesKept := drop(allEdges, dTuple);
+        edgesRemoved := allEdges_dTuple;
+
+        if isGraphConnected(graph(allNodes, edgesKept)) then (
+            return (edgesKept, edgesRemoved);
+        );
+    );
+    return ({}, {})
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+-- gives the edges that comprise an undirected cycle in the graph G, 
+-- (which is assumed to contain a single cycle) and returns the ordered cycle
+
+--  input: G(list of tuples): edges of graph G
+--  output: cycle(list of tuples): tuple representation of the edges contained in the cycle
+primalUndirectedCycle = (G) -> (
+
+    for i from 0 to #G - 1 do (
+        edge := G#i;
+        (isCycle, cycle) := isPathBetween(edge#1, edg#0, drop(G, i), 
+                                          Oriented => false, SavePath => true, EdgesAdded => {});
+        if isCycle then (
+            edgeIndices := {};
+            metEdges := {};
+
+            for cE in cycle do (
+                for gI in drop(asList(0..#G - 1), metEdges) do (
+                    gE := G#gI;
+                    if gE == cE then (
+                        metEdges = metEdges | {gI};
+                        edgeIndices = edgeIndices | {gI};
+                        break;
+                    elif {gE#1, gE#0} == cE then (
+                        metEdges = metEdges | {gI};
+                        edgeIndices = edgeIndices | {-(gI+1)};
+                        break;
+                    );
+                );
+            );
+        );
+        return edgeIndices;
+    );
+    return {};
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+flowPolytope = (Q) -> (
+    (sT, removedEdges) := spanningTree(Q);
+    es := sT | removedEdges;
+    Ws := #es:1;
+
+    f := for i from 0 to #removedEdges - 1 list(
+        edge := removedEdges#i;
+        cycle := primalUndirectedCycle(sT | {edge});
+
+        cycle = for x in cycle list(
+            if x == #sT then (x+i) else if x == -(#sT + 1) then (-#sT - i - 1) else (x);
+        );
+
+        fi := #es:0;
+        for j in cycle do (
+            if j >= 0 then (
+                fi = replaceInList(j, Ws#j, fi)
+            ) else (
+                k := -(1 + j);
+                fi = replaceInList(k, -Ws#k, fi)
+            );
+        );
+        fi
+    );
+    for j from 0 to #es - 1 list(
+        for i from 0 to #removedEdges - 1 list(
+            ff := f#i;
+            ff#j
+        )
+    )
+)
+------------------------------------------------------------
