@@ -195,6 +195,18 @@ def is_connected(node_list, edge_list):
 
 # returns list of tuples of the form (node1, node2) that corresponds to 
 # an edge between node1 and node2. Loops are represented as (node1,node1)
+def graph_from_edges(Es):
+    all_nodes = list(set([y for x in Es for y in x]))
+    num_edges = len(Es)
+    A = np.zeros((len(all_nodes), num_edges))
+
+    for i, e in enumerate(Es):
+        A[e[0], i] = -1
+        A[e[1], i] = 1
+    return A
+
+# returns list of tuples of the form (node1, node2) that corresponds to 
+# an edge between node1 and node2. Loops are represented as (node1,node1)
 def edges_of_graph(A, oriented=False):
     node_list = range(A.shape[0])
     edges = np.asarray(A.T)
@@ -424,3 +436,30 @@ def Step5(mats):
                                 to_remove[iN] = 1
                                 break
     return [m for i, m in enumerate(mats) if not to_remove[i]]
+
+
+def all_possible_graphs(d):
+    graphs = Step1(d)
+
+    step2_graphs, loops_broken = zip(*[Step2(A) for A in graphs])
+
+    step3_graphs = []
+    for i, A in enumerate(step2_graphs):
+        n_edges = A.shape[1]
+        edges_to_break = [x for x in range(n_edges) if not (x in loops_broken[i])]
+        if len(edges_to_break) > 0:
+            for y in range(len(edges_to_break)+1):
+                for edge_list in combinations(edges_to_break, y):
+                    step3_graphs.append(Step3(A, list(edge_list)))
+        else:
+            step3_graphs.append(A)
+    step3_graphs = unoriented_unique_up_to_isomorphism(step3_graphs)
+
+    step4_graphs = []
+    for A in step3_graphs:
+        step4_graphs.extend(Step4(A))
+    step4_graphs = unoriented_unique_up_to_isomorphism(step4_graphs)
+
+    step5_graphs = Step5(step4_graphs)
+
+    return step5_graphs
