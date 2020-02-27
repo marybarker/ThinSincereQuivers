@@ -22,6 +22,7 @@ export {
     "isMaximal",
     "maximalUnstableSubquivers",
     "theta", 
+    "neighborliness",
 -- Options
     "Axis",
     "SavePath",
@@ -793,6 +794,21 @@ isTight = (Q) -> (
 
 
 ------------------------------------------------------------
+neighborliness = (Q) -> (
+    numArrows := #entries(transpose(Q));
+    maxUnstables := maximalUnstableSubquivers(Q);
+
+    k := max(
+        for sQ in maxUnstables list(
+            numArrows - #sQ
+        )
+    );
+    k
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 -- Returns a spanning tree(the first one that is encountered) of 
 -- the quiver Q with |Q_1| - |Q_0| + 1 edges removed. 
 -- NOTE: if such a spanning tree is not possible, then it returns empty lists
@@ -851,7 +867,8 @@ primalUndirectedCycle = (G) -> (
                         metEdges = metEdges | {gI};
                         edgeIndices = edgeIndices | {gI};
                         break;
-                    elif {gE#1, gE#0} == cE then (
+                    )
+                    else if {gE#1, gE#0} == cE then (
                         metEdges = metEdges | {gI};
                         edgeIndices = edgeIndices | {-(gI+1)};
                         break;
