@@ -16,7 +16,7 @@ export {
     "sampleQuiver",
     "toricQuivers", 
     "isTight",
-    "subQuivers", 
+    "subquivers", 
     "subsetsClosedUnderArrows",
     "isStable",
     "isMaximal",
