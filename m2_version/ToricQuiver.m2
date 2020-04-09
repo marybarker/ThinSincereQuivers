@@ -819,7 +819,7 @@ neighborliness = (Q) -> (
 --     - edges_kept(list of tuples): list of the edges in the spanning tree
 --     - edges_removed(list of tuples)): list of the edges in the complement of the spanning tree
 --
-spanning_tree = (Q) -> (
+spanningTree = (Q) -> (
     Q0 := #entries(Q);
     Q1 := #entries(transpose(Q));
 

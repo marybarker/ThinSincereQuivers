@@ -5,9 +5,9 @@
 
 * `isTight (Q)': answers question: is the quiver Q tight? (Q given in matrix form)
 
-* `subQuivers (Q)' : returns a list of the subquivers of Q, given as sets of vertices 
+* `subquivers (Q)' : returns a list of the subquivers of Q, given as sets of vertices 
 
-* `subsetsClosedUnderArrows (Q)': returns the subsets of subQuivers(Q) satisfying the closed under arrows condition
+* `subsetsClosedUnderArrows (Q)': returns the subsets of subquivers(Q) satisfying the closed under arrows condition
 
 * `isStable (Q, sQ)' : answers the question: subQ is a stable subquiver of Q
 
