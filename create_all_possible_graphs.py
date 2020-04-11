@@ -1,4 +1,4 @@
-import graph_cal as gc
+import ToricQuiver as gc
 import numpy as np
 import random
 import os
