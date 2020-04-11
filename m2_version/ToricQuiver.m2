@@ -14,16 +14,18 @@ newPackage(
 export {
 -- Methods/Functions
     "sampleQuiver",
-    "toricQuivers", 
+    "toricQuivers",
     "isTight",
-    "subquivers", 
+    "subquivers",
     "subsetsClosedUnderArrows",
     "isStable",
     "isMaximal",
     "maximalUnstableSubquivers",
-    "theta", 
+    "theta",
     "neighborliness",
     "flowPolytope",
+    "graphEdges",
+    "graphFromEdges",
 -- Options
     "Axis",
     "SavePath",
@@ -718,7 +720,7 @@ isStable = (Q, subQ) -> (
             sumList(weights_subset)
         )
     );
-    all(sums, x -> x > 0)
+    all(sums, x -> x < 0)
 )
 ------------------------------------------------------------
 
@@ -759,7 +761,7 @@ isMaximal = (Q, Qlist) -> (
     returnVal := true;
     for Q2 in Qlist do (
         if isProperSubset(Q, Q2) then (
-            returnVal := false;
+            returnVal = false;
         );
     );
     returnVal
@@ -774,7 +776,7 @@ maximalUnstableSubquivers = (Q) -> (
         isMaximal := true;
         for subQ2 in unstableList do (
             if isProperSubset(subQ1, subQ2) then (
-                isMaximal := false;
+                isMaximal = false;
             );
         );
         if isMaximal then (
@@ -832,7 +834,7 @@ spanningTree = (Q) -> (
     -- number of edges to remove from spanning tree
     d := Q1 - Q0 + 1;
 
-    dTuplesToRemove := combinations(d, asList(0..#allEdges-1));
+    dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement => false);
     for dTuple in dTuplesToRemove do (
         edgesKept := drop(allEdges, dTuple);
         edgesRemoved := allEdges_dTuple;
@@ -855,6 +857,14 @@ spanningTree = (Q) -> (
 
 
 ------------------------------------------------------------
+isIn = (v, l) -> (
+    p := positions(l, x -> x == v);
+    #p > 0
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 -- gives the edges that comprise an undirected cycle in the graph G, 
 -- (which is assumed to contain a single cycle) and returns the ordered cycle
 
@@ -863,25 +873,25 @@ spanningTree = (Q) -> (
 primalUndirectedCycle = (G) -> (
     for i from 0 to #G - 1 do (
         edge := G#i;
-        (isCycle, cycle) := isPathBetween(edge#1, edge#0, drop(G, i), 
-                                          Oriented => false, SavePath => true, EdgesAdded => {});
+        (isCycle, cycle) := isPathBetween(edge#1, edge#0, drop(G, {i, i}), 
+                                          Oriented => false, SavePath => true, EdgesAdded => {edge});
         if isCycle then (
             edgeIndices := {};
             metEdges := {};
 
             for cE in cycle do (
                 for gI in asList(0..#G - 1) do (
-                    if (metEdges#?gI) then (continue;) else (
+                    if isIn(gI, metEdges) then (
+                        continue;
+                    ) else (
                         gE := G#gI;
-                        if gE == cE then (
+                        if (gE#0 == cE#0) and (gE#1 == cE#1) then (
                             metEdges = metEdges | {gI};
                             edgeIndices = edgeIndices | {gI};
-                            break;
                         )
-                        else if {gE#1, gE#0} == cE then (
+                        else if (gE#1 == cE#0) and (gE#0 == cE#1) then (
                             metEdges = metEdges | {gI};
                             edgeIndices = edgeIndices | {-(gI+1)};
-                            break;
                         );
                     );
                 );
@@ -906,7 +916,7 @@ flowPolytope = (Q) -> (
         cycle := primalUndirectedCycle(sT | {edge});
 
         cycle = for x in cycle list(
-            if x == #sT then (x+i) else if x == -(#sT + 1) then (-#sT - i - 1) else (x);
+            if x == #sT then (x+i) else if x == -(#sT + 1) then (-#sT - i - 1) else (x)
         );
 
         fi := #es:0;
