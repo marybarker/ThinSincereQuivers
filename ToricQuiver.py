@@ -165,20 +165,34 @@ def all_edges_in_a_cycle(edge_list):
 
 # FOR ORIENTED GRAPH CYCLE CHECKING
 def exists_cycle(edge_list, vertex_list):
-    visited = [0 for x in vertex_list]
-    v = edge_list[0][0]
-    visited[v] = 1
-    return dfs_find_cycle(v, visited, edge_list)
+    exists_cycle = False
+
+    for v in range(len(vertex_list)):
+        visited = [0 for x in vertex_list]
+        visited[v] = 1
+
+        if dfs_find_cycle(v, visited, edge_list):
+            exists_cycle = True
+            break
+
+    return exists_cycle
 
 
 # FOR ORIENTED GRAPH CYCLE CHECKING
 def dfs_find_cycle(starting_vertex, visited, edge_list):
-    for e_index, e in edges_out_of(starting_vertex, edge_list, oriented=True):
+    to_return = False
+    edges = edges_out_of(starting_vertex, edge_list, oriented=True)
+    for e_index, e in edges:
         if visited[e[1]]:
-            return True
-        visited[e[1]] = 1
-        return dfs_find_cycle(e[1], visited, edge_list)
-    return False
+            to_return = True
+            break
+        new_visited = [x for x in visited]
+        new_visited[e[1]] = 1
+        success = dfs_find_cycle(e[1], new_visited, edge_list)
+        if success:
+            to_return = True
+            break
+    return to_return
 
 
 # checks if a graph(represented by node_list and edge_list)is connected
@@ -402,7 +416,7 @@ def Step4(mat):
         mats = [np.column_stack((base_mat, np.column_stack(A))) for A in [[possible_columns[i][y] for i, y in enumerate(x)] for x in col_choices]]
 
     #save only the graphs that are cycle-free
-    mats = [-x for x in mats if not exists_cycle(edges_of_graph(x, True), range(x.shape[0]))]
+    mats = [-x for x in mats if not exists_cycle(edges_of_graph(-x, True), range(x.shape[0]))]
     return unoriented_unique_up_to_isomorphism(mats)
 
 
