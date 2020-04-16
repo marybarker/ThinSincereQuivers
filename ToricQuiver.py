@@ -559,7 +559,7 @@ def is_stable(M, subM):
     submatrix = submatrix[:,subM]
     # calculate the weight sums for each subset of M that is closed under arrows
     sums = np.array([sum(np.array(weights)[np.array(S)]) for S in subsets_closed_under_arrows(submatrix)])
-    return np.all(sums < 0)
+    return np.all(sums > 0)
 
 
 
