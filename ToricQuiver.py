@@ -4,6 +4,30 @@ from itertools import product, combinations, permutations
 from itertools import combinations_with_replacement as all_combos
 
 
+def is_a_vertex_permutation_of(A, B):
+    if A.shape != B.shape:
+        return False
+    if np.all(A == B):
+        return True
+
+    Aedges = edges_of_graph(A, True)
+    Bedges = edges_of_graph(B, True)
+
+    # really this is 2*valence, but doesn't matter as long as we're just worrying about uniqueness
+    Avalences = np.column_stack([(abs(A).sum(axis=1) - A.sum(axis=1)), (abs(A).sum(axis=1)+A.sum(axis=1))]).tolist()
+    Bvalences = np.column_stack([(abs(B).sum(axis=1) - B.sum(axis=1)), (abs(B).sum(axis=1)+B.sum(axis=1))]).tolist()
+
+    possible_replacements = [[b for (b, bv) in enumerate(Bvalences) if (bv[0] == av[0] and bv[1] == av[1])] for av in Avalences]
+    paths_to_take = product(*possible_replacements)
+    summedvertices = sum(range(A.shape[0]))
+
+    for path in paths_to_take:
+        if len(path) == len(set(path)) and sum(path) == summedvertices:
+            A_alt = np.row_stack([A[a,:] for a in path])
+            if np.all(A_alt == B):
+                return True
+    return False
+
 def is_a_column_permutation_of(A, B):
     """ checks if two matrices A and B are identical up to permutation of columns
         inputs:
