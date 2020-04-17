@@ -621,3 +621,44 @@ def neighborliness(Q):
     max_unstables = all_maximal_unstable(Q)
     n = [len(m) for m in max_unstables] + [0]
     return Q.shape[1] - max(n)
+
+
+def merge_on_vertex(A1, v1, A2, v2):
+    # shape of output matrix
+    nrow = A1.shape[0] + A2.shape[0] - 1
+    ncol = A1.shape[1] + A2.shape[1]
+
+    # permute input matrices so row a1 is at bottom of A1, and 
+    # row a2 is at top of A1.easier to merge that way
+    Q1 = np.row_stack([A1[:v1], A1[v1+1:], A1[v1]])
+    Q2 = np.row_stack([A2[v2], A2[:v2], A2[v2+1:]])
+
+    # create dummy matrix to hold output
+    A = np.zeros((nrow, ncol))
+    A[:A1.shape[0], :A1.shape[1]] = Q1
+    A[A1.shape[0]-1:, A1.shape[1]:] = Q2
+    
+    return A
+
+
+def merge_on_arrow(A1, a1, A2, a2):
+    # shape of output matrix
+    nrow = A1.shape[0] + A2.shape[0] - 2
+    ncol = A1.shape[1] + A2.shape[1] - 1
+
+    # get local indices of vertices associated to the edge
+    q1_e = edges_of_graph(A1, oriented=True)[a1]
+    q2_e = edges_of_graph(A2, oriented=True)[a2]
+
+    # permute A1 so that column a1 and rows associated to edge a1 are at bottom
+    Q1 = np.column_stack([A1[:,:a1], A1[:,a1+1:], A1[:,a1]])
+    Q1 = np.row_stack([Q1[x] for x in range(Q1.shape[0]) if x not in q1_e] + [Q1[q1_e[0]], Q1[q1_e[1]]])
+
+    # permute A2 so that column a2 and rows associated to edge a2 are at top
+    Q2 = np.column_stack([A2[:,:a2], A2[:,a2+1:]])
+    Q2 = np.row_stack([Q2[q2_e[0]], Q2[q2_e[1]]] + [Q2[x] for x in range(Q2.shape[0]) if x not in q2_e])
+
+    A = np.zeros((nrow, ncol))
+    A[:A1.shape[0], :A1.shape[1]] = Q1
+    A[A1.shape[0]-2:,A1.shape[1]:] = Q2
+    return A
