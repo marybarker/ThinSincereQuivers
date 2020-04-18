@@ -87,6 +87,18 @@ def generate_graphs(d):
         connectivity_matrices.extend(As)
     return connectivity_matrices
 
+def generate_graphs_for_pair(G0, G1):
+    list_of_aij_possibilities = [[0, 1, 2] for x in range(G0)]
+    all_possible_columns = [x for x in product(*list_of_aij_possibilities) if sum(x) == 2]
+    list_of_col_indices = [list(range(len(all_possible_columns))) for x in range(G1)]
+    all_col_combinations = all_combos(range(len(all_possible_columns)), G1)
+    As = [np.matrix(np.column_stack([all_possible_columns[j] for j in i])) for i in all_col_combinations]
+    As = [A for A in As if np.all(np.array((A.sum(axis=1)) >= 3))]
+
+    # now make sure the graphs are unique up to graph isomorphism
+    As = unoriented_unique_up_to_isomorphism(As)
+    return As
+
 
 # This set of functions deals with part d in the theorem.
 # namely, it checks that each edge is contained in a cycle.
