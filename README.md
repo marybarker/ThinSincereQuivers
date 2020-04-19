@@ -8,9 +8,11 @@ The main data structures that are dealt with are Graphs, Quivers, and polytopes 
 1. Matrix representation: for a graph <img src="/tex/5201385589993766eea584cd3aa6fa13.svg?invert_in_darkmode&sanitize=true" align=middle width=12.92464304999999pt height=22.465723500000017pt/> with edge set <img src="/tex/0e0fff175b21e36dc5c4cae2cb36897c.svg?invert_in_darkmode&sanitize=true" align=middle width=19.477190699999987pt height=22.465723500000017pt/> and vertex set <img src="/tex/b3f35df4c36a139a959bb2514490cd1d.svg?invert_in_darkmode&sanitize=true" align=middle width=19.477190699999987pt height=22.465723500000017pt/>, the matrix associated to <img src="/tex/5201385589993766eea584cd3aa6fa13.svg?invert_in_darkmode&sanitize=true" align=middle width=12.92464304999999pt height=22.465723500000017pt/> is the <img src="/tex/62e34e95c7c57ce3b9c407f67922d3e6.svg?invert_in_darkmode&sanitize=true" align=middle width=78.95429354999999pt height=24.65753399999998pt/> matrix <img src="/tex/53d147e7f3fe6e47ee05b88b166bd3f6.svg?invert_in_darkmode&sanitize=true" align=middle width=12.32879834999999pt height=22.465723500000017pt/> with <p align="center"><img src="/tex/af61bd1b82d4f93087079adbbc7d2672.svg?invert_in_darkmode&sanitize=true" align=middle width=273.28447079999995pt height=49.315569599999996pt/></p> Note: for oriented graphs/quivers, we use 1 for the <img src="/tex/3e384b223dce750e6c98aa501355f00b.svg?invert_in_darkmode&sanitize=true" align=middle width=20.679527549999985pt height=21.68300969999999pt/> entry corresponding to the head of an edge and -1 for the tail. 
 2. Edge representation: For <img src="/tex/5201385589993766eea584cd3aa6fa13.svg?invert_in_darkmode&sanitize=true" align=middle width=12.92464304999999pt height=22.465723500000017pt/> as above, define each edge as a pair <img src="/tex/b31116e7405741aa8eaa5adaa6b31484.svg?invert_in_darkmode&sanitize=true" align=middle width=50.77636904999999pt height=24.65753399999998pt/> of endpoints (ordered by tail/head if it is an oriented graph), and thus we can represent <img src="/tex/5201385589993766eea584cd3aa6fa13.svg?invert_in_darkmode&sanitize=true" align=middle width=12.92464304999999pt height=22.465723500000017pt/> as a list of all such pairs. 
 
-There are 2 major files at the moment:
-* **graph\_cal.py** contains routines for generating all of the directed graphs that satisfy conditions to generate a flow polytope in dimension <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/>. 
+There is 1 main files at the moment:
+**ToricQuiver.py** contains routines for generating all of the directed graphs that satisfy conditions to generate a flow polytope in dimension <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/>. 
 The main routines in this file are: 
+* `acyclic_quivers(d)`: 
+tes all of the connected, cycle-free quivers in <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/> dimensions (up to graph isomorphism). This is based on the routines:
     * `Step1(d)`: 
 creates all connected undirected graphs up to isomorphism for a given <img src="/tex/2103f85b8b1477f430fc407cad462224.svg?invert_in_darkmode&sanitize=true" align=middle width=8.55596444999999pt height=22.831056599999986pt/> satisfying <img src="/tex/b50f7d37801bbbfa4f855ee8ad3bc566.svg?invert_in_darkmode&sanitize=true" align=middle width=96.43475654999999pt height=24.65753399999998pt/> and <img src="/tex/5bfc9b4f236354b527d35f72b3bedb28.svg?invert_in_darkmode&sanitize=true" align=middle width=137.73828914999999pt height=24.65753399999998pt/> such that the valence of any vertex <img src="/tex/edc38764d2b249d54559b8fd1f3bced4.svg?invert_in_darkmode&sanitize=true" align=middle width=48.12617039999999pt height=22.465723500000017pt/> is <img src="/tex/7e70ada5b76b03379a57d8aca40f296b.svg?invert_in_darkmode&sanitize=true" align=middle width=25.570741349999988pt height=21.18721440000001pt/>. 
     * `Step2(M)`: 
@@ -21,14 +23,19 @@ takes a graph in matrix form <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg
 produces all possible oriented quivers <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/> for a graph <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.73973739999999pt height=22.465723500000017pt/>, such that valence 2 vertices in <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/> are sinks and there are no oriented cycles. 
     * `Step5(Ms)`: 
 Takes a list <img src="/tex/b1a9dbac8eac63ce661a58d7dfca05f4.svg?invert_in_darkmode&sanitize=true" align=middle width=25.44519449999999pt height=22.465723500000017pt/> of quivers (in matrix form) and returns a list of the ones that are unique(up to directed graph isomorphism)
-    * `flow_polytope(Q)`: 
+* `flow_polytope(Q)`: 
 computes the vertices for the convex hull defining the polytope associated to the dual of the quiver <img src="/tex/1afcdb0f704394b16fe85fb40c45ca7a.svg?invert_in_darkmode&sanitize=true" align=middle width=12.99542474999999pt height=22.465723500000017pt/>. This algorithm is taken from the procedure outlined in [\[2\]](#neighborly_polytopes) section 3. 
-* **quiver\_cal.py** contains routines for studying at the quivers generated in **graph\_cal.py**.  It contains the following routines:
-    * `subquivers(M)`: Given a quiver, it generates all its subquivers with the same set of vertices. 
-    * `subsets_closed(M)`: 
+* `subquivers(M)`: Given a quiver, it generates all its subquivers with the same set of vertices. 
+* `subsets_closed_under_arrows(M)`: 
 Give you all the possible subquivers of M such that it is closed under arrows. 
-    * `theta(M)`: returns the weights of the vertices.
-    * `is_stable(M, subM)`: returns true with a subquiver is stable. 
+* `theta(M)`: returns the weights of the vertices.
+* `is_stable(M, subM)`: returns true with a subquiver is stable. 
+* `all_unstable(M)`: returns all unstable subquivers of M 
+* `all_maximal_unstable(M)`: return the maximal unstable subquivers of M that are closed under arrows
+* `is_tight(M)`: answers question: is M tight? 
+* `neighborliness(M)`: calculates neighborliness of M
+* `merge_on_vertex(M1, v1, M2, v2)`: create a new quiver based on two input quivers by identifying a vertex from each.
+* `merge_on_arrow(M1, a1, M2, a2)`: create a new quiver based on two input quivers by identifying an arrow from each.
 Note that the input <img src="/tex/fb97d38bcc19230b0acd442e17db879c.svg?invert_in_darkmode&sanitize=true" align=middle width=17.73973739999999pt height=22.465723500000017pt/> is a weighted matrix, so the weights in the arrows
 
 
@@ -51,7 +58,7 @@ TODO:
 - [x] add cycle detection to M2 version (for step4)
 - [ ] change dual to actual polytope
 - [ ] visualize polytopes (simple matplotlib implementation)
-- [ ] restructure code for clarity(quiver_cal depends on graph_cal)
+- [x] restructure code for clarity(quiver_cal depends on graph_cal)
 - [x] add quiver_cal functionality to M2 version
 
 ## [References](#references)
