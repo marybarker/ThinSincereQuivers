@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import collections
 from itertools import product, combinations, permutations
 from itertools import combinations_with_replacement as all_combos
@@ -7,26 +8,26 @@ from itertools import combinations_with_replacement as all_combos
 def is_a_vertex_permutation_of(A, B):
     if A.shape != B.shape:
         return False
-    if np.all(A == B):
+    elif np.all(A == B):
         return True
+    else:
+        Aedges = edges_of_graph(A, True)
+        Bedges = edges_of_graph(B, True)
 
-    Aedges = edges_of_graph(A, True)
-    Bedges = edges_of_graph(B, True)
+        # really this is 2*valence, but doesn't matter as long as we're just worrying about uniqueness
+        Avalences = np.column_stack([(abs(A).sum(axis=1) - A.sum(axis=1)), (abs(A).sum(axis=1) + A.sum(axis=1))]).tolist()
+        Bvalences = np.column_stack([(abs(B).sum(axis=1) - B.sum(axis=1)), (abs(B).sum(axis=1) + B.sum(axis=1))]).tolist()
 
-    # really this is 2*valence, but doesn't matter as long as we're just worrying about uniqueness
-    Avalences = np.column_stack([(abs(A).sum(axis=1) - A.sum(axis=1)), (abs(A).sum(axis=1)+A.sum(axis=1))]).tolist()
-    Bvalences = np.column_stack([(abs(B).sum(axis=1) - B.sum(axis=1)), (abs(B).sum(axis=1)+B.sum(axis=1))]).tolist()
+        possible_replacements = [[b for (b, bv) in enumerate(Bvalences) if (bv[0] == av[0] and bv[1] == av[1])] for av in Avalences]
+        paths_to_take = product(*possible_replacements)
+        summedvertices = sum(range(A.shape[0]))
 
-    possible_replacements = [[b for (b, bv) in enumerate(Bvalences) if (bv[0] == av[0] and bv[1] == av[1])] for av in Avalences]
-    paths_to_take = product(*possible_replacements)
-    summedvertices = sum(range(A.shape[0]))
-
-    for path in paths_to_take:
-        if len(path) == len(set(path)) and sum(path) == summedvertices:
-            A_alt = np.row_stack([A[a,:] for a in path])
-            if np.all(A_alt == B):
-                return True
-    return False
+        for path in paths_to_take:
+            if len(path) == len(set(path)) and sum(path) == summedvertices:
+                A_alt = np.row_stack([A[a,:] for a in path])
+                if np.all(A_alt == B):
+                    return True
+        return False
 
 def is_a_column_permutation_of(A, B):
     """ checks if two matrices A and B are identical up to permutation of columns
@@ -45,6 +46,33 @@ def is_a_column_permutation_of(A, B):
     for x in b:
         d[tuple(x)] -= 1
     return not any(d.values())
+
+
+def standardForm(g): # write an adjacency matrix in standard form (i.e. ordered vertices and arrows)
+    # sort vertices by total valance firt, and then by total how many arrows it is the head for
+    valences = np.column_stack([(abs(g).sum(axis=1)), (abs(g).sum(axis=1) + g.sum(axis=1))]).tolist()
+    indices = pd.DataFrame(valences, columns=["total", "totpos"]).sort_values(by=["total", "totpos"]).index.tolist()
+    orderedByVertex = np.row_stack([g[i] for i in indices])
+    tailr, tailc = np.where(g < 0)
+    headr, headc = np.where(g > 0)
+    headc = list(headc)
+    headr = [headr[headc.index(x)] for x in tailc]
+    indices = pd.DataFrame(np.column_stack([tailr, headr]), columns=["tail", "head"], index=tailc).sort_values(by=["tail","head"]).index.tolist()
+    ordered = np.column_stack([g[:,x] for x in indices])
+    return np.matrix(ordered)
+
+
+def is_a_permutation_of(A, B):
+    if A.shape != B.shape:
+        return False
+    elif np.all(A == B):
+        return True
+    else:
+        A_sf = standardForm(A)
+        B_sf = standardForm(B)
+        if np.all(A_sf == B_sf):
+            return True
+        return False
 
 
 # take a list of graphs (matrices, really) and return the unique elements. 
