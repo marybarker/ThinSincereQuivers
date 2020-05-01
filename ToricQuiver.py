@@ -657,6 +657,36 @@ def is_tight(Q):
     return np.all([len(x) != (n_arrows - 1) for x in all_maximal_unstable(Q)])
 
 
+
+def wall_type(Q, Qp):
+    tp = sum((Q[Qp].sum(axis=0) < 0).tolist()[0])
+    tm = sum((Q[Qp].sum(axis=0) > 0).tolist()[0])
+    return (tp, tm)
+
+
+def walls(Q, theta):
+    num_vertices = Q.shape[0]
+    nv_set = set(range(num_vertices))
+    subsets = range(1, int(0.5*num_vertices + 1.5))
+
+    Qms = [j for i in subsets for j in combinations(subsets, i)]
+
+    Q_edges = edges_of_graph(Q, True)
+
+    for Qm in Qms:
+        # get arrows in Q that have heads/tails in Qm
+        Qme = np.where(Q[Qm].sum(axis=0) == 0)[1]
+        Qm_edges = [Q_edges[x] for x in Qme]
+
+        if is_connected(Qm, Qm_edges):
+            Qp = list(nv_set - set(Qm))
+            Qpe = np.where(Q[Qp].sum(axis=0) == 0)[1]
+            Qp_edges = [Q_edges[x] for x in Qpe]
+
+            if is_connected(Qp, Qp_edges):
+                walls.append(Qp, wall_type(Q, Qm))
+
+
 def neighborliness(Q):
     max_unstables = all_maximal_unstable(Q)
     n = [len(m) for m in max_unstables] + [0]
