@@ -659,35 +659,30 @@ def is_tight(Q):
 
 
 def wall_type(Q, Qp):
-    tp = sum((Q[Qp].sum(axis=0) < 0).tolist()[0])
-    tm = sum((Q[Qp].sum(axis=0) > 0).tolist()[0])
+    tp = sum((Q[Qp,:].sum(axis=0) < 0).tolist()[0])
+    tm = sum((Q[Qp,:].sum(axis=0) > 0).tolist()[0])
     return (tp, tm)
 
 
 def walls(Q, theta):
     num_vertices = Q.shape[0]
     nv_set = set(range(num_vertices))
-    subsets = range(int(0.5*num_vertices + .5))
+    subsets = range(1, int(0.5*num_vertices + 1.5))
 
-    Qms = [j for i in subsets[1:] for j in combinations(range(num_vertices), i)]
+    Qms = [j for i in subsets for j in combinations(range(num_vertices), i)]
     Q_edges = edges_of_graph(Q, True)
     ws = []
 
     for Qm in Qms:
         # get arrows in Q that have heads/tails in Qm
-        Qme = np.where(Q[Qm].sum(axis=0) == 0)
-        if len(Qme) > 1:
-            Qme = Qme[1]
-            Qm_edges = [Q_edges[x] for x in Qme]
-
-            if len(Qm) < 2 or is_connected(Qm, Qm_edges):
-                Qp = list(nv_set - set(Qm))
-                Qpe = np.where(Q[Qp].sum(axis=0) == 0)
-                if len(Qpe) > 1:
-                    Qpe = Qpe[1]
-                    Qp_edges = [Q_edges[x] for x in Qpe]
-                    if len(Qp) < 2 or is_connected(Qp, Qp_edges):
-                        ws.append([Qp, wall_type(Q, Qm)])
+        Qme = np.where(Q[Qm,:].sum(axis=0) == 0)[1]
+        Qm_edges = [Q_edges[x] for x in Qme]
+        if len(Qm) < 2 or is_connected(Qm, Qm_edges):
+            Qp = list(nv_set - set(Qm))
+            Qpe = np.where(Q[Qp,:].sum(axis=0) == 0)[1]
+            Qp_edges = [Q_edges[x] for x in Qpe]
+            if len(Qp) < 2 or is_connected(Qp, Qp_edges):
+                ws.append([Qp, wall_type(Q, Qp)])
     return ws
 
 
