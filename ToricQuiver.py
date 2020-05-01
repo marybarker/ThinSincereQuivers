@@ -664,7 +664,7 @@ def wall_type(Q, Qp):
     return (tp, tm)
 
 
-def walls(Q, theta):
+def walls(Q):
     num_vertices = Q.shape[0]
     nv_set = set(range(num_vertices))
     subsets = range(1, int(0.5*num_vertices + 1.5))
