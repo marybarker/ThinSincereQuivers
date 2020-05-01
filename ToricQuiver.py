@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 import collections
-from itertools import product, combinations, permutations
-from itertools import combinations_with_replacement as all_combos
+from itertools import product, combinations, permutations, combinations_with_replacement
 
 
 def is_a_vertex_permutation_of(A, B):
@@ -106,7 +105,7 @@ def generate_graphs(d):
         list_of_aij_possibilities = [[0, 1, 2] for x in range(G0)]
         all_possible_columns = [x for x in product(*list_of_aij_possibilities) if sum(x) == 2]
         list_of_col_indices = [list(range(len(all_possible_columns))) for x in range(G1)]
-        all_col_combinations = all_combos(range(len(all_possible_columns)), G1)
+        all_col_combinations = combinations_with_replacement(range(len(all_possible_columns)), G1)
         As = [np.matrix(np.column_stack([all_possible_columns[j] for j in i])) for i in all_col_combinations]
         As = [A for A in As if np.all(np.array((A.sum(axis=1)) >= 3))]
 
@@ -119,7 +118,7 @@ def generate_graphs_for_pair(G0, G1):
     list_of_aij_possibilities = [[0, 1, 2] for x in range(G0)]
     all_possible_columns = [x for x in product(*list_of_aij_possibilities) if sum(x) == 2]
     list_of_col_indices = [list(range(len(all_possible_columns))) for x in range(G1)]
-    all_col_combinations = all_combos(range(len(all_possible_columns)), G1)
+    all_col_combinations = combinations_with_replacement(range(len(all_possible_columns)), G1)
     As = [np.matrix(np.column_stack([all_possible_columns[j] for j in i])) for i in all_col_combinations]
     As = [A for A in As if np.all(np.array((A.sum(axis=1)) >= 3))]
 
@@ -475,7 +474,7 @@ def Step4(mat):
             possible_columns.append((col1, col2))
 
         base_mat = mat[:, columns_to_save]
-        col_choices = list(all_combos([0,1], len(possible_columns)))
+        col_choices = list(combinations_with_replacement([0,1], len(possible_columns)))
 
         mats = [np.column_stack((base_mat, np.column_stack(A))) for A in [[possible_columns[i][y] for i, y in enumerate(x)] for x in col_choices]]
 
