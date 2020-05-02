@@ -818,8 +818,8 @@ neighborliness = (Q) -> (
 
 ------------------------------------------------------------
 wallType = (Q, Qp) -> (
-    tp := sum(for x in sumList(Q^Qp, Axis=>"Col") if x < 0 then 1);
-    tm := sum(for x in sumList(Q^Qp, Axis=>"Col") if x > 0 then 1);
+    tp := sum(for x in sumList(Q^Qp, Axis=>"Col") list(if x < 0 then (1) else (continue;)));
+    tm := sum(for x in sumList(Q^Qp, Axis=>"Col") list(if x > 0 then (1) else (continue;)));
     (tp, tm)
 )
 ------------------------------------------------------------
@@ -827,21 +827,25 @@ wallType = (Q, Qp) -> (
 
 ------------------------------------------------------------
 walls = (Q) -> (
-    nv := numRows(Q)
+    nv := numRows(Q);
     nvSet := set(0..nv - 1);
     subs := (1..ceiling(nv/2));
 
     Qms := flatten(for i from 1 to ceiling(nv/2) list (
-        combinations(i, nvSet, Replacement => false)
+        combinations(i, asList(nvSet), Replacement => false)
     ));
 
-    Qedges = graphEdges(Q, Oriented=>true);
+    Qedges := graphEdges(Q, Oriented=>true);
     for Qm in Qms list(
-        QmEdgeIndices := for s in sumList(Q^Qm, Axis=>"Col") list(if (s == 0) then s);
-        if (#Qm < 2) or (isGraphConnected(Q_QmEdgeIndices^Qm)) then (
-            Qp := nvSet - set(Qm);
-            if (#Qp < 2) or (isGraphConnected(Q_QpEdgeIndices^Qp)) then (
-                wallType(Q, Qp)
+        mSums := sumList(Q^Qm, Axis=>"Col");
+        QmEdgeIndices := for s in (0..#mSums - 1) list(if (mSums_s == 0) then (s) else (continue;));
+
+        if (#Qm < 2) or (isGraphConnected(Q^Qm_QmEdgeIndices)) then (
+            Qp := asList(nvSet - set(Qm));
+            pSums := sumList(Q^Qp, Axis=>"Col");
+            QpEdgeIndices := for s in (0..#pSums - 1) list(if (pSums_s == 0) then (s) else (continue;));
+            if (#Qp < 2) or (isGraphConnected(Q^Qp_QpEdgeIndices)) then (
+               (Qp, wallType(Q, Qp))
             )
         )
     )
@@ -987,8 +991,8 @@ mergeOnVertex = (Q1, v1, Q2, v2) -> (
 
     i1 := join(drop(0..numRows(Q1) - 1, {v1, v1}), {v1});
     i2 := join({v2}, drop(0..numRows(Q2) - 1, {v2, v2}));
-    Q1 = Q1^i1
-    Q2 = Q2^i2
+    Q1 = Q1^i1;
+    Q2 = Q2^i2;
 
     matrix(
         for row from 0 to nrow list(
@@ -998,7 +1002,7 @@ mergeOnVertex = (Q1, v1, Q2, v2) -> (
             ) else if row < numRows(Q1) then (
                 join(Q1^{row}, Q2^{0})
             ) else (
-                j = row - numRows(Q1);
+                j := row - numRows(Q1);
                 paddingSize := ncol - numColumns(Q2);
                 join(paddingSize:0, Q2^{j})
             )
@@ -1019,11 +1023,11 @@ mergeOnArrow = (Q1, a1, Q2, a2) -> (
     c1 := join(drop(0..numColumns(Q1) - 1, {q1E, q1E}), q1E);
     c2 := drop(0..numColumns(Q2) - 1, {q2E, q2E});
 
-    r1 = join(asList(set(0..numRows(Q1)) - set(q1E)), q1E);
-    r2 = join(q2E, asList(set(0..numRows(Q2)) - set(q2E)));
+    r1 := join(asList(set(0..numRows(Q1)) - set(q1E)), q1E);
+    r2 := join(q2E, asList(set(0..numRows(Q2)) - set(q2E)));
 
-    Q1 = Q1_c1^r1
-    Q2 = Q2_c2^r2
+    Q1 = Q1_c1^r1;
+    Q2 = Q2_c2^r2;
 
     matrix(
         for row from 0 to nrow list(
@@ -1033,7 +1037,7 @@ mergeOnArrow = (Q1, a1, Q2, a2) -> (
             ) else if row < numRows(Q1) then (
                 join(Q1^{row}, Q2^{2 + row - numRows(Q1)})
             ) else (
-                j = row - numRows(Q1) - 1;
+                j := row - numRows(Q1) - 1;
                 paddingSize := ncol - numColumns(Q2);
                 join(paddingSize:0, Q2^{j})
             )
