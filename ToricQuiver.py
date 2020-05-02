@@ -28,6 +28,7 @@ def is_a_vertex_permutation_of(A, B):
                     return True
         return False
 
+
 def is_a_column_permutation_of(A, B):
     """ checks if two matrices A and B are identical up to permutation of columns
         inputs:
@@ -627,6 +628,7 @@ def contained_in(Q1, Q2):
     if len([x for x in Q1 if x in Q2]) == len(Q1):
         return True
     return False
+
 
 
 def all_maximal_unstable(M):

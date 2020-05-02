@@ -26,6 +26,10 @@ export {
     "flowPolytope",
     "graphEdges",
     "graphFromEdges",
+    "wallType",
+    "walls",
+    "mergeOnVertex",
+    "mergeOnArrow",
 -- Options
     "Axis",
     "SavePath",
@@ -337,7 +341,7 @@ findCycleDFS = (startV, visited, E) -> (
 existsOrientedCycle = (G) -> (
     retVal := false;
     E := graphEdges(G, Oriented => true);
-    V := asList(0..#entries(G)-1);
+    V := asList(0..numRows(G)-1);
     for firstV in V do (
         visited := insert(firstV, 1, asList((#V - 1):0));
         result := findCycleDFS(firstV, visited, E);
@@ -435,7 +439,7 @@ isEdgeInCycle = (i, E) -> (
 ------------------------------------------------------------
 splitLoops = m -> (
     Es := graphEdges(m);
-    nVerts := #entries(m);
+    nVerts := numRows(m);
     loopsBroken := for i from 0 to #Es - 1 list(
         e := Es#i;
         if (#e < 2) or #(delete(e#0, e)) < 1 then (
@@ -463,7 +467,7 @@ splitLoops = m -> (
 ------------------------------------------------------------
 splitEdges = (m, E) -> (
     Es := graphEdges(m);
-    nVerts := #entries(m);
+    nVerts := numRows(m);
 
     for i from 0 to #E - 1 do (
         ei := E#i;
@@ -655,7 +659,7 @@ sampleQuiver = (n) -> (
 ------------------------------------------------------------
 -- yield the subquivers of a given quiver Q
 subquivers = {Format => "indices"} >> opts -> (Q) -> (
-    numArrows := #entries(transpose(Q));
+    numArrows := numColumns(Q);
     arrows := 0..(numArrows - 1);
 
     flatten(
@@ -676,7 +680,7 @@ subquivers = {Format => "indices"} >> opts -> (Q) -> (
 ------------------------------------------------------------
 -- list the subsets of a quiver Q that are closed under arrows
 subsetsClosedUnderArrows = (Q) -> (
-    numVertices := #entries(Q);
+    numVertices := numRows(Q);
     currentVertices := 0..(numVertices - 1);
     Qt := transpose(Q);
 
@@ -720,14 +724,14 @@ isStable = (Q, subQ) -> (
             sumList(weights_subset)
         )
     );
-    all(sums, x -> x < 0)
+    all(sums, x -> x > 0)
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
 unstableSubquivers = Q -> (
-    numArrows := #entries(transpose(Q));
+    numArrows := numColumns(Q);
     arrows := asList(0..numArrows - 1);
 
     L := flatten(for i from 1 to numArrows - 1 list (
@@ -791,7 +795,7 @@ maximalUnstableSubquivers = (Q) -> (
 
 ------------------------------------------------------------
 isTight = (Q) -> (
-    numArrows := #entries(transpose(Q));
+    numArrows := numColumns(Q);
     all(maximalUnstableSubquivers(Q), x -> #x != (numArrows - 1))
 )
 ------------------------------------------------------------
@@ -799,7 +803,7 @@ isTight = (Q) -> (
 
 ------------------------------------------------------------
 neighborliness = (Q) -> (
-    numArrows := #entries(transpose(Q));
+    numArrows := numColumns(Q);
     maxUnstables := maximalUnstableSubquivers(Q);
 
     k := max(
@@ -808,6 +812,39 @@ neighborliness = (Q) -> (
         )
     );
     k
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+wallType = (Q, Qp) -> (
+    tp := sum(for x in sumList(Q^Qp, Axis=>"Col") if x < 0 then 1);
+    tm := sum(for x in sumList(Q^Qp, Axis=>"Col") if x > 0 then 1);
+    (tp, tm)
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+walls = (Q) -> (
+    nv := numRows(Q)
+    nvSet := set(0..nv - 1);
+    subs := (1..ceiling(nv/2));
+
+    Qms := flatten(for i from 1 to ceiling(nv/2) list (
+        combinations(i, nvSet, Replacement => false)
+    ));
+
+    Qedges = graphEdges(Q, Oriented=>true);
+    for Qm in Qms list(
+        QmEdgeIndices := for s in sumList(Q^Qm, Axis=>"Col") list(if (s == 0) then s);
+        if (#Qm < 2) or (isGraphConnected(Q_QmEdgeIndices^Qm)) then (
+            Qp := nvSet - set(Qm);
+            if (#Qp < 2) or (isGraphConnected(Q_QpEdgeIndices^Qp)) then (
+                wallType(Q, Qp)
+            )
+        )
+    )
 )
 ------------------------------------------------------------
 
@@ -824,8 +861,8 @@ neighborliness = (Q) -> (
 --     - edges_removed(list of tuples)): list of the edges in the complement of the spanning tree
 --
 spanningTree = (Q) -> (
-    Q0 := #entries(Q);
-    Q1 := #entries(transpose(Q));
+    Q0 := numRows(Q);
+    Q1 := numColumns(Q);
 
     --  edges of quiver Q represented as a list of tuples
     allEdges := graphEdges(Q, Oriented => true);
@@ -934,6 +971,72 @@ flowPolytope = (Q) -> (
         for i from 0 to #removedEdges - 1 list(
             ff := f#i;
             ff#j
+        )
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+mergeOnVertex = (Q1, v1, Q2, v2) -> (
+    nrow := numRows(Q1) + numRows(Q2) - 1;
+    ncol := numColumns(Q1) + numColumns(Q2);
+
+    -- i1 := join((0..v1 - 1), (v1+1..numRows(Q1 - 1)), {v1});
+    -- i2 := join({v2}, (0..v2 - 1), (v2+1..numRows(Q2)));
+
+    i1 := join(drop(0..numRows(Q1) - 1, {v1, v1}), {v1});
+    i2 := join({v2}, drop(0..numRows(Q2) - 1, {v2, v2}));
+    Q1 = Q1^i1
+    Q2 = Q2^i2
+
+    matrix(
+        for row from 0 to nrow list(
+            if row < (numRows(Q1) - 1) then (
+                paddingSize := ncol - numColumns(Q1);
+                join(Q1^{row}, paddingSize:0)
+            ) else if row < numRows(Q1) then (
+                join(Q1^{row}, Q2^{0})
+            ) else (
+                j = row - numRows(Q1);
+                paddingSize := ncol - numColumns(Q2);
+                join(paddingSize:0, Q2^{j})
+            )
+        )
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+mergeOnArrow = (Q1, a1, Q2, a2) -> (
+    nrow := numRows(Q1) + numRows(Q2) - 2;
+    ncol := numColumns(Q1) + numColumns(Q2) - 1;
+
+    q1E := graphEdges(Q1, Oriented=>true)_a1;
+    q2E := graphEdges(Q2, Oriented=>true)_a2;
+
+    c1 := join(drop(0..numColumns(Q1) - 1, {q1E, q1E}), q1E);
+    c2 := drop(0..numColumns(Q2) - 1, {q2E, q2E});
+
+    r1 = join(asList(set(0..numRows(Q1)) - set(q1E)), q1E);
+    r2 = join(q2E, asList(set(0..numRows(Q2)) - set(q2E)));
+
+    Q1 = Q1_c1^r1
+    Q2 = Q2_c2^r2
+
+    matrix(
+        for row from 0 to nrow list(
+            if row < (numRows(Q1) - 2) then (
+                paddingSize := ncol - numColumns(Q1);
+                join(Q1^{row}, paddingSize:0)
+            ) else if row < numRows(Q1) then (
+                join(Q1^{row}, Q2^{2 + row - numRows(Q1)})
+            ) else (
+                j = row - numRows(Q1) - 1;
+                paddingSize := ncol - numColumns(Q2);
+                join(paddingSize:0, Q2^{j})
+            )
         )
     )
 )
