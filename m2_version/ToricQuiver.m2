@@ -986,25 +986,23 @@ mergeOnVertex = (Q1, v1, Q2, v2) -> (
     nrow := numRows(Q1) + numRows(Q2) - 1;
     ncol := numColumns(Q1) + numColumns(Q2);
 
-    -- i1 := join((0..v1 - 1), (v1+1..numRows(Q1 - 1)), {v1});
-    -- i2 := join({v2}, (0..v2 - 1), (v2+1..numRows(Q2)));
+    i1 := asList(join(drop(0..numRows(Q1) - 1, {v1, v1}), {v1}));
+    i2 := asList(join({v2}, drop(0..numRows(Q2) - 1, {v2, v2})));
+    Q1 = transpose(Q1^i1);
+    Q2 = transpose(Q2^i2);
 
-    i1 := join(drop(0..numRows(Q1) - 1, {v1, v1}), {v1});
-    i2 := join({v2}, drop(0..numRows(Q2) - 1, {v2, v2}));
-    Q1 = Q1^i1;
-    Q2 = Q2^i2;
-
+    print(transpose(Q1), transpose(Q2));
     matrix(
-        for row from 0 to nrow list(
-            if row < (numRows(Q1) - 1) then (
-                paddingSize := ncol - numColumns(Q1);
-                join(Q1^{row}, paddingSize:0)
-            ) else if row < numRows(Q1) then (
-                join(Q1^{row}, Q2^{0})
+        for row from 0 to nrow - 1 list(
+            if row < (numColumns(Q1) - 1) then (
+                paddingSize := ncol - numColumns(Q1) - 1;
+                join(entries(Q1)_row, paddingSize:0)
+            ) else if row < numColumns(Q1) then (
+                join(entries(Q1)_row, entries(Q2)_0)
             ) else (
-                j := row - numRows(Q1);
-                paddingSize := ncol - numColumns(Q2);
-                join(paddingSize:0, Q2^{j})
+                j := row - numColumns(Q1) + 1;
+                paddingSize := ncol - numRows(Q2);
+                asList(join(paddingSize:0, entries(Q2)_j))
             )
         )
     )
@@ -1017,29 +1015,30 @@ mergeOnArrow = (Q1, a1, Q2, a2) -> (
     nrow := numRows(Q1) + numRows(Q2) - 2;
     ncol := numColumns(Q1) + numColumns(Q2) - 1;
 
-    q1E := graphEdges(Q1, Oriented=>true)_a1;
-    q2E := graphEdges(Q2, Oriented=>true)_a2;
+    q1E := asList(graphEdges(Q1, Oriented=>true))_a1;
+    q2E := asList(graphEdges(Q2, Oriented=>true))_a2;
 
-    c1 := join(drop(0..numColumns(Q1) - 1, {q1E, q1E}), q1E);
-    c2 := drop(0..numColumns(Q2) - 1, {q2E, q2E});
+    c1 := asList(join(drop(0..numColumns(Q1) - 1, {a1, a1}), {a1}));
+    c2 := asList(drop(0..numColumns(Q2) - 1, {a1,a1}));
 
-    r1 := join(asList(set(0..numRows(Q1)) - set(q1E)), q1E);
-    r2 := join(q2E, asList(set(0..numRows(Q2)) - set(q2E)));
+    r1 := asList(join(asList(set(0..numRows(Q1) - 1) - set(q1E)), q1E));
+    r2 := asList(join(q2E, asList(set(0..numRows(Q2) - 1) - set(q2E))));
 
-    Q1 = Q1_c1^r1;
-    Q2 = Q2_c2^r2;
+    Q1 = transpose((Q1^r1)_c1);
+    Q2 = transpose((Q2^r2)_c2);
 
     matrix(
-        for row from 0 to nrow list(
-            if row < (numRows(Q1) - 2) then (
-                paddingSize := ncol - numColumns(Q1);
-                join(Q1^{row}, paddingSize:0)
-            ) else if row < numRows(Q1) then (
-                join(Q1^{row}, Q2^{2 + row - numRows(Q1)})
+        for row from 0 to nrow - 1 list(
+            if row < (numColumns(Q1) - 2) then (
+                paddingSize := ncol - numColumns(Q1) - 1;
+                join(entries(Q1)_row, asList(paddingSize:0))
+
+            ) else if row < numColumns(Q1) then (
+                join(entries(Q1)_row, entries(Q2)_(2 + row - numColumns(Q1)))
             ) else (
-                j := row - numRows(Q1) - 1;
+                j := row - numColumns(Q1) + 2;
                 paddingSize := ncol - numColumns(Q2);
-                join(paddingSize:0, Q2^{j})
+                asList(join(paddingSize:0, entries(Q2)_j))
             )
         )
     )
