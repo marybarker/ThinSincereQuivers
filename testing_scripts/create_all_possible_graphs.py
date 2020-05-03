@@ -1,3 +1,5 @@
+import sys
+sys.path.append("..")
 import ToricQuiver as gc
 import numpy as np
 import os
@@ -7,8 +9,8 @@ import matplotlib.pyplot as plt
 
 n = int(input("Enter value for d -> "))
 
-base_folder = "./outputs/"
-folder = "./outputs/d=%d/"%n
+base_folder = "../outputs/"
+folder = "../outputs/d=%d/"%n
 filename = folder+"step"
 
 def read_step_file(filename):

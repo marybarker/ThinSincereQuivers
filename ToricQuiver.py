@@ -48,7 +48,7 @@ def is_a_column_permutation_of(A, B):
     return not any(d.values())
 
 
-def standardForm(g): # write an adjacency matrix in standard form (i.e. ordered vertices and arrows)
+def standard_form(g): # write an adjacency matrix in standard form (i.e. ordered vertices and arrows)
     # sort vertices by total valance firt, and then by total how many arrows it is the head for
     valences = np.column_stack([(abs(g).sum(axis=1)), (abs(g).sum(axis=1) + g.sum(axis=1))]).tolist()
     indices = pd.DataFrame(valences, columns=["total", "totpos"]).sort_values(by=["total", "totpos"]).index.tolist()
@@ -57,7 +57,9 @@ def standardForm(g): # write an adjacency matrix in standard form (i.e. ordered 
     headr, headc = np.where(g > 0)
     headc = list(headc)
     headr = [headr[headc.index(x)] for x in tailc]
-    indices = pd.DataFrame(np.column_stack([tailr, headr]), columns=["tail", "head"], index=tailc).sort_values(by=["tail","head"]).index.tolist()
+    indices = pd.DataFrame(np.column_stack([tailr, headr]),
+                           columns=["tail", "head"], 
+                           index=tailc).sort_values(by=["tail","head"]).index.tolist()
     ordered = np.column_stack([g[:,x] for x in indices])
     return np.matrix(ordered)
 
@@ -68,8 +70,8 @@ def is_a_permutation_of(A, B):
     elif np.all(A == B):
         return True
     else:
-        A_sf = standardForm(A)
-        B_sf = standardForm(B)
+        A_sf = standard_form(A)
+        B_sf = standard_form(B)
         if np.all(A_sf == B_sf):
             return True
         return False
