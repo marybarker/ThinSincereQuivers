@@ -1123,7 +1123,8 @@ flowPolytope(ToricQuiver) := (Q) -> (
 
 
 ------------------------------------------------------------
-mergeOnVertex = (Q1, v1, Q2, v2) -> (
+mergeOnVertex = method()
+mergeOnVertex(Matrix, ZZ, Matrix, ZZ) := (Q1, v1, Q2, v2) -> (
     nrow := numRows(Q1) + numRows(Q2) - 1;
     ncol := numColumns(Q1) + numColumns(Q2);
 
@@ -1148,11 +1149,21 @@ mergeOnVertex = (Q1, v1, Q2, v2) -> (
         )
     )
 )
+mergeOnVertex(ToricQuiver, ZZ, Matrix, ZZ) := (Q1, v1, Q2, v2) -> (
+    mergeOnVertex(Q1.connectivityMatrix, v1, Q2, v2)
+)
+mergeOnVertex(Matrix, ZZ, ToricQuiver, ZZ) := (Q1, v1, Q2, v2) -> (
+    mergeOnVertex(Q1, v1, Q2.connectivityMatrix, v2)
+)
+mergeOnVertex(ToricQuiver, ZZ, ToricQuiver, ZZ) := (Q1, v1, Q2, v2) -> (
+    mergeOnVertex(Q1.connectivityMatrix, v1, Q2.connectivityMatrix, v2)
+)
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
-mergeOnArrow = (Q1, a1, Q2, a2) -> (
+mergeOnArrow = method()
+mergeOnArrow(Matrix, ZZ, Matrix, ZZ) := (Q1, a1, Q2, a2) -> (
     nrow := numRows(Q1) + numRows(Q2) - 2;
     ncol := numColumns(Q1) + numColumns(Q2) - 1;
 
@@ -1168,20 +1179,30 @@ mergeOnArrow = (Q1, a1, Q2, a2) -> (
     Q1 = transpose((Q1^r1)_c1);
     Q2 = transpose((Q2^r2)_c2);
 
+    paddingSize := 0;
     matrix(
         for row from 0 to nrow - 1 list(
             if row < (numColumns(Q1) - 2) then (
-                paddingSize := ncol - numColumns(Q1) - 1;
+                paddingSize = ncol - numColumns(Q1) - 1;
                 join(entries(Q1)_row, asList(paddingSize:0))
 
             ) else if row < numColumns(Q1) then (
                 join(entries(Q1)_row, entries(Q2)_(2 + row - numColumns(Q1)))
             ) else (
                 j := row - numColumns(Q1) + 2;
-                paddingSize := ncol - numColumns(Q2);
+                paddingSize = ncol - numRows(Q2);
                 asList(join(paddingSize:0, entries(Q2)_j))
             )
         )
     )
+)
+mergeOnArrow(ToricQuiver, ZZ, Matrix, ZZ) := (Q1, a1, Q2, a2) -> (
+    mergeOnArrow(Q1.connectivityMatrix, a1, Q2, a2)
+)
+mergeOnArrow(Matrix, ZZ, ToricQuiver, ZZ) := (Q1, a1, Q2, a2) -> (
+    mergeOnArrow(Q1, a1, Q2.connectivityMatrix, a2)
+)
+mergeOnArrow(ToricQuiver, ZZ, ToricQuiver, ZZ) := (Q1, a1, Q2, a2) -> (
+    mergeOnArrow(Q1.connectivityMatrix, a1, Q2.connectivityMatrix, a2)
 )
 ------------------------------------------------------------
