@@ -768,18 +768,18 @@ getFirstGraphFromPair = (g0, g1) -> (
 sampleQuiver = (n) -> (
     metSq := false;
     sq := {};
-    tries := 0;
+    tries := 1;
     g0 := 0;
     g1 := 0;
     possibleCols := 0;
     rowCombs := 0;
     M := 0;
 
-    while (not metSq) and (tries < n) do (
+    while (not metSq) and (tries < 2*n - 1) do (
         tries = tries + 1;
-        g0 = 1;
+        g0 = tries;
         g1 = g0 + n - 1;
-        print(g0,g1);
+        print(g0, g1);
         possibleCols = combinations(g0, {0,1,2}, Replacement=>true, MinSum=>2, MaxSum=>2);
         rowCombs = combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
 
