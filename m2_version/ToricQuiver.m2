@@ -32,6 +32,9 @@ export {
     "mergeOnVertex",
     "mergeOnArrow",
 -- Options
+    "Flow",
+    "MatrixType",
+    "AddOrientation",
     "Axis",
     "SavePath",
     "MaxSum",
@@ -51,21 +54,36 @@ protect weights
 protect connectivityMatrix
 
 ToricQuiver = new Type of HashTable
-toricQuiver = method()
+toricQuiver = method(Options => {Flow=>"Canonical",MatrixType=>"Connectivity",AddOrientation=>false})
+
+FlowCeil := 100;
 
 -- construct ToricQuiver from connectivity matrix
-toricQuiver(Matrix) := Q -> (
+toricQuiver(Matrix) := opts -> Q -> (
+    F := 0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col");
+    if opts.MatrixType == "Adjacency" then (
+        Q = adjacencyToConnectivity(Q);
+    );
+    if opts.Flow == "Canonical" then (
+        F = numColumns(Q):1;
+    ) else if opts.Flow == "Random" then (
+        F = for i in (0..#F - 1) list(random(FlowCeil));
+        Q = Q*diagonalMatrix F;
+    );
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
         Q0=>toList(0..numRows(Q) - 1),
         Q1=>graphEdges(Q),
-        flow=>0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col"),
+        flow=>F,
         weights=>sumList(entries(Q), Axis=>"Row")
     }
 )
 
 -- construct ToricQuiver from connectivity matrix and a flow
-toricQuiver(Matrix, List) := (Q, F) -> (
+toricQuiver(Matrix, List) := opts -> (Q, F) -> (
+    if opts.MatrixType == "Adjacency" then (
+        Q = adjacencyToConnectivity(Q);
+    );
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q*diagonalMatrix F,
         Q0=>toList(0..numRows(Q) - 1),
@@ -103,6 +121,17 @@ ToricQuiver _ List := (TQ, L) -> (
     M := matrix(for x in entries(TQ.connectivityMatrix_L) list(if sumList(x) != 0 then (x) else (continue;)));
     toricQuiver(M)
 )
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+adjacencyToConnectivity = (A) -> (
+    E := for i in (0..numRows(A) - 1) list(for j in (0..numColumns(A) - 1) list(if A_{j}^{i} != 0 then (i, j)));
+    matrix(graphFromEdges(E), Oriented => true)
+
+)
+------------------------------------------------------------
+
 
 ------------------------------------------------------------
 asList = x -> (
@@ -714,21 +743,59 @@ toricQuivers = n -> (
 
 
 ------------------------------------------------------------
+getFirstGraphFromPair = (g0, g1) -> (
+    -- get all possible columns for connectivity matrix (entries must be 0,1, or 2)
+    possibleCols := combinations(g0, {0,1,2}, Replacement => true, MinSum=>2, MaxSum=>2);
+
+    -- all combinations of columns to create rows
+    rowCombs := combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
+    M := 0;
+    firstG := 0;
+    for i in rowCombs do(
+        M = transpose(matrix(for j in i list(asList(possibleCols#j))));
+        if min(sumList(entries(M), Axis=>"Row")) >= 3 then (
+            firstG = M; 
+            break;
+        ) else (continue;)
+    );
+    firstG
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 -- extract a sample quiver in dimension n 
 sampleQuiver = (n) -> (
     metSq := false;
     sq := {};
-    gs := undirectedBaseGraphs(n);
+    tries := 0;
+    g0 := 0;
+    g1 := 0;
+    possibleCols := 0;
+    rowCombs := 0;
+    M := 0;
 
-    for g in gs do(
-        if metSq then break;
-        for i in splitLoopsAndEdges(g) do (
+    while (not metSq) and (tries < n) do (
+        tries = tries + 1;
+        g0 = 1;
+        g1 = g0 + n - 1;
+        print(g0,g1);
+        possibleCols = combinations(g0, {0,1,2}, Replacement=>true, MinSum=>2, MaxSum=>2);
+        rowCombs = combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
+
+        for rc in rowCombs do(
             if metSq then break;
-            for j in allPossibleOrientations(i) do (
-                if (not existsOrientedCycle(j)) then (
-                    sq = toricQuiver(matrix(j));
-                    metSq = true;
-                    break;
+            M = transpose(matrix(for j in rc list(asList(possibleCols#j))));
+            if min(sumList(entries(M), Axis=>"Row")) >= 3 then (
+                for i in splitLoopsAndEdges(M) do (
+                    if metSq then break;
+                    for j in allPossibleOrientations(i) do (
+                        if (not existsOrientedCycle(j)) then (
+                            sq = toricQuiver(matrix(j));
+                            metSq = true;
+                            break;
+                        )
+                    )
                 )
             )
         )
