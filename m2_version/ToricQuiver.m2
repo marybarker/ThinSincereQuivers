@@ -765,7 +765,7 @@ getFirstGraphFromPair = (g0, g1) -> (
 
 ------------------------------------------------------------
 -- extract a sample quiver in dimension n 
-sampleQuiver = (n) -> (
+sampleQuiver = {Flow => "Canonical"} >> opts -> (n) -> (
     metSq := false;
     sq := {};
     tries := 1;
@@ -799,7 +799,11 @@ sampleQuiver = (n) -> (
             )
         )
     );
-    sq
+    if opts.Flow == "Canonical" then (
+        sq
+    ) else (
+        toricQuiver(sq.connectivityMatrix, Flow=>"Random")
+    )
 )
 ------------------------------------------------------------
 
