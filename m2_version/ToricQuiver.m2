@@ -34,7 +34,6 @@ export {
 -- Options
     "Flow",
     "MatrixType",
-    "AddOrientation",
     "Axis",
     "SavePath",
     "MaxSum",
@@ -54,7 +53,7 @@ protect weights
 protect connectivityMatrix
 
 ToricQuiver = new Type of HashTable
-toricQuiver = method(Options => {Flow=>"Canonical",MatrixType=>"Connectivity",AddOrientation=>false})
+toricQuiver = method(Options => {Flow=>"Canonical",MatrixType=>"Connectivity"})
 
 FlowCeil := 100;
 
@@ -127,7 +126,7 @@ ToricQuiver _ List := (TQ, L) -> (
 ------------------------------------------------------------
 adjacencyToConnectivity = (A) -> (
     E := for i in (0..numRows(A) - 1) list(for j in (0..numColumns(A) - 1) list(if A_{j}^{i} != 0 then (i, j)));
-    matrix(graphFromEdges(E), Oriented => true)
+    matrix(graphFromEdges(E), Oriented=>true)
 
 )
 ------------------------------------------------------------
@@ -152,7 +151,7 @@ asList = x -> (
 
 ------------------------------------------------------------
 -- add all elements of a list x together, and specify Axis (row/col) if x is actually a matrix or list of lists -- 
-sumList = {Axis => "None"} >> opts -> x -> (
+sumList = {Axis=>"None"} >> opts -> x -> (
     s := 0;
     if opts.Axis == "Row" then (
         s = flatten(for i in x list(sumList(i)));
@@ -176,7 +175,7 @@ sumList = {Axis => "None"} >> opts -> x -> (
 -- -- MinSum(numeric value) = exclude all combinations with sum below MinSum
 -- -- MaxSum(numeric value) = exclude all combinations with sum above MaxSum
 -- -- Order(true/false) = whether or not the ordering of combination values matters
-combinations = {Replacement => true, MinSum => -1000, MaxSum => -1000, Order => true} >> opts -> (k, l) -> (
+combinations = {Replacement=>true, MinSum=>-1000, MaxSum=>-1000, Order=>true} >> opts -> (k, l) -> (
     combs := {};
     combs1 := {};
     combs2 := {};
@@ -300,7 +299,7 @@ allPossibleBaseGraphsForPair = x -> (
    g1 := x#1;
 
    -- get all possible columns for connectivity matrix (entries must be 0,1, or 2)
-   possibleCols := combinations(g0, {0,1,2}, Replacement => true, MinSum=>2, MaxSum=>2);
+   possibleCols := combinations(g0, {0,1,2}, Replacement=>true, MinSum=>2, MaxSum=>2);
 
    -- all combinations of columns to create rows
    rowCombs := combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
@@ -326,7 +325,7 @@ undirectedGraphs = (d) -> (
 ------------------------------------------------------------
 -- yield the edges of a graph in the form of a list of pairs 
 -- (v1, v2), where edge E is from v1 to v2
-graphEdges = {Oriented => false, RavelLoops => false} >> opts -> (G) -> (
+graphEdges = {Oriented=>false, RavelLoops=>false} >> opts -> (G) -> (
     E := {};
     if opts.Oriented == true then (
         E = for e in entries(transpose(G)) list(
@@ -351,7 +350,7 @@ graphEdges = {Oriented => false, RavelLoops => false} >> opts -> (G) -> (
 ------------------------------------------------------------
 -- yield the matrix rep of graph, given a list of edges as ordered 
 -- pairs (this is the opposite of graphEdges() function. 
-graphFromEdges = {Oriented => false} >> opts -> E -> (
+graphFromEdges = {Oriented=>false} >> opts -> E -> (
     -- first, if oriented graph, then make sure this is reflected. 
     tailVal := 1;
     if opts.Oriented == true then (
@@ -369,7 +368,7 @@ graphFromEdges = {Oriented => false} >> opts -> E -> (
 
 
 ------------------------------------------------------------
-edgesOutOfPoint = {Oriented => false} >> opts -> (p, E) -> (
+edgesOutOfPoint = {Oriented=>false} >> opts -> (p, E) -> (
     if opts.Oriented then (
         for i from 0 to #E - 1 list(e := E#i; if p != e#0 then (continue;) else (i, e))
     )
@@ -403,7 +402,7 @@ isGraphConnected = G -> (
 -- DFS search to find cycle in directed graph:
 findCycleDFS = (startV, visited, E) -> (
     retVal := false;
-    edgesOut := edgesOutOfPoint(startV, E, Oriented => true);
+    edgesOut := edgesOutOfPoint(startV, E, Oriented=>true);
     for edge in edgesOut do (
         currentVisited := asList(visited);
         edgeVerts := edge#1;
@@ -425,7 +424,7 @@ findCycleDFS = (startV, visited, E) -> (
 -- oriented graph, passed in matrix form. 
 existsOrientedCycle = (G) -> (
     retVal := false;
-    E := graphEdges(G, Oriented => true);
+    E := graphEdges(G, Oriented=>true);
     V := asList(0..numRows(G)-1);
     for firstV in V do (
         visited := insert(firstV, 1, asList((#V - 1):0));
@@ -460,11 +459,11 @@ isAcyclic(ToricQuiver) := Q -> (
 -- -- EdgesAdded(list) = internal mechanism for computing for SavePath
 
 ------------------------------------------------------------
-isPathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts -> (p, q, E) -> (
+isPathBetween = {Oriented=>false, SavePath=>false, EdgesAdded=>{}} >> opts -> (p, q, E) -> (
     ifPath := false;
     existsPath := false;
     currentEdges := {};
-    pathsToSee := edgesOutOfPoint(p, E, Oriented => opts.Oriented);
+    pathsToSee := edgesOutOfPoint(p, E, Oriented=>opts.Oriented);
 
     for edge in pathsToSee do (
         --- get the edge index and enpoints
@@ -487,10 +486,10 @@ isPathBetween = {Oriented => false, SavePath => false, EdgesAdded => {}} >> opts
             remainingEdges := for j from 0 to #E - 1 list(if j == i then (continue;) else E#j);
 
             if opts.SavePath then (
-                (ifPath, thisPath) = isPathBetween(v, q, remainingEdges, Oriented => opts.Oriented, SavePath => true, EdgesAdded => currentEdges);
+                (ifPath, thisPath) = isPathBetween(v, q, remainingEdges, Oriented=>opts.Oriented, SavePath=>true, EdgesAdded=>currentEdges);
             )
             else (
-                ifPath = isPathBetween(v, q, remainingEdges, Oriented => opts.Oriented, EdgesAdded => currentEdges);
+                ifPath = isPathBetween(v, q, remainingEdges, Oriented=>opts.Oriented, EdgesAdded=>currentEdges);
             );
             if ifPath then (
                 existsPath = true;
@@ -579,7 +578,7 @@ splitEdges = (m, E) -> (
 -- generate the undirected graphs with admissable #vertices and #arrows to generate quivers
 undirectedBaseGraphs = (n) -> (
     for m in undirectedGraphs(n) list(
-        es := graphEdges(m, RavelLoops => true);
+        es := graphEdges(m, RavelLoops=>true);
         if #es > 0 then (
             inCycle := for i from 0 to #es - 1 list( isEdgeInCycle(i, es) );
             if all(inCycle, i -> i == true) then (m) else (continue;)
@@ -603,7 +602,7 @@ splitLoopsAndEdges = m -> (
 
     if #originalLooplessEdges > 0 then (
         otherEdgeCombs := for i from 1 to #originalLooplessEdges list(
-            asList(combinations(i, asList(originalLooplessEdges), Replacement => false, Order => false))
+            asList(combinations(i, asList(originalLooplessEdges), Replacement=>false, Order=>false))
         );
         outputs := flatten(for i from 0 to #originalLooplessEdges - 1 list(
             for comb in otherEdgeCombs#i list(
@@ -693,7 +692,7 @@ uniqueUpToQuiverIsomorphism = M -> (
         for mi from 0 to #M - 2 do (
             m := M_mi;
             mShape := {numgens(target(m)), numgens(source(m))};
-            mValences := sort(sumList(entries(m), Axis => "Row"));
+            mValences := sort(sumList(entries(m), Axis=>"Row"));
 
             for ni from mi + 1 to #M - 1 do(
                 if #positions(toSave, jj -> jj == ni) < 1 then (
@@ -706,7 +705,7 @@ uniqueUpToQuiverIsomorphism = M -> (
                     )
                     else (
                         nShape := {numgens(target(m)), numgens(source(m))};
-                        nValences := sort(sumList(entries(n), Axis => "Row"));
+                        nValences := sort(sumList(entries(n), Axis=>"Row"));
                         if nShape == mShape and nValences == mValences then (
                             possiblePermutations := combinations(nShape#1, (0..(nShape#1-1)), Replacement=>false);
                             for p in possiblePermutations do (
@@ -745,7 +744,7 @@ toricQuivers = n -> (
 ------------------------------------------------------------
 getFirstGraphFromPair = (g0, g1) -> (
     -- get all possible columns for connectivity matrix (entries must be 0,1, or 2)
-    possibleCols := combinations(g0, {0,1,2}, Replacement => true, MinSum=>2, MaxSum=>2);
+    possibleCols := combinations(g0, {0,1,2}, Replacement=>true, MinSum=>2, MaxSum=>2);
 
     -- all combinations of columns to create rows
     rowCombs := combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
@@ -765,7 +764,7 @@ getFirstGraphFromPair = (g0, g1) -> (
 
 ------------------------------------------------------------
 -- extract a sample quiver in dimension n 
-sampleQuiver = {Flow => "Canonical"} >> opts -> (n) -> (
+sampleQuiver = {Flow=>"Canonical"} >> opts -> (n) -> (
     metSq := false;
     sq := {};
     tries := 1;
@@ -810,14 +809,14 @@ sampleQuiver = {Flow => "Canonical"} >> opts -> (n) -> (
 
 ------------------------------------------------------------
 -- yield the subquivers of a given quiver Q
-subquivers = method(Options => {Format => "quiver"})
+subquivers = method(Options=>{Format=>"quiver"})
 subquivers Matrix := opts -> Q -> (
     numArrows := numColumns(Q);
     arrows := 0..(numArrows - 1);
 
     flatten(
         for i from 1 to numArrows - 1 list (
-            for c in combinations(i, arrows, Order => false, Replacement => false) list (
+            for c in combinations(i, arrows, Order=>false, Replacement=>false) list (
                 if opts.Format == "indices" then (
                     c
                 ) else (
@@ -833,7 +832,7 @@ subquivers ToricQuiver := opts -> Q -> (
 
     flatten(
         for i from 1 to numArrows - 1 list (
-            for c in combinations(i, arrows, Order => false, Replacement => false) list (
+            for c in combinations(i, arrows, Order=>false, Replacement=>false) list (
                 if opts.Format == "indices" then (
                     c
                 ) else (
@@ -855,9 +854,9 @@ subsetsClosedUnderArrows Matrix := (Q) -> (
     Qt := transpose(Q);
 
     flatten(for i from 1 to numVertices - 1 list(
-        for c in combinations(i, currentVertices, Order => false, Replacement => false) list(
+        for c in combinations(i, currentVertices, Order=>false, Replacement=>false) list(
             sQ := entries(Qt_c);
-            if all(sumList(sQ, Axis => "Row"), x -> x >= 0) then (
+            if all(sumList(sQ, Axis=>"Row"), x -> x >= 0) then (
                 c
             )
             else(
@@ -879,7 +878,7 @@ theta(ToricQuiver) := Q -> (
     Q.weights
 )
 theta(Matrix) := Q -> (
-    sumList(entries(Q), Axis => "Row")
+    sumList(entries(Q), Axis=>"Row")
 )
 ------------------------------------------------------------
 
@@ -917,7 +916,7 @@ unstableSubquivers Matrix := Q -> (
     arrows := asList(0..numArrows - 1);
 
     L := flatten(for i from 1 to numArrows - 1 list (
-        combinations(i, arrows, Replacement => false) 
+        combinations(i, arrows, Replacement=>false) 
     ));
 
     for sQ in L list(
@@ -1036,7 +1035,7 @@ walls(Matrix) := (Q) -> (
     subs := (1..ceiling(nv/2));
 
     Qms := flatten(for i from 1 to ceiling(nv/2) list (
-        combinations(i, asList(nvSet), Replacement => false)
+        combinations(i, asList(nvSet), Replacement=>false)
     ));
 
     Qedges := graphEdges(Q, Oriented=>true);
@@ -1076,13 +1075,13 @@ spanningTree = (Q) -> (
     Q1 := numColumns(Q);
 
     --  edges of quiver Q represented as a list of tuples
-    allEdges := graphEdges(Q, Oriented => true);
+    allEdges := graphEdges(Q, Oriented=>true);
     allNodes := asList(0..Q0-1);
 
     -- number of edges to remove from spanning tree
     d := Q1 - Q0 + 1;
 
-    dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement => false);
+    dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement=>false);
     for dTuple in dTuplesToRemove do (
         edgesKept := drop(allEdges, dTuple);
         edgesRemoved := allEdges_dTuple;
@@ -1122,7 +1121,7 @@ primalUndirectedCycle = (G) -> (
     for i from 0 to #G - 1 do (
         edge := G#i;
         (isCycle, cycle) := isPathBetween(edge#1, edge#0, drop(G, {i, i}), 
-                                          Oriented => false, SavePath => true, EdgesAdded => {edge});
+                                          Oriented=>false, SavePath=>true, EdgesAdded=>{edge});
         if isCycle then (
             edgeIndices := {};
             metEdges := {};
@@ -1241,7 +1240,7 @@ mergeOnArrow(Matrix, ZZ, Matrix, ZZ) := (Q1, a1, Q2, a2) -> (
     q2E := asList(graphEdges(Q2, Oriented=>true))_a2;
 
     c1 := asList(join(drop(0..numColumns(Q1) - 1, {a1, a1}), {a1}));
-    c2 := asList(drop(0..numColumns(Q2) - 1, {a1,a1}));
+    c2 := asList(drop(0..numColumns(Q2) - 1, {a1, a1}));
 
     r1 := asList(join(asList(set(0..numRows(Q1) - 1) - set(q1E)), q1E));
     r2 := asList(join(q2E, asList(set(0..numRows(Q2) - 1) - set(q2E))));
