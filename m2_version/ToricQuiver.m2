@@ -20,6 +20,7 @@ export {
     "subsetsClosedUnderArrows",
     "isStable",
     "isMaximal",
+    "isAcyclic",
     "maximalUnstableSubquivers",
     "theta",
     "neighborliness",
@@ -38,15 +39,70 @@ export {
     "Oriented",
     "RavelLoops",
     "Replacement",
-    "EdgesAdded"
+    "EdgesAdded",
 ---- Quiver objects 
---    "Q0",
---    "Q1",
---    "ConnectivityMatrix",
---    "Weights"
+    "ToricQuiver",
+    "toricQuiver"
 }
+protect Q0
+protect Q1
+protect flow
+protect weights
+protect connectivityMatrix
 
+ToricQuiver = new Type of HashTable
+toricQuiver = method()
 
+-- construct ToricQuiver from connectivity matrix
+toricQuiver(Matrix) := Q -> (
+    new ToricQuiver from hashTable{
+        connectivityMatrix=>Q,
+        Q0=>toList(0..numRows(Q) - 1),
+        Q1=>graphEdges(Q),
+        flow=>0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col"),
+        weights=>sumList(entries(Q), Axis=>"Row")
+    }
+)
+
+-- construct ToricQuiver from connectivity matrix and a flow
+toricQuiver(Matrix, List) := (Q, F) -> (
+    new ToricQuiver from hashTable{
+        connectivityMatrix=>Q*diagonalMatrix F,
+        Q0=>toList(0..numRows(Q) - 1),
+        Q1=>graphEdges(Q),
+        flow=>asList(F),
+        weights=>sumList(entries(Q), Axis=>"Row")
+    }
+)
+
+-- construct ToricQuiver from list of edges
+toricQuiver(List) := E -> (
+    Q := graphFromEdges(E, Oriented=>true);
+    new ToricQuiver from hashTable{
+        connectivityMatrix=>Q,
+        Q0=>asList(0..numRows(Q) - 1),
+        Q1=>E,
+        flow=>asList(#E:1),
+        weights=>sumList(entries(Q), Axis=>"Row")
+    }
+)
+
+-- construct ToricQuiver from list of edges and a flow
+toricQuiver(List, List) := (E, F) -> (
+    Q := graphFromEdges(E, Oriented=>true)*diagonalMatrix F;
+    new ToricQuiver from hashTable{
+        connectivityMatrix=>Q,
+        Q0=>toList(0..numRows(Q) - 1),
+        Q1=>E,
+        flow=>F,
+        weights=>sumList(entries(Q), Axis=>"Row")
+    }
+)
+-- subquiver of a ToricQuiver by taking a subset of the arrows, together with the vertices they adjoin
+ToricQuiver _ List := (TQ, L) -> (
+    M := matrix(for x in entries(TQ.connectivityMatrix_L) list(if sumList(x) != 0 then (x) else (continue;)));
+    toricQuiver(M)
+)
 
 ------------------------------------------------------------
 asList = x -> (
@@ -356,6 +412,17 @@ existsOrientedCycle = (G) -> (
 
 
 ------------------------------------------------------------
+isAcyclic = method()
+isAcyclic(Matrix) := Q -> (
+    not existsOrientedCycle(Q)
+)
+isAcyclic(ToricQuiver) := Q -> (
+    not existsOrientedCycle(Q.connectivityMatrix)
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 -- check if there exists a path between p and q by appending 
 -- edges in E(which is a list of pairs (v1, v2). 
 -- optional arguments: 
@@ -640,7 +707,7 @@ toricQuivers = n -> (
     qs := removeOrientedCycles(gs);
     qs = uniqueUpToQuiverIsomorphism(qs);
     for q in qs list(
-        q
+        toricQuiver(q)
     )
 )
 ------------------------------------------------------------
@@ -649,18 +716,50 @@ toricQuivers = n -> (
 ------------------------------------------------------------
 -- extract a sample quiver in dimension n 
 sampleQuiver = (n) -> (
-    ts := toricQuivers(n);
-    randomIdx := random(#ts);
-    ts#randomIdx
+    metSq := false;
+    sq := {};
+    gs := undirectedBaseGraphs(n);
+
+    for g in gs do(
+        if metSq then break;
+        for i in splitLoopsAndEdges(g) do (
+            if metSq then break;
+            for j in allPossibleOrientations(i) do (
+                if (not existsOrientedCycle(j)) then (
+                    sq = toricQuiver(matrix(j));
+                    metSq = true;
+                    break;
+                )
+            )
+        )
+    );
+    sq
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
 -- yield the subquivers of a given quiver Q
-subquivers = {Format => "indices"} >> opts -> (Q) -> (
+subquivers = method(Options => {Format => "quiver"})
+subquivers Matrix := opts -> Q -> (
     numArrows := numColumns(Q);
     arrows := 0..(numArrows - 1);
+
+    flatten(
+        for i from 1 to numArrows - 1 list (
+            for c in combinations(i, arrows, Order => false, Replacement => false) list (
+                if opts.Format == "indices" then (
+                    c
+                ) else (
+                    toricQuiver(Q)_c
+                )
+            )
+        )
+    )
+)
+subquivers ToricQuiver := opts -> Q -> (
+    numArrows := #Q.Q1;
+    arrows := Q.Q1;
 
     flatten(
         for i from 1 to numArrows - 1 list (
@@ -679,7 +778,8 @@ subquivers = {Format => "indices"} >> opts -> (Q) -> (
 
 ------------------------------------------------------------
 -- list the subsets of a quiver Q that are closed under arrows
-subsetsClosedUnderArrows = (Q) -> (
+subsetsClosedUnderArrows = method()
+subsetsClosedUnderArrows Matrix := (Q) -> (
     numVertices := numRows(Q);
     currentVertices := 0..(numVertices - 1);
     Qt := transpose(Q);
@@ -696,19 +796,27 @@ subsetsClosedUnderArrows = (Q) -> (
         )
     ))
 )
+subsetsClosedUnderArrows ToricQuiver := (Q) -> (
+    subsetsClosedUnderArrows(Q.connectivityMatrix)
+)
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
 -- return ordered list of the weights for the vertices of quiver Q
-theta = Q -> (
+theta = method()
+theta(ToricQuiver) := Q -> (
+    Q.weights
+)
+theta(Matrix) := Q -> (
     sumList(entries(Q), Axis => "Row")
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
-isStable = (Q, subQ) -> (
+isStable = method()
+isStable(Matrix, List) := (Q, subQ) -> (
     -- get the vertices in the subquiver
     subQVertices := positions(entries(Q_subQ), x -> any(x, y -> y != 0));
     -- weights of the original quiver
@@ -726,11 +834,15 @@ isStable = (Q, subQ) -> (
     );
     all(sums, x -> x > 0)
 )
+isStable(ToricQuiver, List) := (Q, subQ) -> (
+    isStable(Q.connectivityMatrix, subQ)
+)
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
-unstableSubquivers = Q -> (
+unstableSubquivers = method()
+unstableSubquivers Matrix := Q -> (
     numArrows := numColumns(Q);
     arrows := asList(0..numArrows - 1);
 
@@ -745,6 +857,9 @@ unstableSubquivers = Q -> (
             continue;
         )
     )
+)
+unstableSubquivers ToricQuiver := Q -> (
+    unstableSubquivers(Q.connectivityMatrix)
 )
 ------------------------------------------------------------
 
@@ -761,7 +876,8 @@ isProperSubset = (Q1, Q2) -> (
 
 
 ------------------------------------------------------------
-isMaximal = (Q, Qlist) -> (
+isMaximal = method()
+isMaximal(Matrix, List) := (Q, Qlist) -> (
     returnVal := true;
     for Q2 in Qlist do (
         if isProperSubset(Q, Q2) then (
@@ -769,6 +885,9 @@ isMaximal = (Q, Qlist) -> (
         );
     );
     returnVal
+)
+isMaximal(ToricQuiver, List) := (Q, Qlist) -> (
+    isMaximal(Q.connectivityMatrix, Qlist)
 )
 ------------------------------------------------------------
 
@@ -794,15 +913,22 @@ maximalUnstableSubquivers = (Q) -> (
 
 
 ------------------------------------------------------------
-isTight = (Q) -> (
+isTight = method()
+isTight(Matrix) := Q -> (
     numArrows := numColumns(Q);
     all(maximalUnstableSubquivers(Q), x -> #x != (numArrows - 1))
+)
+
+isTight(ToricQuiver) := Q -> (
+    numArrows := #Q#Q1;
+    all(maximalUnstableSubquivers(Q.connectivityMatrix), x -> #x != (numArrows - 1))
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
-neighborliness = (Q) -> (
+neighborliness = method()
+neighborliness Matrix := (Q) -> (
     numArrows := numColumns(Q);
     maxUnstables := maximalUnstableSubquivers(Q);
 
@@ -813,20 +939,28 @@ neighborliness = (Q) -> (
     );
     k
 )
-------------------------------------------------------------
-
-
-------------------------------------------------------------
-wallType = (Q, Qp) -> (
-    tp := sum(for x in sumList(Q^Qp, Axis=>"Col") list(if x < 0 then (1) else (continue;)));
-    tm := sum(for x in sumList(Q^Qp, Axis=>"Col") list(if x > 0 then (1) else (continue;)));
-    (tp, tm)
+neighborliness ToricQuiver := (Q) -> (
+    neighborliness(Q.connectivityMatrix)
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
-walls = (Q) -> (
+wallType = method()
+wallType(Matrix, List) := (Q, Qp) -> (
+    tp := sum(for x in sumList(Q^Qp, Axis=>"Col") list(if x < 0 then (1) else (continue;)));
+    tm := sum(for x in sumList(Q^Qp, Axis=>"Col") list(if x > 0 then (1) else (continue;)));
+    (tp, tm)
+)
+wallType(ToricQuiver, List) := (Q, Qp) -> (
+    wallType(Q.connectivityMatrix, Qp)
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+walls = method()
+walls(Matrix) := (Q) -> (
     nv := numRows(Q);
     nvSet := set(0..nv - 1);
     subs := (1..ceiling(nv/2));
@@ -849,6 +983,9 @@ walls = (Q) -> (
             )
         )
     )
+)
+walls(ToricQuiver) := (Q) -> (
+    walls(Q.connectivityMatrix)
 )
 ------------------------------------------------------------
 
@@ -946,7 +1083,8 @@ primalUndirectedCycle = (G) -> (
 
 
 ------------------------------------------------------------
-flowPolytope = (Q) -> (
+flowPolytope = method()
+flowPolytope(Matrix) := (Q) -> (
 
     (sT, removedEdges) := spanningTree(Q);
     es := sT | removedEdges;
@@ -978,6 +1116,9 @@ flowPolytope = (Q) -> (
         )
     )
 )
+flowPolytope(ToricQuiver) := (Q) -> (
+    flowPolytope(Q.connectivityMatrix)
+)
 ------------------------------------------------------------
 
 
@@ -991,17 +1132,17 @@ mergeOnVertex = (Q1, v1, Q2, v2) -> (
     Q1 = transpose(Q1^i1);
     Q2 = transpose(Q2^i2);
 
-    print(transpose(Q1), transpose(Q2));
+    paddingSize := 0;
     matrix(
         for row from 0 to nrow - 1 list(
             if row < (numColumns(Q1) - 1) then (
-                paddingSize := ncol - numColumns(Q1) - 1;
+                paddingSize = ncol - numColumns(Q1) - 1;
                 join(entries(Q1)_row, paddingSize:0)
             ) else if row < numColumns(Q1) then (
                 join(entries(Q1)_row, entries(Q2)_0)
             ) else (
                 j := row - numColumns(Q1) + 1;
-                paddingSize := ncol - numRows(Q2);
+                paddingSize = ncol - numRows(Q2);
                 asList(join(paddingSize:0, entries(Q2)_j))
             )
         )
