@@ -776,10 +776,9 @@ sampleQuiver = (n) -> (
     M := 0;
 
     while (not metSq) and (tries < 2*n - 1) do (
-        tries = tries + 1;
         g0 = tries;
         g1 = g0 + n - 1;
-        print(g0, g1);
+        tries = tries + 1;
         possibleCols = combinations(g0, {0,1,2}, Replacement=>true, MinSum=>2, MaxSum=>2);
         rowCombs = combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
 
