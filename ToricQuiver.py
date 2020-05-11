@@ -448,8 +448,6 @@ def Step3(mat, edges_to_split):
 
 
 def Step4(mat):
-    # put signs on the arrows.
-
     #first step: find the vertices with valence 2 (i.e. row sum = 2)
     rowsums = np.array(mat.T.sum(axis=0).flatten().tolist()[0])
     val2_verts = np.where(rowsums == 2)[0]
@@ -593,7 +591,8 @@ def is_stable(M, subM):
 
     output: boolean of statement "M is W-stable"
     """
-    vertices = list(set(r for r in range(M.shape[0]) if np.any(np.array([M[r,c] != 0 for c in subM])))) #of the subquiver
+    #vertices = list(set(r for r in range(M.shape[0]) if np.any(np.array([M[r,c] != 0 for c in subM])))) #of the subquiver
+    vertices = np.unique(list(np.where(M[:,subM] != 0)[0]))
     theta_calc = theta(M)
     weights = [theta_calc[i] for i in vertices]
 
@@ -603,6 +602,29 @@ def is_stable(M, subM):
     sums = np.array([sum(np.array(weights)[np.array(S)]) for S in subsets_closed_under_arrows(submatrix)])
     return np.all(sums > 0)
 
+
+def is_unstable(M, subM):
+    """
+    inputs: M(numpy matrix): weighted connectivity matrix of some quiver Q
+            subM(list): subset of the indices[0,...,#columns of M] corresponding to the arrows of the subquiver
+
+    output: boolean of statement "M is not W-stable"(quicker in some cases than is_stable)
+    """
+    retV = False
+    vertices = np.unique(list(np.where(M[:,subM] != 0)[0]))
+    theta_calc = np.array(theta(M))
+    weights = np.array([theta_calc[i] for i in vertices])
+
+    submatrix = M[np.array(vertices),:]
+    submatrix = submatrix[:,subM]
+    # calculate the weight sums for each subset of M that is closed under arrows
+    for i in range(1, submatrix.shape[0]):
+        for j in combinations(vertices, i):
+            if np.all(M[j,:].sum(axis=0) <= 0):
+                if sum(theta_calc[np.array(j)]) <= 0:
+                    retV = True
+                    break
+    return retV
 
 
 def all_unstable(M):
@@ -616,7 +638,7 @@ def all_unstable(M):
     num_arrows = M.shape[1]
     arrows = range(num_arrows)
     L = [list(j) for i in arrows[1:] for j in combinations(arrows, i)]
-    return [subQ for subQ in L if not is_stable(M, list(subQ))]
+    return [subQ for subQ in L if is_unstable(M, list(subQ))]
 
 
 
@@ -648,6 +670,28 @@ def all_maximal_unstable(M):
                 maximal = False
         if maximal:
             answer.append(Q)
+    return answer
+
+
+def all_maximal_unstable_of_min_len(M, l):
+    """
+    """
+    # all unstable subquivers of M closed under arrows
+    # NOTE: unstable in this context includes things that are not stable i.e. unstable and semi-stable.
+    num_arrows = M.shape[1]
+    arrows = range(num_arrows)
+    unstableList = [set(j) for i in arrows[l:] for j in combinations(arrows, i) if is_unstable(M, list(j))]
+    print("unstable list is here.")
+
+    answer = []
+    for q in unstableList:
+        maximal = True
+        for qOther in unstableList:
+            if maximal:
+                if (not q == qOther) and q.issubset(qOther):
+                    maximal = False
+        if maximal:
+            answer.append(q)
     return answer
 
 
@@ -734,3 +778,42 @@ def merge_on_arrow(A1, a1, A2, a2):
     A[:A1.shape[0], :A1.shape[1]] = Q1
     A[A1.shape[0]-2:,A1.shape[1]:] = Q2
     return A
+
+
+def oriented_graph_on(mat):
+    #first step: find the vertices with valence 2 (i.e. row sum = 2)
+    rowsums = np.array(mat.T.sum(axis=0).flatten().tolist()[0])
+    val2_verts = np.where(rowsums == 2)[0]
+    diag = np.zeros((mat.shape[0], mat.shape[0]))
+    np.fill_diagonal(diag, [1 if not (x in val2_verts) else -1 for x in range(mat.shape[1])])
+    mat = np.matmul(diag, mat)
+
+    # now for each column that does not add up to 0, generate all possible
+    # combinations of +-1 for it
+    A = mat.T.copy()
+    columns_to_alter = np.where(np.array(A.sum(axis=1).flatten().tolist()[0]) != 0)[0]
+    columns_to_save = [x for x in range(A.shape[0]) if x not in columns_to_alter]
+
+    if len(columns_to_alter) > 0:
+        possible_columns = []
+        for col in columns_to_alter:
+            column = A[col,:].tolist()[0]
+            idx = column.index(1)
+
+            column[idx] = -1
+            col1 = column
+            col2 = [-x for x in column]
+            possible_columns.append((col1, col2))
+
+        base_mat = mat[:, columns_to_save]
+        col_choices = list(combinations_with_replacement([0,1], len(possible_columns)))
+
+        for x in col_choices:
+            # candidate matrix
+            m = np.column_stack((base_mat, np.column_stack([possible_columns[i][y] for i, y in enumerate(x)])))
+            #check if m is cycle free
+            if not exists_cycle(edges_of_graph(-m, True), range(m.shape[0])):
+                mat = m
+                break
+    return -mat
+
