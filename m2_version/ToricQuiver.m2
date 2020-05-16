@@ -83,6 +83,10 @@ toricQuiver(Matrix, List) := opts -> (Q, F) -> (
     if opts.MatrixType == "Adjacency" then (
         Q = adjacencyToConnectivity(Q);
     );
+    if opts.Flow == "Random" then (
+        F = for i in (0..#F - 1) list(random(FlowCeil));
+        Q = Q*diagonalMatrix F;
+    );
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q*diagonalMatrix F,
         Q0=>toList(0..numRows(Q) - 1),
@@ -95,11 +99,16 @@ toricQuiver(Matrix, List) := opts -> (Q, F) -> (
 -- construct ToricQuiver from list of edges
 toricQuiver(List) := opts -> E -> (
     Q := graphFromEdges(E, Oriented=>true);
+    F := asList(#E:1);
+    if opts.Flow == "Random" then (
+        F = for i in (0..#E - 1) list(random(FlowCeil));
+        Q = Q*diagonalMatrix F;
+    );
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
         Q0=>asList(0..numRows(Q) - 1),
         Q1=>E,
-        flow=>asList(#E:1),
+        flow=>F,
         weights=>sumList(entries(Q), Axis=>"Row")
     }
 )
