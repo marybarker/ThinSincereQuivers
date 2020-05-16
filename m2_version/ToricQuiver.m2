@@ -93,7 +93,7 @@ toricQuiver(Matrix, List) := opts -> (Q, F) -> (
 )
 
 -- construct ToricQuiver from list of edges
-toricQuiver(List) := E -> (
+toricQuiver(List) := opts -> E -> (
     Q := graphFromEdges(E, Oriented=>true);
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
@@ -105,7 +105,7 @@ toricQuiver(List) := E -> (
 )
 
 -- construct ToricQuiver from list of edges and a flow
-toricQuiver(List, List) := (E, F) -> (
+toricQuiver(List, List) := opts -> (E, F) -> (
     Q := graphFromEdges(E, Oriented=>true)*diagonalMatrix F;
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
