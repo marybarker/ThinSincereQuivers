@@ -863,7 +863,13 @@ isClosedUnderArrows (Matrix, List) := (Q, V) -> (
     all(sumList(sQ, Axis=>"Row"), x -> x >=0)
     
 )
+isClosedUnderArrows (List, Matrix) := (V, Q) -> (
+    isClosedUnderArrows(Q, V)
+)
 isClosedUnderArrows (ToricQuiver, List) := (Q, V) -> (
+    isClosedUnderArrows(Q.connectivityMatrix, V)
+)
+isClosedUnderArrows (List, ToricQuiver) := (V, Q) -> (
     isClosedUnderArrows(Q.connectivityMatrix, V)
 )
 ------------------------------------------------------------

@@ -557,6 +557,10 @@ def subquivers(M):
 
 
 
+def is_closed_under_arrows(M, V):
+    return np.all(M[V,:].sum(axis=0) >= 0)
+
+
 def subsets_closed_under_arrows(M):
     """
     v.1: sum matrix columns
@@ -570,7 +574,7 @@ def subsets_closed_under_arrows(M):
     """
     num_vertices = M.shape[0]
     vertices = range(num_vertices)
-    return [j for i in range(1, num_vertices) for j in combinations(vertices, i) if np.all(M[j,:].sum(axis=0) <= 0)]
+    return [j for i in range(1, num_vertices) for j in combinations(vertices, i) if np.all(M[j,:].sum(axis=0) >= 0)]
 
 
 
