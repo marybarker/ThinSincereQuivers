@@ -21,6 +21,7 @@ export {
     "isStable",
     "isMaximal",
     "isAcyclic",
+    "isClosedUnderArrows",
     "maximalUnstableSubquivers",
     "theta",
     "neighborliness",
@@ -855,17 +856,28 @@ subquivers ToricQuiver := opts -> Q -> (
 
 
 ------------------------------------------------------------
+isClosedUnderArrows = method()
+isClosedUnderArrows (Matrix, List) := (Q, V) -> (
+    Qt := transpose(Q);
+    sQ := entries(Qt_V);
+    all(sumList(sQ, Axis=>"Row"), x -> x >=0)
+    
+)
+isClosedUnderArrows (ToricQuiver, List) := (Q, V) -> (
+    isClosedUnderArrows(Q.connectivityMatrix, V)
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 -- list the subsets of a quiver Q that are closed under arrows
 subsetsClosedUnderArrows = method()
 subsetsClosedUnderArrows Matrix := (Q) -> (
-    numVertices := numRows(Q);
-    currentVertices := 0..(numVertices - 1);
-    Qt := transpose(Q);
+    currentVertices := 0..(numRows(Q) - 1);
 
-    flatten(for i from 1 to numVertices - 1 list(
+    flatten(for i from 1 to #currentVertices - 1 list(
         for c in combinations(i, currentVertices, Order=>false, Replacement=>false) list(
-            sQ := entries(Qt_c);
-            if all(sumList(sQ, Axis=>"Row"), x -> x >= 0) then (
+            if isClosedUnderArrows(Q, c) then (
                 c
             )
             else(
