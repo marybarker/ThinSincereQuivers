@@ -1133,7 +1133,8 @@ spanningTree = (Q) -> (
     foundTree := false;
 
     for dTuple in dTuplesToRemove do (
-        edgesKept = asList(set(allEdges) - set(dTuple));
+        edgeIndices := asList(set(0..#allEdges - 1) - set(dTuple));
+        edgesKept = allEdges_edgeIndices;
         edgesRemoved = allEdges_dTuple;
 
         reducedG := transpose(matrix(for e in edgesKept list(
@@ -1144,9 +1145,14 @@ spanningTree = (Q) -> (
             localE = replaceInList(t, -1, localE);
             localE
         )));
-        notAnyCycles := not existsUnorientedCycle(reducedG);
+        if numColumns(reducedG) > 1 then (
+            notAnyCycles := not existsUnorientedCycle(reducedG);
 
-        if isGraphConnected(reducedG) and notAnyCycles then (
+            if isGraphConnected(reducedG) and notAnyCycles then (
+                foundTree = true;
+                break;
+            );
+        ) else (
             foundTree = true;
             break;
         );
