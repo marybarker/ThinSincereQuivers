@@ -335,7 +335,8 @@ undirectedGraphs = (d) -> (
 ------------------------------------------------------------
 -- yield the edges of a graph in the form of a list of pairs 
 -- (v1, v2), where edge E is from v1 to v2
-graphEdges = {Oriented=>false, RavelLoops=>false} >> opts -> (G) -> (
+graphEdges = method(Options=>{Oriented=>false, RavelLoops=>false});
+graphEdges Matrix := opts -> (G) -> (
     E := {};
     if opts.Oriented == true then (
         E = for e in entries(transpose(G)) list(
@@ -353,6 +354,9 @@ graphEdges = {Oriented=>false, RavelLoops=>false} >> opts -> (G) -> (
     );
     lens := sortedIndices(for e in E list(-#e));
     return E_lens
+)
+graphEdges ToricQuiver := opts -> (G) -> (
+    graphEdges(G.connectivityMatrix)
 )
 ------------------------------------------------------------
 
@@ -443,6 +447,21 @@ existsOrientedCycle = (G) -> (
             retVal = true;
             break;
         )
+    );
+    retVal
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+existsUnorientedCycle = (G) -> (
+    retVal := false;
+    E := graphEdges(G);
+    for i from 0 to #E - 1 do (
+        if isEdgeInCycle(i, E) then (
+            retVal = true;
+            break;
+        );
     );
     retVal
 )
@@ -1108,10 +1127,14 @@ spanningTree = (Q) -> (
     -- number of edges to remove from spanning tree
     d := Q1 - Q0 + 1;
 
-    dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement=>false);
+    dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement=>false, Order=>false);
+    edgesKept := {};
+    edgesRemoved := {};
+    foundTree := false;
+
     for dTuple in dTuplesToRemove do (
-        edgesKept := drop(allEdges, dTuple);
-        edgesRemoved := allEdges_dTuple;
+        edgesKept = asList(set(allEdges) - set(dTuple));
+        edgesRemoved = allEdges_dTuple;
 
         reducedG := transpose(matrix(for e in edgesKept list(
             t := e#0;
@@ -1121,11 +1144,18 @@ spanningTree = (Q) -> (
             localE = replaceInList(t, -1, localE);
             localE
         )));
-        if isGraphConnected(reducedG) then (
-            return (edgesKept, edgesRemoved);
+        notAnyCycles := not existsUnorientedCycle(reducedG);
+
+        if isGraphConnected(reducedG) and notAnyCycles then (
+            foundTree = true;
+            break;
         );
     );
-    return ({}, {});
+    if foundTree then (
+        return (edgesKept, edgesRemoved);
+    ) else (
+        return ({}, {});
+    );
 )
 ------------------------------------------------------------
 
@@ -1162,16 +1192,17 @@ primalUndirectedCycle = (G) -> (
                         if (gE#0 == cE#0) and (gE#1 == cE#1) then (
                             metEdges = metEdges | {gI};
                             edgeIndices = edgeIndices | {gI};
-                        )
-                        else if (gE#1 == cE#0) and (gE#0 == cE#1) then (
+                            break;
+                        ) else if (gE#1 == cE#0) and (gE#0 == cE#1) then (
                             metEdges = metEdges | {gI};
                             edgeIndices = edgeIndices | {-(gI+1)};
+                            break;
                         );
                     );
                 );
             );
+            return edgeIndices;
         );
-        return edgeIndices;
     );
     return {};
 )
