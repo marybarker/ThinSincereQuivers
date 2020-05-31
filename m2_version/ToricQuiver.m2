@@ -938,6 +938,10 @@ isStable(Matrix, List) := (Q, subQ) -> (
     Qtheta := theta(Q);
     -- inherited weights on the subquiver
     weights := Qtheta_subQVertices;
+    -- negative weights in Q_0 \ subQ_0
+    otherVertices := asList(set(0..#Qtheta - 1) - set(subQVertices));
+    minWeight := min({0} | asList(Qtheta_otherVertices));
+
     subMat := Q_subQ;
     tSubMat := transpose(subMat);
     subMat = transpose(tSubMat_subQVertices);
@@ -947,7 +951,7 @@ isStable(Matrix, List) := (Q, subQ) -> (
             sumList(weights_subset)
         )
     );
-    all(sums, x -> x > 0)
+    all(sums, x -> x + minWeight > 0)
 )
 isStable(ToricQuiver, List) := (Q, subQ) -> (
     isStable(Q.connectivityMatrix, subQ)
