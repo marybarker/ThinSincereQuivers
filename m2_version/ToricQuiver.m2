@@ -940,7 +940,7 @@ isStable(Matrix, List) := (Q, subQ) -> (
     weights := Qtheta_subQVertices;
     -- negative weights in Q_0 \ subQ_0
     otherVertices := asList(set(0..#Qtheta - 1) - set(subQVertices));
-    minWeight := sum(apply({0} | asList(Qtheta_otherVertices), x -> x <= 0));
+    minWeight := sum(apply({0} | asList(Qtheta_otherVertices), x -> if(x <= 0) then x else 0));
 
     subMat := Q_subQ;
     tSubMat := transpose(subMat);
