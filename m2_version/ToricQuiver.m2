@@ -54,7 +54,7 @@ protect weights
 protect connectivityMatrix
 
 ToricQuiver = new Type of HashTable
-toricQuiver = method(Options => {Flow=>"Canonical",MatrixType=>"Connectivity"})
+toricQuiver = method(Options => {Flow=>"Default",MatrixType=>"Connectivity"})
 
 FlowCeil := 100;
 
@@ -857,7 +857,7 @@ subquivers Matrix := opts -> Q -> (
 )
 subquivers ToricQuiver := opts -> Q -> (
     numArrows := #Q.Q1;
-    arrows := Q.Q1;
+    arrows := 0..(numArrows - 1);
 
     flatten(
         for i from 1 to numArrows - 1 list (
