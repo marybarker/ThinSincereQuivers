@@ -847,6 +847,13 @@ sampleQuiver = {Flow=>"Canonical"} >> opts -> (n) -> (
 
 
 ------------------------------------------------------------
+bipartiteQuiver = {Flow=>"Canonical"} >> opts -> (a, b) -> (
+    toricQuiver(flatten(for ai from 0 to a - 1 list(for bi from 0 to b - 1 list({ai, a+bi}))), Flow=>opts.Flow)
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 -- yield the subquivers of a given quiver Q
 subquivers = method(Options=>{Format=>"quiver", AsSubquiver=>false})
 subquivers Matrix := opts -> Q -> (
