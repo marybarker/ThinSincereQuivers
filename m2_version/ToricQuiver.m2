@@ -363,7 +363,7 @@ graphEdges Matrix := opts -> (G) -> (
     return E
 )
 graphEdges ToricQuiver := opts -> (G) -> (
-    graphEdges(G.connectivityMatrix)
+    graphEdges(G.connectivityMatrix, Oriented=>opts.Oriented, RavelLoops=>opts.RavelLoops)
 )
 ------------------------------------------------------------
 
@@ -1247,8 +1247,8 @@ primalUndirectedCycle = (G) -> (
 
 
 ------------------------------------------------------------
-flowPolytope = method()
-flowPolytope(Matrix) := (Q) -> (
+flowPolytope = method(Options=>{Format=>"matrix"})
+flowPolytope(Matrix) := opts-> (Q) -> (
 
     (sT, removedEdges) := spanningTree(Q);
     es := sT | removedEdges;
@@ -1273,15 +1273,20 @@ flowPolytope(Matrix) := (Q) -> (
         );
         fi
     );
-    for j from 0 to #es - 1 list(
+    output := for j from 0 to #es - 1 list(
         for i from 0 to #removedEdges - 1 list(
             ff := f#i;
             ff#j
         )
+    );
+    if (opts.Format == "matrix") then (
+        transpose(matrix(output))
+    ) else (
+        output
     )
 )
-flowPolytope(ToricQuiver) := (Q) -> (
-    flowPolytope(Q.connectivityMatrix)
+flowPolytope(ToricQuiver) := opts -> (Q) -> (
+    flowPolytope(Q.connectivityMatrix, Format=>opts.Format)
 )
 ------------------------------------------------------------
 
