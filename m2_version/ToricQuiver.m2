@@ -35,6 +35,7 @@ export {
 -- Options
     "Flow",
     "MatrixType",
+    "AsSubquiver",
     "Axis",
     "SavePath",
     "MaxSum",
@@ -43,6 +44,7 @@ export {
     "RavelLoops",
     "Replacement",
     "EdgesAdded",
+    "Output",
 ---- Quiver objects 
     "ToricQuiver",
     "toricQuiver"
@@ -54,7 +56,7 @@ protect weights
 protect connectivityMatrix
 
 ToricQuiver = new Type of HashTable
-toricQuiver = method(Options => {Flow=>"Default",MatrixType=>"Connectivity"})
+toricQuiver = method(Options=>{Flow=>"Default",MatrixType=>"Connectivity"})
 
 FlowCeil := 100;
 
@@ -68,8 +70,8 @@ toricQuiver(Matrix) := opts -> Q -> (
         F = numColumns(Q):1;
     ) else if opts.Flow == "Random" then (
         F = for i in (0..#F - 1) list(random(FlowCeil));
-        Q = Q*diagonalMatrix F;
     );
+    Q = Q*diagonalMatrix F;
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
         Q0=>toList(0..numRows(Q) - 1),
@@ -86,8 +88,8 @@ toricQuiver(Matrix, List) := opts -> (Q, F) -> (
     );
     if opts.Flow == "Random" then (
         F = for i in (0..#F - 1) list(random(FlowCeil));
-        Q = Q*diagonalMatrix F;
     );
+    Q = Q*diagonalMatrix F;
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q*diagonalMatrix F,
         Q0=>toList(0..numRows(Q) - 1),
@@ -103,8 +105,8 @@ toricQuiver(List) := opts -> E -> (
     F := asList(#E:1);
     if opts.Flow == "Random" then (
         F = for i in (0..#E - 1) list(random(FlowCeil));
-        Q = Q*diagonalMatrix F;
     );
+    Q = Q*diagonalMatrix F;
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
         Q0=>asList(0..numRows(Q) - 1),
@@ -125,7 +127,13 @@ toricQuiver(List, List) := opts -> (E, F) -> (
         weights=>sumList(entries(Q), Axis=>"Row")
     }
 )
--- subquiver of a ToricQuiver by taking a subset of the arrows, together with the vertices they adjoin
+-- subquiver of a ToricQuiver by taking a subset of the arrows, represented as a "child" of the original quiver
+ToricQuiver ^ List := (TQ, L) -> (
+    newFlow := TQ.flow;
+    Lc := asList(set(0..#TQ.flow - 1) - set(L));
+    for i in Lc do(newFlow = replaceInList(i, 0, newFlow));
+    toricQuiver(TQ.connectivityMatrix, newFlow)
+)
 ToricQuiver _ List := (TQ, L) -> (
     M := matrix(for x in entries(TQ.connectivityMatrix_L) list(if sumList(x) != 0 then (x) else (continue;)));
     toricQuiver(M)
@@ -352,8 +360,7 @@ graphEdges Matrix := opts -> (G) -> (
             E = for e in E list(if #e > 1 then e else toList(2:e#0));
         );
     );
-    lens := sortedIndices(for e in E list(-#e));
-    return E_lens
+    return E
 )
 graphEdges ToricQuiver := opts -> (G) -> (
     graphEdges(G.connectivityMatrix)
@@ -397,6 +404,9 @@ edgesOutOfPoint = {Oriented=>false} >> opts -> (p, E) -> (
 -- check if graph is connected
 isGraphConnected = G -> (
     gEdges := graphEdges(G);
+    lens := sortedIndices(for e in gEdges list(-#e));
+    gEdges = gEdges_lens;
+
     if max(for e in gEdges list(#e)) > 1 then (
         isConnected(graph(gEdges))
     )
@@ -838,18 +848,23 @@ sampleQuiver = {Flow=>"Canonical"} >> opts -> (n) -> (
 
 ------------------------------------------------------------
 -- yield the subquivers of a given quiver Q
-subquivers = method(Options=>{Format=>"quiver"})
+subquivers = method(Options=>{Format=>"quiver", AsSubquiver=>false})
 subquivers Matrix := opts -> Q -> (
     numArrows := numColumns(Q);
     arrows := 0..(numArrows - 1);
+    QFlow := 0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col");
 
     flatten(
         for i from 1 to numArrows - 1 list (
             for c in combinations(i, arrows, Order=>false, Replacement=>false) list (
-                if opts.Format == "indices" then (
+                if opts.Format == "list" then (
                     c
                 ) else (
-                    toricQuiver(Q)_c
+                    if opts.AsSubquiver then (
+                        toricQuiver(Q, QFlow)^c
+                    ) else (
+                        toricQuiver(Q)_c
+                    )
                 )
             )
         )
@@ -862,10 +877,14 @@ subquivers ToricQuiver := opts -> Q -> (
     flatten(
         for i from 1 to numArrows - 1 list (
             for c in combinations(i, arrows, Order=>false, Replacement=>false) list (
-                if opts.Format == "indices" then (
+                if opts.Format == "list" then (
                     c
                 ) else (
-                    Q_c
+                    if opts.AsSubquiver then (
+                        Q^c
+                    ) else (
+                        Q_c
+                    )
                 )
             )
         )
@@ -960,25 +979,29 @@ isStable(ToricQuiver, List) := (Q, subQ) -> (
 
 
 ------------------------------------------------------------
-unstableSubquivers = method()
-unstableSubquivers Matrix := Q -> (
+unstableSubquivers = method(Options=>{Format=>"list"})
+unstableSubquivers(Matrix) := opts -> Q -> (
     numArrows := numColumns(Q);
     arrows := asList(0..numArrows - 1);
 
     L := flatten(for i from 1 to numArrows - 1 list (
-        combinations(i, arrows, Replacement=>false) 
+        combinations(i, arrows, Replacement=>false, Order=>false) 
     ));
 
     for sQ in L list(
         if not isStable(Q, asList(sQ)) then (
-            sQ
+            if (opts.Format == "list") then (
+                sQ
+            ) else (
+                Q^sQ
+            )
         ) else (
             continue;
         )
     )
 )
-unstableSubquivers ToricQuiver := Q -> (
-    unstableSubquivers(Q.connectivityMatrix)
+unstableSubquivers(ToricQuiver) := opts -> Q -> (
+    unstableSubquivers(Q.connectivityMatrix, Format=>opts.Format)
 )
 ------------------------------------------------------------
 
@@ -1012,8 +1035,8 @@ isMaximal(ToricQuiver, List) := (Q, Qlist) -> (
 
 
 ------------------------------------------------------------
-maximalUnstableSubquivers = (Q) -> (
-    unstableList := unstableSubquivers(Q);
+maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
+    unstableList := unstableSubquivers(Q, Format=>"list");
     for subQ1 in unstableList list (
         isMaximal := true;
         for subQ2 in unstableList do (
@@ -1022,7 +1045,11 @@ maximalUnstableSubquivers = (Q) -> (
             );
         );
         if isMaximal then (
-            subQ1
+            if (opts.Format == "list") then (
+                subQ1
+            ) else (
+                Q^subQ1
+            )
         ) else (
             continue;
         )
