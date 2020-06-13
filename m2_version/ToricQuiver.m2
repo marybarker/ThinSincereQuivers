@@ -14,6 +14,7 @@ newPackage(
 export {
 -- Methods/Functions
     "sampleQuiver",
+    "bipartiteQuiver",
     "toricQuivers",
     "isTight",
     "subquivers",
@@ -56,21 +57,20 @@ protect weights
 protect connectivityMatrix
 
 ToricQuiver = new Type of HashTable
-toricQuiver = method(Options=>{Flow=>"Default",MatrixType=>"Connectivity"})
+toricQuiver = method(Options=>{Flow=>"Default"})
 
 FlowCeil := 100;
 
 -- construct ToricQuiver from connectivity matrix
 toricQuiver(Matrix) := opts -> Q -> (
     F := 0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col");
-    if opts.MatrixType == "Adjacency" then (
-        Q = adjacencyToConnectivity(Q);
-    );
     if opts.Flow == "Canonical" then (
-        F = numColumns(Q):1;
+        F = asList(numColumns(Q):1);
     ) else if opts.Flow == "Random" then (
         F = for i in (0..#F - 1) list(random(FlowCeil));
     );
+    -- set Q to be unit valued to apply flow
+    Q = matrix(for e in entries(Q) list(for x in e list(if abs(x) > 0 then x/abs(x) else 0)));
     Q = Q*diagonalMatrix F;
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
@@ -83,12 +83,8 @@ toricQuiver(Matrix) := opts -> Q -> (
 
 -- construct ToricQuiver from connectivity matrix and a flow
 toricQuiver(Matrix, List) := opts -> (Q, F) -> (
-    if opts.MatrixType == "Adjacency" then (
-        Q = adjacencyToConnectivity(Q);
-    );
-    if opts.Flow == "Random" then (
-        F = for i in (0..#F - 1) list(random(FlowCeil));
-    );
+    -- set Q to be unit valued to apply flow
+    Q = matrix(for e in entries(Q) list(for x in e list(if abs(x) > 0 then x/abs(x) else 0)));
     Q = Q*diagonalMatrix F;
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q*diagonalMatrix F,
