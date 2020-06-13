@@ -75,7 +75,7 @@ toricQuiver(Matrix) := opts -> Q -> (
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
         Q0=>toList(0..numRows(Q) - 1),
-        Q1=>graphEdges(Q),
+        Q1=>graphEdges(Q, Oriented=>true),
         flow=>F,
         weights=>sumList(entries(Q), Axis=>"Row")
     }
@@ -93,7 +93,7 @@ toricQuiver(Matrix, List) := opts -> (Q, F) -> (
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q*diagonalMatrix F,
         Q0=>toList(0..numRows(Q) - 1),
-        Q1=>graphEdges(Q),
+        Q1=>graphEdges(Q, Oriented=>true),
         flow=>asList(F),
         weights=>sumList(entries(Q), Axis=>"Row")
     }
@@ -403,7 +403,7 @@ edgesOutOfPoint = {Oriented=>false} >> opts -> (p, E) -> (
 ------------------------------------------------------------
 -- check if graph is connected
 isGraphConnected = G -> (
-    gEdges := graphEdges(G);
+    gEdges := graphEdges(G, Oriented=>false);
     lens := sortedIndices(for e in gEdges list(-#e));
     gEdges = gEdges_lens;
 
@@ -466,7 +466,7 @@ existsOrientedCycle = (G) -> (
 ------------------------------------------------------------
 existsUnorientedCycle = (G) -> (
     retVal := false;
-    E := graphEdges(G);
+    E := graphEdges(G, Oriented=>false);
     for i from 0 to #E - 1 do (
         if isEdgeInCycle(i, E) then (
             retVal = true;
@@ -572,7 +572,7 @@ isEdgeInCycle = (i, E) -> (
 
 ------------------------------------------------------------
 splitLoops = m -> (
-    Es := graphEdges(m);
+    Es := graphEdges(m, Oriented=>false);
     nVerts := numRows(m);
     loopsBroken := for i from 0 to #Es - 1 list(
         e := Es#i;
@@ -600,7 +600,7 @@ splitLoops = m -> (
 
 ------------------------------------------------------------
 splitEdges = (m, E) -> (
-    Es := graphEdges(m);
+    Es := graphEdges(m, Oriented=>false);
     nVerts := numRows(m);
 
     for i from 0 to #E - 1 do (
@@ -617,7 +617,7 @@ splitEdges = (m, E) -> (
 -- generate the undirected graphs with admissable #vertices and #arrows to generate quivers
 undirectedBaseGraphs = (n) -> (
     for m in undirectedGraphs(n) list(
-        es := graphEdges(m, RavelLoops=>true);
+        es := graphEdges(m, Oriented=>false, RavelLoops=>true);
         if #es > 0 then (
             inCycle := for i from 0 to #es - 1 list( isEdgeInCycle(i, es) );
             if all(inCycle, i -> i == true) then (m) else (continue;)
@@ -668,7 +668,7 @@ allPossibleOrientations = m -> (
         if sumList(i) == 2 then (-1*i) else (i)
     ));
     cols := entries(transpose(mat));
-    es := graphEdges(mat);
+    es := graphEdges(mat, Oriented=>false);
 
     -- now take every combination of +-1 for the columns that do 
     -- not yet add up to 0
