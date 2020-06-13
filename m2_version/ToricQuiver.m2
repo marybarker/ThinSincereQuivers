@@ -435,6 +435,7 @@ findCycleDFS = (startV, visited, E) -> (
             retVal = true;
             break;
         );
+        if retVal then break;
         currentVisited = replaceInList(endV, 1, visited);
         retVal = findCycleDFS(endV, currentVisited, E);
     );
@@ -451,7 +452,7 @@ existsOrientedCycle = (G) -> (
     E := graphEdges(G, Oriented=>true);
     V := asList(0..numRows(G)-1);
     for firstV in V do (
-        visited := insert(firstV, 1, asList((#V - 1):0));
+        visited := replaceInList(firstV, 1, asList(#V:0));
         result := findCycleDFS(firstV, visited, E);
         if result then (
             retVal = true;
@@ -981,6 +982,10 @@ isStable(Matrix, List) := (Q, subQ) -> (
 )
 isStable(ToricQuiver, List) := (Q, subQ) -> (
     isStable(Q.connectivityMatrix, subQ)
+)
+isStable(ToricQuiver, ToricQuiver) := (Q, subQ) -> (
+    nonZeroEntries := positions(subQ.Flow, x -> (x > 0) or (x < 0));
+    isStable(Q.connectivityMatrix, nonZeroEntries)
 )
 ------------------------------------------------------------
 
