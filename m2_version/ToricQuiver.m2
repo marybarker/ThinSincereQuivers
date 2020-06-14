@@ -1383,3 +1383,162 @@ mergeOnArrow(ToricQuiver, ZZ, ToricQuiver, ZZ) := (Q1, a1, Q2, a2) -> (
     mergeOnArrow(Q1.connectivityMatrix, a1, Q2.connectivityMatrix, a2)
 )
 ------------------------------------------------------------
+
+beginDocumentation()
+multidoc ///
+
+    Node
+        Key 
+            ToricQuiver
+        Headline
+            creating a Toric Quiver
+        Description
+            Text
+                {\em ToricQuiver} is a package for creating and manipulating toric quivers.
+    Node
+        Key
+            toricQuiver
+        Headline
+            creating a toric quiver
+        Usage
+            Q = toricQuiver M
+            Q = toricQuiver (M, F)
+            Q = toricQuiver E
+            Q = toricQuiver (E, F)
+        Inputs
+            M: Matrix 
+                of integers giving the connectivity structure of the quiver
+            F: List 
+                the flow on the quiver given as a list of integers
+            E: List
+                of pairs $(v_1, v_2)$ giving the edges of the quiver in terms of the vertices
+            Flow => String
+                that specifies the flow for the polytope
+        Outputs
+            Q: ToricQuiver
+        Description
+            Text
+                A toric quiver is a directed graph $Q=(Q_0, Q_1)$ where $Q_0$ is the set of vertices associated to $Q$ and $Q_1$ is the set of arrows. Also included in $Q$ is a flow, which associates an integer value to each edge. The canonical flow gives a weight of 1 to each edge. 
+            Text
+                the ToricQuiver data type is stored as a hash table with the following keys: connectivityMatrix: matrix representation of the connected graph underlying the quiver flow: list of integers representing the flow associated to each edge of the quiver Q0: the list of vertices Q1: the list of edges weights: the values on each vertex induced by the flow
+
+            Example
+                Q = toricQuiver matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}})
+            Example
+                Q = toricQuiver(matrix({{-3,-1,-4,-1},{3,1,0,0},{0,0,4,1}}))
+            Example
+                Q = toricQuiver(matrix({{-3,-1,-4,-1},{3,1,0,0},{0,0,4,1}}), Flow=>"Canonical")
+            Example
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
+            Example
+                Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
+        SeeAlso
+            "sampleQuiver"
+            "bipartiteQuiver"
+    Node
+        Key
+            (toricQuiver, Matrix)
+        Headline
+            make a toric quiver from a connectivity matrix
+        Usage
+            toricQuiver M
+        Inputs
+            M: Matrix
+                of integers; each column corresponds to an arrow and each row
+            Flow => String
+                options are "Default", which takes the flow from values in the matrix, "Canonical", which sets the flow to 1 for each edge, or "Random", which assigns a random integer between 0 and 100 to each edge
+        Outputs
+            Q: ToricQuiver
+    Node
+        Key
+            (toricQuiver, Matrix, List)
+        Headline
+            make a toric quiver from a connectivity matrix and a flow
+        Usage
+            toricQuiver (M,F)
+        Inputs
+            M: Matrix
+                of integers; each column corresponds to an arrow and each row
+            F: List
+                of integers specifying the flow for each arrow
+        Outputs
+            Q: ToricQuiver
+    Node
+        Key
+            (toricQuiver, List)
+        Headline
+            make a toric quiver from a list of edges
+        Usage
+            toricQuiver (E)
+        Inputs
+            E: List
+                of pairs of the form $(v_1,v_2)$, one for each edge between vertices $v_1$ and $v_2$
+            Flow => String
+                options are "Canonical", which sets the flow to 1 for each edge, or "Random", which assigns a random integer between 0 and 100 to each edge
+        Outputs
+            Q: ToricQuiver
+    Node
+        Key
+            (toricQuiver, List, List)
+        Headline
+            make a toric quiver from a list of edges and a flow
+        Usage
+            toricQuiver (E, F)
+        Inputs
+            E: List
+                of pairs of the form $(v_1,v_2)$, one for each edge between vertices $v_1$ and $v_2$
+            F: List
+                of integers specifying the flow for each arrow
+        Outputs
+            Q: ToricQuiver
+       
+///
+end--
+    Node
+        Key
+            (bipartiteQuiver, ZZ, ZZ)
+        Headline
+            make a toric quiver on underlying bipartite graph
+        Usage
+            bipartiteQuiver (n,m)
+        Inputs
+            n: ZZ
+                number of vertices that are sources
+            m: ZZ
+                number of vertices that are sinks
+            Flow => String
+                specify flow to use
+        Outputs
+            Q: ToricQuiver
+        Description
+            Text
+                This function creates the unique toric quiver whose underlying graph is the fully connected bipartite graph with $n$ source vertices and $m$ sink vertices.
+            Example
+                Q = bipartiteQuiver(2,3)
+            Example
+                Q = bipartiteQuiver(2,3,Flow=>"Random")
+///
+end--
+    Node
+        Key
+            (sampleQuiver, ZZ)
+        Headline
+            built-in functionality for sampling quivers in arbitrary dimensions
+        Usage
+            sampleQuiver n
+        Inputs
+            n: ZZ
+                specified dimension for quiver
+            Flow => String
+                specify flow to use
+        Outputs
+            Q: ToricQuiver
+        Description
+            Text
+                This method creates a toricQuiver in dimension $n$. The algorithm returns the first valid result for a toricQuiver in this dimension. The dimension of a quiver $Q=(Q_0,Q_1)$ is $d=|Q_1|-|Q_0|+1$. 
+            Example
+                Q = sampleQuiver 3
+            Example
+                Q = sampleQuiver (3,Flow=>"Random")
+///
+end--
