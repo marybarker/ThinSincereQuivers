@@ -19,7 +19,6 @@ export {
     "isTight",
     "subquivers",
     "isStable",
-    "isMaximal",
     "isAcyclic",
     "isClosedUnderArrows",
     "maximalUnstableSubquivers",
@@ -977,7 +976,7 @@ isStable(ToricQuiver, List) := (Q, subQ) -> (
     isStable(Q.connectivityMatrix, subQ)
 )
 isStable(ToricQuiver, ToricQuiver) := (Q, subQ) -> (
-    nonZeroEntries := positions(subQ.Flow, x -> (x > 0) or (x < 0));
+    nonZeroEntries := positions(subQ.flow, x -> (x > 0) or (x < 0));
     isStable(Q.connectivityMatrix, nonZeroEntries)
 )
 ------------------------------------------------------------
@@ -1034,7 +1033,8 @@ isMaximal(Matrix, List) := (Q, Qlist) -> (
     returnVal
 )
 isMaximal(ToricQuiver, List) := (Q, Qlist) -> (
-    isMaximal(Q.connectivityMatrix, Qlist)
+    Ms := for Qm in Qlist list(Qm.connectivityMatrix);
+    isMaximal(Q.connectivityMatrix, Ms)
 )
 ------------------------------------------------------------
 
@@ -1043,13 +1043,13 @@ isMaximal(ToricQuiver, List) := (Q, Qlist) -> (
 maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
     unstableList := unstableSubquivers(Q, Format=>"list");
     for subQ1 in unstableList list (
-        isMaximal := true;
+        IsMaximal := true;
         for subQ2 in unstableList do (
             if isProperSubset(subQ1, subQ2) then (
-                isMaximal = false;
+                IsMaximal = false;
             );
         );
-        if isMaximal then (
+        if IsMaximal then (
             if (opts.Format == "list") then (
                 subQ1
             ) else (
@@ -1287,7 +1287,7 @@ flowPolytope(Matrix) := opts-> (Q) -> (
     if (opts.Format == "matrix") then (
         transpose(matrix(output))
     ) else (
-        output
+        matrix(output)
     )
 )
 flowPolytope(ToricQuiver) := opts -> (Q) -> (
@@ -1495,11 +1495,11 @@ multidoc ///
         Headline
             make a toric quiver on underlying bipartite graph
         Usage
-            bipartiteQuiver (n,m)
+            bipartiteQuiver (N, M)
         Inputs
-            n: ZZ
+            N: ZZ
                 number of vertices that are sources
-            m: ZZ
+            M: ZZ
                 number of vertices that are sinks
             Flow => String
                 specify flow to use
@@ -1509,23 +1509,23 @@ multidoc ///
             Text
                 This function creates the unique toric quiver whose underlying graph is the fully connected bipartite graph with $n$ source vertices and $m$ sink vertices.
             Example
-                Q = bipartiteQuiver(2,3)
+                Q = bipartiteQuiver (2, 3)
             Example
-                Q = bipartiteQuiver(2,3,Flow=>"Random")
+                Q = bipartiteQuiver (2, 3, Flow=>"Random")
     Node
         Key
             sampleQuiver
         Headline
             built-in functionality for sampling quivers in arbitrary dimensions
         Usage
-            sampleQuiver n
+            sampleQuiver N
         Inputs
-            n: ZZ
+            N: ZZ
                 specified dimension for quiver
             Flow => String
                 specify flow to use
         Outputs
-            Q: ToricQuiver
+            : ToricQuiver
         Description
             Text
                 This method creates a toricQuiver in dimension $n$. The algorithm returns the first valid result for a toricQuiver in this dimension. The dimension of a quiver $Q=(Q_0,Q_1)$ is $d=|Q_1|-|Q_0|+1$. 
@@ -1539,78 +1539,317 @@ multidoc ///
         Headline
             create all toric quivers in a given dimension
         Usage
-            toricQuivers n
+            toricQuivers N
         Inputs
-            n: ZZ
+            N: ZZ
                 dimension of the toric quivers
         Outputs
             Qs: List
-                of all toric quivers (up to quiver isomorphism) in dimension $n$
+                of all toric quivers (up to quiver isomorphism) in dimension $N$
     Node
         Key
             isTight
         Headline
             determine if toric quiver is tight
+        Usage
+            isTight Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            : Boolean
+        Description
+            Text
+                Determines if a toric quiver $Q$ is tight with respect to the vertex weights induced by its flow
+            Example
+                isTight bipartiteQuiver(2, 3, Flow=>"Random")
+    Node
+        Key
+            (isTight, ToricQuiver)
+        Headline
+            determine if toric quiver is tight
+        Usage
+            isTight Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            : Boolean
+        Description
+            Text
+                Determines if a toric quiver $Q$ is tight with respect to the vertex weights induced by its flow
+            Example
+                isTight bipartiteQuiver(2, 3, Flow=>"Random")
     Node
         Key
             subquivers
         Headline
             return all possible subquivers of a given quiver
+        Usage
+            subquivers Q
+        Inputs
+            Q: ToricQuiver
+            Format => String
+                options include "quiver", which returns a list of quivers, and "list", which returns a list of arrows for each subquiver
+            AsSubquiver => Boolean
+                if Format is specified as "quiver", then applying AsSubquiver = true insures that the matrix representation of the subquiver is the same size as the matrix original quiver
+        Outputs
+            L: List
+                of either quiver objects, or arrow indices
+        Description
+            Text 
+                this returns the subquivers of a given quiver. There are 3 main ways to represent a subquiver: as a list of arrow indices, as a subset of rows and columns of the original connectivity matrix, and as a copy of the original connectivity matrix with certain rows and columns zeroed out. These options are expanded in the Examples below. 
+            Example
+                subquivers bipartiteQuiver(2, 3)
+            Example
+                subquivers(bipartiteQuiver(2, 3), Format=>"list")
+            Example
+                subquivers(bipartiteQuiver(2, 3), Format=>"quiver", AsSubquiver=>true)
     Node
         Key
             isStable
         Headline
             determines if a subquiver is stable
+        Usage
+            isStable (Q, L)
+            isStable (Q, SQ)
+        Inputs
+            Q: ToricQuiver
+            SQ: ToricQuiver
+                A subquiver of the quiver $Q$
+            L: List
+                of the indices of arrows in $Q$ that make up the subquiver in question
+        Outputs
+            :Boolean
+        Description
+            Text 
+                a subquiver $SQ$ of the quiver $Q$ is stable if 
     Node
         Key
-            isMaximal
+            (isStable, ToricQuiver, List)
         Headline
-            is a subquiver a maximal subquiver?
+            determines if a subquiver is stable
+        Usage
+            isStable (Q, L)
+        Inputs
+            Q: ToricQuiver
+            L: List
+                of the indices of arrows in $Q$ that make up the subquiver in question
+        Outputs
+            :Boolean
+        Description
+            Text 
+                a subquiver $SQ$ of the quiver $Q$ is stable if 
+            Example
+                isStable (bipartiteQuiver(2, 3), {0, 1})
+    Node
+        Key
+            (isStable, ToricQuiver, ToricQuiver)
+        Headline
+            determines if a subquiver is stable
+        Usage
+            isStable (Q, SQ)
+        Inputs
+            Q: ToricQuiver
+            SQ: ToricQuiver
+                A subquiver of the quiver $Q$
+        Outputs
+            :Boolean
+        Description
+            Example
+                Q = bipartiteQuiver(2, 3)
+                S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
+                isStable (Q, S)
     Node
         Key
             isAcyclic
         Headline
             check that a quiver has no cycles
+        Usage
+            isAcyclic Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            :Boolean
+        Description
+            Text
+                checks that a toric quiver does not contain any oriented cycles 
+    Node
+        Key
+            (isAcyclic, ToricQuiver)
+        Headline
+            check that a quiver has no cycles
+        Usage
+            isAcyclic Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            :Boolean
+        Description
+            Text
+                checks that a toric quiver does not contain any oriented cycles 
+            Example
+                isAcyclic bipartiteQuiver(2, 3)
+            Example
+                isAcyclic toricQuiver matrix({{-1, 1, -1, -1}, {1, -1, 0, 0}, {0, 0, 1, 1}})
     Node
         Key
             isClosedUnderArrows
         Headline
             is a subquiver closed under arrows?
+        Usage
+            isClosedUnderArrows (Q, V)
+            isClosedUnderArrows (V, Q)
+        Inputs
+            Q: ToricQuiver
+            V: List
+                set of vertices 
+        Outputs
+            : Boolean
+        Description
+            Text
+                checks that a set of vertices is closed under arrows with respect to the toricQuiver $Q$. That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. Note that this does not require that $V\subset Q_0$.
+    Node
+        Key
+            (isClosedUnderArrows, ToricQuiver, List)
+        Headline
+            is a subquiver closed under arrows?
+        Usage
+            isClosedUnderArrows (Q, V)
+        Inputs
+            Q: ToricQuiver
+            V: List
+                set of vertices 
+        Outputs
+            : Boolean
+        Description
+            Example
+                isClosedUnderArrows (bipartiteQuiver(2, 3), {0, 2, 3})
+            Example
+                isClosedUnderArrows (bipartiteQuiver(2, 3), {2, 3, 4})
     Node
         Key
             maximalUnstableSubquivers
         Headline
             return the maximal subquivers that are unstable
+        Usage
+            maximalUnstableSubquivers Q
+        Inputs
+            Q: ToricQuiver
+            Format => String
+                format for representing the subquivers
+        Outputs
+            L: List
+                list of subquivers, given in specified format
+        Description
+            Text
+                this routine takes all of the possible subquivers of a given quiver $Q$ and returns those that are both unstable and maximal
+            Example
+                maximalUnstableSubquivers bipartiteQuiver (2,3)
     Node
         Key
             theta
         Headline
             image of the flow on the vertices
+        Usage
+            theta Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            L: List
+                of integers
+        Description
+            Text
+                this is the image of the $Inc$ map 
+            Example
+                Q = bipartiteQuiver(2, 3, Flow=>"Random")
+                theta Q
     Node
         Key
             neighborliness
         Headline
             compute the neighborliness of a quiver
+        Usage
+            neighborliness Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            : ZZ
+        Description
+            Text
+                computes the neighborliness of a given quiver $Q$
+            Example
+                neighborliness bipartiteQuiver(2, 3)
     Node
         Key
             flowPolytope
         Headline
             generate the dual polytope of a toric quiver
+        Usage
+            flowPolytope Q
+        Inputs
+            Q: ToricQuiver
+            Format => String
+                optional formatting option for representing the polytope
+        Outputs
+            : Matrix
+                giving the coordinates of the vertices defining the flow polytope
+        Description
+            Text
+                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
+            Example
+                flowPolytope bipartiteQuiver(2, 3)
     Node
         Key
             wallType
         Headline
             get the type of a wall for a given quiver
+        Usage
+            wallType (Q, Qplus)
+        Inputs
+            Q: ToricQuiver
+            Qplus: List
+        Outputs
+            : 
+                wall type is given by (ZZ, ZZ)
+        Description
+            Text
+                every wall can be represented uniquely by a partition of the vertiecs 
+            Example
+                wallType(bipartiteQuiver(2, 3), {0,2,3})
     Node
         Key
             walls
         Headline
             return the walls in the weight chamber decomposition for a given quiver
+        Usage
+            walls Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            : List
+        Description
+            Text
+                each wall is given in the form $(t^+,t^-), Q^+$, where $(t^+,t^-)$ is the wall type associated to the wall with vertex-partition $Q_0=Q^+\cup (Q_0\setminus Q^+)$
+            Example
+                walls bipartiteQuiver (2, 3)
     Node
         Key
             mergeOnVertex
         Headline
             join two quivers together by identifying a vertex from each
+        Usage
+            mergeOnVertex (Q1, V1, Q2, V2)
+        Inputs
+            Q1: ToricQuiver
+            V1: ZZ
+            Q2: ToricQuiver
+            V2: ZZ
+        Outputs
+            : ToricQuiver
+        Description
+            Text
+                create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
+            Example
+                mergeOnVertex (bipartiteQuiver (2, 3), 1, bipartiteQuiver (2, 3), 0)
         Caveat
             this has not been studied extensively
     Node
@@ -1618,6 +1857,20 @@ multidoc ///
             mergeOnArrow
         Headline
             join two quivers together by identifying an arrow from each
+        Usage
+            mergeOnVertex (Q1, A1, Q2, A2)
+        Inputs
+            Q1: ToricQuiver
+            A1: ZZ
+            Q2: ToricQuiver
+            A2: ZZ
+        Outputs
+            : ToricQuiver
+        Description
+            Text
+                create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
+            Example
+                mergeOnArrow (bipartiteQuiver (2, 3), 0, bipartiteQuiver (2, 3), 0)
         Caveat
             this has not been studied extensively
 ///
