@@ -18,7 +18,6 @@ export {
     "toricQuivers",
     "isTight",
     "subquivers",
-    "subsetsClosedUnderArrows",
     "isStable",
     "isMaximal",
     "isAcyclic",
@@ -27,8 +26,6 @@ export {
     "theta",
     "neighborliness",
     "flowPolytope",
-    "graphEdges",
-    "graphFromEdges",
     "wallType",
     "walls",
     "mergeOnVertex",
@@ -1399,7 +1396,7 @@ multidoc ///
         Key
             toricQuiver
         Headline
-            creating a toric quiver
+            the toricQuiver constructor
         Usage
             Q = toricQuiver M
             Q = toricQuiver (M, F)
@@ -1492,11 +1489,9 @@ multidoc ///
         Outputs
             Q: ToricQuiver
        
-///
-end--
     Node
         Key
-            (bipartiteQuiver, ZZ, ZZ)
+            bipartiteQuiver
         Headline
             make a toric quiver on underlying bipartite graph
         Usage
@@ -1517,11 +1512,9 @@ end--
                 Q = bipartiteQuiver(2,3)
             Example
                 Q = bipartiteQuiver(2,3,Flow=>"Random")
-///
-end--
     Node
         Key
-            (sampleQuiver, ZZ)
+            sampleQuiver
         Headline
             built-in functionality for sampling quivers in arbitrary dimensions
         Usage
@@ -1540,5 +1533,92 @@ end--
                 Q = sampleQuiver 3
             Example
                 Q = sampleQuiver (3,Flow=>"Random")
+    Node
+        Key
+            toricQuivers
+        Headline
+            create all toric quivers in a given dimension
+        Usage
+            toricQuivers n
+        Inputs
+            n: ZZ
+                dimension of the toric quivers
+        Outputs
+            Qs: List
+                of all toric quivers (up to quiver isomorphism) in dimension $n$
+    Node
+        Key
+            isTight
+        Headline
+            determine if toric quiver is tight
+    Node
+        Key
+            subquivers
+        Headline
+            return all possible subquivers of a given quiver
+    Node
+        Key
+            isStable
+        Headline
+            determines if a subquiver is stable
+    Node
+        Key
+            isMaximal
+        Headline
+            is a subquiver a maximal subquiver?
+    Node
+        Key
+            isAcyclic
+        Headline
+            check that a quiver has no cycles
+    Node
+        Key
+            isClosedUnderArrows
+        Headline
+            is a subquiver closed under arrows?
+    Node
+        Key
+            maximalUnstableSubquivers
+        Headline
+            return the maximal subquivers that are unstable
+    Node
+        Key
+            theta
+        Headline
+            image of the flow on the vertices
+    Node
+        Key
+            neighborliness
+        Headline
+            compute the neighborliness of a quiver
+    Node
+        Key
+            flowPolytope
+        Headline
+            generate the dual polytope of a toric quiver
+    Node
+        Key
+            wallType
+        Headline
+            get the type of a wall for a given quiver
+    Node
+        Key
+            walls
+        Headline
+            return the walls in the weight chamber decomposition for a given quiver
+    Node
+        Key
+            mergeOnVertex
+        Headline
+            join two quivers together by identifying a vertex from each
+        Caveat
+            this has not been studied extensively
+    Node
+        Key
+            mergeOnArrow
+        Headline
+            join two quivers together by identifying an arrow from each
+        Caveat
+            this has not been studied extensively
 ///
 end--
