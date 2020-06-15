@@ -1554,6 +1554,48 @@ multidoc ///
                 For example
     Node
         Key
+            (symbol _, ToricQuiver, List)
+        Headline
+            taking a subquiver by indexing
+        Usage
+            Q_L
+        Inputs
+            Q: ToricQuiver
+            L: List
+               of integers specifying which arrows to subset
+        Description
+            Text
+                This method returns a the subquiver of the quiver {\tt Q} 
+                that is made up of the arrows in the list {\tt L}. Note that 
+                this method re-orders the subquiver labels to create a standalone quiver.
+                To retain the original quiver labels on the subquiver, see the SeeAlso. 
+            Example
+                Q = bipartiteQuiver(2, 3)
+                Q_{0,1,3}
+        SeeAlso
+            (symbol ^, ToricQuiver, List)
+    Node
+        Key
+            (symbol ^, ToricQuiver, List)
+        Headline
+            taking a subquiver by indexing
+        Usage
+            Q^L
+        Inputs
+            Q: ToricQuiver
+            L: List
+               of integers specifying which arrows to subset
+        Description
+            Text
+                This method returns a the subquiver of the quiver {\tt Q} 
+                that is made up of the arrows in the list {\tt L}. 
+            Example
+                Q = bipartiteQuiver(2, 3)
+                Q^{0,1,3}
+        SeeAlso
+            (symbol _, ToricQuiver, List)
+    Node
+        Key
             bipartiteQuiver
         Headline
             make a toric quiver on underlying bipartite graph
