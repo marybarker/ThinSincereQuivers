@@ -42,7 +42,7 @@ export {
     "Replacement",
     "EdgesAdded",
     "Output",
----- Quiver objects 
+-- Quiver objects 
     "ToricQuiver",
     "toricQuiver"
 }
@@ -1421,13 +1421,13 @@ multidoc ///
 
             Example
                 Q = toricQuiver matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}})
-            Example
+            -- Example
                 Q = toricQuiver(matrix({{-3,-1,-4,-1},{3,1,0,0},{0,0,4,1}}))
-            Example
+            -- Example
                 Q = toricQuiver(matrix({{-3,-1,-4,-1},{3,1,0,0},{0,0,4,1}}), Flow=>"Canonical")
-            Example
+            -- Example
                 Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
-            Example
+            -- Example
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
         SeeAlso
             "sampleQuiver"
@@ -1597,6 +1597,25 @@ multidoc ///
         Description
             Text 
                 this returns the subquivers of a given quiver. There are 3 main ways to represent a subquiver: as a list of arrow indices, as a subset of rows and columns of the original connectivity matrix, and as a copy of the original connectivity matrix with certain rows and columns zeroed out. These options are expanded in the Examples below. 
+    Node
+        Key
+            (subquivers, ToricQuiver)
+        Headline
+            return all possible subquivers of a given quiver
+        Usage
+            subquivers Q
+        Inputs
+            Q: ToricQuiver
+            Format => String
+                options include "quiver", which returns a list of quivers, and "list", which returns a list of arrows for each subquiver
+            AsSubquiver => Boolean
+                if Format is specified as "quiver", then applying AsSubquiver = true insures that the matrix representation of the subquiver is the same size as the matrix original quiver
+        Outputs
+            L: List
+                of either quiver objects, or arrow indices
+        Description
+            Text 
+                this returns the subquivers of a given quiver. There are 3 main ways to represent a subquiver: as a list of arrow indices, as a subset of rows and columns of the original connectivity matrix, and as a copy of the original connectivity matrix with certain rows and columns zeroed out. These options are expanded in the Examples below. 
             Example
                 subquivers bipartiteQuiver(2, 3)
             Example
@@ -1727,6 +1746,24 @@ multidoc ///
                 isClosedUnderArrows (bipartiteQuiver(2, 3), {2, 3, 4})
     Node
         Key
+            (isClosedUnderArrows, List, ToricQuiver)
+        Headline
+            is a subquiver closed under arrows?
+        Usage
+            isClosedUnderArrows (V, Q)
+        Inputs
+            V: List
+                set of vertices 
+            Q: ToricQuiver
+        Outputs
+            : Boolean
+        Description
+            Example
+                isClosedUnderArrows ({0, 2, 3}, bipartiteQuiver(2, 3))
+            Example
+                isClosedUnderArrows ({2, 3, 4}, bipartiteQuiver(2, 3))
+    Node
+        Key
             maximalUnstableSubquivers
         Headline
             return the maximal subquivers that are unstable
@@ -1759,12 +1796,41 @@ multidoc ///
         Description
             Text
                 this is the image of the $Inc$ map 
+    Node
+        Key
+            (theta, ToricQuiver)
+        Headline
+            image of the flow on the vertices
+        Usage
+            theta Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            L: List
+                of integers
+        Description
+            Text
+                this is the image of the $Inc$ map 
             Example
                 Q = bipartiteQuiver(2, 3, Flow=>"Random")
                 theta Q
     Node
         Key
             neighborliness
+        Headline
+            compute the neighborliness of a quiver
+        Usage
+            neighborliness Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            : ZZ
+        Description
+            Text
+                computes the neighborliness of a given quiver $Q$
+    Node
+        Key
+            (neighborliness, ToricQuiver)
         Headline
             compute the neighborliness of a quiver
         Usage
@@ -1795,11 +1861,42 @@ multidoc ///
         Description
             Text
                 the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
+    Node
+        Key
+            (flowPolytope, ToricQuiver)
+        Headline
+            generate the dual polytope of a toric quiver
+        Usage
+            flowPolytope Q
+        Inputs
+            Q: ToricQuiver
+            Format => String
+                optional formatting option for representing the polytope
+        Outputs
+            : Matrix
+                giving the coordinates of the vertices defining the flow polytope
+        Description
+            Text
+                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
             Example
                 flowPolytope bipartiteQuiver(2, 3)
     Node
         Key
             wallType
+        Headline
+            get the type of a wall for a given quiver
+        Usage
+            wallType (Q, Qplus)
+        Inputs
+            Q: ToricQuiver
+            Qplus: List
+        Outputs
+            : 
+                wall type is given by (ZZ, ZZ)
+        Description
+    Node
+        Key
+            (wallType, ToricQuiver, List)
         Headline
             get the type of a wall for a given quiver
         Usage
@@ -1818,6 +1915,18 @@ multidoc ///
     Node
         Key
             walls
+        Headline
+            return the walls in the weight chamber decomposition for a given quiver
+        Usage
+            walls Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            : List
+        Description
+    Node
+        Key
+            (walls, ToricQuiver)
         Headline
             return the walls in the weight chamber decomposition for a given quiver
         Usage
@@ -1854,11 +1963,74 @@ multidoc ///
             this has not been studied extensively
     Node
         Key
+            (mergeOnVertex, ToricQuiver, ZZ, ToricQuiver, ZZ)
+        Headline
+            join two quivers together by identifying a vertex from each
+        Usage
+            mergeOnVertex (Q1, V1, Q2, V2)
+        Inputs
+            Q1: ToricQuiver
+            V1: ZZ
+            Q2: ToricQuiver
+            V2: ZZ
+        Outputs
+            : ToricQuiver
+        Description
+            Text
+                create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
+            Example
+                mergeOnVertex (bipartiteQuiver (2, 3), 1, bipartiteQuiver (2, 3), 0)
+        Caveat
+            this has not been studied extensively
+    Node
+        Key
+            (mergeOnVertex, ToricQuiver, ZZ, Matrix, ZZ)
+        Headline
+            join two quivers together by identifying a vertex from each
+        Usage
+            mergeOnVertex (Q1, V1, Q2, V2)
+        Inputs
+            Q1: ToricQuiver
+            V1: ZZ
+            Q2: Matrix
+            V2: ZZ
+        Outputs
+            : ToricQuiver
+        Description
+            Text
+                create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
+            Example
+                mergeOnVertex (bipartiteQuiver (2, 3), 1, matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0)
+        Caveat
+            this has not been studied extensively
+    Node
+        Key
+            (mergeOnVertex, Matrix, ZZ, ToricQuiver, ZZ)
+        Headline
+            join two quivers together by identifying a vertex from each
+        Usage
+            mergeOnVertex (Q1, V1, Q2, V2)
+        Inputs
+            Q1: Matrix
+            V1: ZZ
+            Q2: ToricQuiver
+            V2: ZZ
+        Outputs
+            : ToricQuiver
+        Description
+            Text
+                create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
+            Example
+                mergeOnVertex (matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 1, bipartiteQuiver (2, 3), 0)
+        Caveat
+            this has not been studied extensively
+    Node
+        Key
             mergeOnArrow
         Headline
             join two quivers together by identifying an arrow from each
         Usage
-            mergeOnVertex (Q1, A1, Q2, A2)
+            mergeOnArrow (Q1, A1, Q2, A2)
         Inputs
             Q1: ToricQuiver
             A1: ZZ
@@ -1871,6 +2043,69 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
             Example
                 mergeOnArrow (bipartiteQuiver (2, 3), 0, bipartiteQuiver (2, 3), 0)
+        Caveat
+            this has not been studied extensively
+    Node
+        Key
+            (mergeOnArrow, ToricQuiver, ZZ, ToricQuiver, ZZ)
+        Headline
+            join two quivers together by identifying an arrow from each
+        Usage
+            mergeOnArrow (Q1, A1, Q2, A2)
+        Inputs
+            Q1: ToricQuiver
+            A1: ZZ
+            Q2: ToricQuiver
+            A2: ZZ
+        Outputs
+            : ToricQuiver
+        Description
+            Text
+                create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
+            Example
+                mergeOnArrow (bipartiteQuiver (2, 3), 0, bipartiteQuiver (2, 3), 0)
+        Caveat
+            this has not been studied extensively
+    Node
+        Key
+            (mergeOnArrow, ToricQuiver, ZZ, Matrix, ZZ)
+        Headline
+            join two quivers together by identifying an arrow from each
+        Usage
+            mergeOnArrow (Q1, A1, Q2, A2)
+        Inputs
+            Q1: ToricQuiver
+            A1: ZZ
+            Q2: Matrix
+            A2: ZZ
+        Outputs
+            : ToricQuiver
+        Description
+            Text
+                create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
+            Example
+                mergeOnArrow (bipartiteQuiver (2, 3), 0, matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0)
+        Caveat
+            this has not been studied extensively
+    Node
+        Key
+            (mergeOnArrow, Matrix, ZZ, ToricQuiver, ZZ)
+        Headline
+            join two quivers together by identifying an arrow from each
+        Usage
+            mergeOnArrow (Q1, A1, Q2, A2)
+        Inputs
+            Q1: Matrix
+            A1: ZZ
+            Q2: ToricQuiver
+            A2: ZZ
+        Outputs
+            : ToricQuiver
+        Description
+            Text
+                create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
+            Example
+                mergeOnArrow (matrix ({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0, bipartiteQuiver (2, 3), 0)
         Caveat
             this has not been studied extensively
 ///
