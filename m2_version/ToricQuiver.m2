@@ -1383,7 +1383,6 @@ mergeOnArrow(ToricQuiver, ZZ, ToricQuiver, ZZ) := (Q1, a1, Q2, a2) -> (
 
 beginDocumentation()
 multidoc ///
-
     Node
         Key 
             ToricQuiver
@@ -1392,6 +1391,34 @@ multidoc ///
         Description
             Text
                 {\em ToricQuiver} is a package for creating and manipulating toric quivers.
+            Text   
+                @UL { 
+                    {"Klaus Altmann, Benjamin Nill, Sabine Schwentner, Izolda Wiercinska, ", 
+                        HREF("sciencedirect.com/sceince/article/pii/S0012365X09001162",
+                            EM "Flow polytopes and the graph of reflexive polytopes"), ", 
+                        Discrete Mathematics. 309.16(2009), pp 4992-4999."
+                    }, 
+                    {"Patricio Gallardo, Daniel Mckenzie, ", 
+                        HREF("http://arxiv.org/abs/1811.01993'>arXiv:1811.01993", 
+                             EM "On the neighborliness of dual flow polytopes of quivers"), ", 2018"
+                    }
+                }@
+            Text
+                @SUBSECTION "Contributors"@
+            Text
+                @UL {
+            	{HREF("https://github.com/marybarker","Mary Barker")},
+            	{HREF("https://github.com/marybarker","Patricio Gallardo")},
+                }@
+            Text
+                @SUBSECTION "Menu"@
+            Text
+                @UL {
+                    {TO "toric quiver representation"},
+                    {TO "subquiver representation"},
+                    -- {TO "toricQuiver"},
+                    -- {TO "flowPolytope"},
+                }@
     Node
         Key
             toricQuiver
@@ -1408,26 +1435,33 @@ multidoc ///
             F: List 
                 the flow on the quiver given as a list of integers
             E: List
-                of pairs $(v_1, v_2)$ giving the edges of the quiver in terms of the vertices
+                of pairs {\tt (V1, V2)} giving the edges of the quiver in terms of the vertices
             Flow => String
                 that specifies the flow for the polytope
         Outputs
             Q: ToricQuiver
         Description
             Text
-                A toric quiver is a directed graph $Q=(Q_0, Q_1)$ where $Q_0$ is the set of vertices associated to $Q$ and $Q_1$ is the set of arrows. Also included in $Q$ is a flow, which associates an integer value to each edge. The canonical flow gives a weight of 1 to each edge. 
+                A toric quiver is a directed graph {\tt Q=(Q_0, Q_1) } where 
+                {\tt Q_0} is the set of vertices associated to {\tt Q} and {\tt Q_1} is the set of arrows. 
+                Also included in $Q$ is a flow, which associates an integer value to each edge. 
+                The canonical flow gives a weight of 1 to each edge. 
             Text
-                the ToricQuiver data type is stored as a hash table with the following keys: connectivityMatrix: matrix representation of the connected graph underlying the quiver flow: list of integers representing the flow associated to each edge of the quiver Q0: the list of vertices Q1: the list of edges weights: the values on each vertex induced by the flow
+                the ToricQuiver data type is stored as a hash table with the following keys: 
+            Text
+                @UL {
+                    {TT "connectivityMatrix:", "matrix representation of the connected graph underlying the quiver"},
+                    {TT "flow:              ", "list of integers representing the flow associated to each edge of the quiver"},
+                    {TT "Q0:                ", "the list of vertices"},
+                    {TT "Q1:                ", "the list of edges "},
+                    {TT "weights:           ", "the values on each vertex induced by the flow"},
+                }@
 
             Example
                 Q = toricQuiver matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}})
-            -- Example
                 Q = toricQuiver(matrix({{-3,-1,-4,-1},{3,1,0,0},{0,0,4,1}}))
-            -- Example
                 Q = toricQuiver(matrix({{-3,-1,-4,-1},{3,1,0,0},{0,0,4,1}}), Flow=>"Canonical")
-            -- Example
                 Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
-            -- Example
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
         SeeAlso
             "sampleQuiver"
@@ -1443,16 +1477,23 @@ multidoc ///
             M: Matrix
                 of integers; each column corresponds to an arrow and each row
             Flow => String
-                options are "Default", which takes the flow from values in the matrix, "Canonical", which sets the flow to 1 for each edge, or "Random", which assigns a random integer between 0 and 100 to each edge
+                options are 
+                {\tt Default}, which takes the flow from values in the matrix, 
+                {\tt Canonical}, which sets the flow to 1 for each edge, and 
+                {\tt Random}, which assigns a random integer between 0 and 100 to each edge
         Outputs
             Q: ToricQuiver
+        Description
+            Example
+                Q = toricQuiver matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}})
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
     Node
         Key
             (toricQuiver, Matrix, List)
         Headline
             make a toric quiver from a connectivity matrix and a flow
         Usage
-            toricQuiver (M,F)
+            toricQuiver (M, F)
         Inputs
             M: Matrix
                 of integers; each column corresponds to an arrow and each row
@@ -1460,6 +1501,9 @@ multidoc ///
                 of integers specifying the flow for each arrow
         Outputs
             Q: ToricQuiver
+        Description
+            Example
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), {3, 1, 0, 5})
     Node
         Key
             (toricQuiver, List)
@@ -1469,11 +1513,15 @@ multidoc ///
             toricQuiver (E)
         Inputs
             E: List
-                of pairs of the form $(v_1,v_2)$, one for each edge between vertices $v_1$ and $v_2$
+                of pairs of the form {\tt (v_1, v_2)}, one for each edge between vertices {\tt v_1} and {\tt v_2}
             Flow => String
-                options are "Canonical", which sets the flow to 1 for each edge, or "Random", which assigns a random integer between 0 and 100 to each edge
+                options are {\tt Canonical}, which sets the flow to 1 for each edge, or 
+                {\tt Random}, which assigns a random integer between 0 and 100 to each edge
         Outputs
             Q: ToricQuiver
+        Description
+            Example
+                Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
     Node
         Key
             (toricQuiver, List, List)
@@ -1483,12 +1531,27 @@ multidoc ///
             toricQuiver (E, F)
         Inputs
             E: List
-                of pairs of the form $(v_1,v_2)$, one for each edge between vertices $v_1$ and $v_2$
+                of pairs of the form {\tt (v_1, v_2)}, one for each edge between vertices {\tt v_1} and {\tt v_2}
             F: List
                 of integers specifying the flow for each arrow
         Outputs
             Q: ToricQuiver
-       
+        Description
+            Example
+                Q = toricQuiver({{0,1},{0,1},{0,2},{0,2}}, {3, 1, 0, 5})
+    Node
+        Key
+            "toric quiver representation"
+        Description
+            Text
+                toric quivers are represented as a type of HashTable with 
+    Node
+        Key
+            "subquiver representation"
+        Description
+            Text
+                The ways to subset a quiver are many. 
+                For example
     Node
         Key
             bipartiteQuiver
@@ -1507,7 +1570,9 @@ multidoc ///
             Q: ToricQuiver
         Description
             Text
-                This function creates the unique toric quiver whose underlying graph is the fully connected bipartite graph with $n$ source vertices and $m$ sink vertices.
+                This function creates the unique toric quiver whose underlying graph 
+                is the fully connected bipartite graph with 
+                {\tt N} source vertices and {\tt M} sink vertices.
             Example
                 Q = bipartiteQuiver (2, 3)
             Example
@@ -1528,11 +1593,13 @@ multidoc ///
             : ToricQuiver
         Description
             Text
-                This method creates a toricQuiver in dimension $n$. The algorithm returns the first valid result for a toricQuiver in this dimension. The dimension of a quiver $Q=(Q_0,Q_1)$ is $d=|Q_1|-|Q_0|+1$. 
+                This method creates a toricQuiver in dimension {\tt N}. 
+                The algorithm returns the first valid result for a toricQuiver in this dimension. 
+                The dimension of a quiver {\tt Q=(Q_0,Q_1)} is {\tt d=|Q_1|-|Q_0|+1}. 
             Example
                 Q = sampleQuiver 3
             Example
-                Q = sampleQuiver (3,Flow=>"Random")
+                Q = sampleQuiver (3, Flow=>"Random")
     Node
         Key
             toricQuivers
@@ -1559,7 +1626,7 @@ multidoc ///
             : Boolean
         Description
             Text
-                Determines if a toric quiver $Q$ is tight with respect to the vertex weights induced by its flow
+                Determines if a toric quiver {\tt Q} is tight with respect to the vertex weights induced by its flow
             Example
                 isTight bipartiteQuiver(2, 3, Flow=>"Random")
     Node
@@ -1588,15 +1655,25 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             Format => String
-                options include "quiver", which returns a list of quivers, and "list", which returns a list of arrows for each subquiver
+                options include {\tt quiver}, which returns a list of quivers, and {\tt list}, 
+                which returns a list of arrows for each subquiver
             AsSubquiver => Boolean
-                if Format is specified as "quiver", then applying AsSubquiver = true insures that the matrix representation of the subquiver is the same size as the matrix original quiver
+                if Format is specified as {\tt quiver}, then applying 
+                {\tt AsSubquiver = true} insures that the matrix representation 
+                of the subquiver is the same size as the matrix original quiver
         Outputs
             L: List
                 of either quiver objects, or arrow indices
         Description
             Text 
-                this returns the subquivers of a given quiver. There are 3 main ways to represent a subquiver: as a list of arrow indices, as a subset of rows and columns of the original connectivity matrix, and as a copy of the original connectivity matrix with certain rows and columns zeroed out. These options are expanded in the Examples below. 
+                this returns the subquivers of a given quiver. 
+                There are 3 main ways to represent a subquiver: 
+            Text
+                @UL{
+                    {"as a list of arrow indices,"}, 
+                    {"as a subset of rows and columns of the original connectivity matrix, and"},
+                    {"as a copy of the original connectivity matrix with certain rows and columns zeroed out. "}
+                }@
     Node
         Key
             (subquivers, ToricQuiver)
@@ -1607,21 +1684,31 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             Format => String
-                options include "quiver", which returns a list of quivers, and "list", which returns a list of arrows for each subquiver
+                options include {\tt quiver}, which returns a list of quivers, and {\tt list}, 
+                which returns a list of arrows for each subquiver
             AsSubquiver => Boolean
-                if Format is specified as "quiver", then applying AsSubquiver = true insures that the matrix representation of the subquiver is the same size as the matrix original quiver
+                if Format is specified as {\tt quiver}, then applying 
+                {\tt AsSubquiver = true} insures that the matrix representation 
+                of the subquiver is the same size as the matrix original quiver
         Outputs
             L: List
                 of either quiver objects, or arrow indices
         Description
             Text 
-                this returns the subquivers of a given quiver. There are 3 main ways to represent a subquiver: as a list of arrow indices, as a subset of rows and columns of the original connectivity matrix, and as a copy of the original connectivity matrix with certain rows and columns zeroed out. These options are expanded in the Examples below. 
+                this returns the subquivers of a given quiver. 
+                There are 3 main ways to represent a subquiver: 
+            Text
+                @UL{
+                    {"as a list of arrow indices,"}, 
+                    {"as a subset of rows and columns of the original connectivity matrix, and"},
+                    {"as a copy of the original connectivity matrix with certain rows and columns zeroed out. "}
+                }@
+            Text
+                These options are expanded in the Examples below. 
             Example
-                subquivers bipartiteQuiver(2, 3)
-            Example
-                subquivers(bipartiteQuiver(2, 3), Format=>"list")
-            Example
-                subquivers(bipartiteQuiver(2, 3), Format=>"quiver", AsSubquiver=>true)
+                subquivers bipartiteQuiver(2, 2)
+                subquivers(bipartiteQuiver(2, 2), Format=>"list")
+                subquivers(bipartiteQuiver(2, 2), Format=>"quiver", AsSubquiver=>true)
     Node
         Key
             isStable
@@ -1633,14 +1720,14 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             SQ: ToricQuiver
-                A subquiver of the quiver $Q$
+                A subquiver of the quiver {\tt Q}
             L: List
-                of the indices of arrows in $Q$ that make up the subquiver in question
+                of the indices of arrows in {\tt Q} that make up the subquiver in question
         Outputs
             :Boolean
         Description
             Text 
-                a subquiver $SQ$ of the quiver $Q$ is stable if 
+                a subquiver {\tt SQ} of the quiver {\tt Q} is stable if 
     Node
         Key
             (isStable, ToricQuiver, List)
@@ -1651,12 +1738,12 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             L: List
-                of the indices of arrows in $Q$ that make up the subquiver in question
+                of the indices of arrows in {\tt Q} that make up the subquiver in question
         Outputs
             :Boolean
         Description
             Text 
-                a subquiver $SQ$ of the quiver $Q$ is stable if 
+                a subquiver {\tt SQ} of the quiver {\tt Q} is stable if 
             Example
                 isStable (bipartiteQuiver(2, 3), {0, 1})
     Node
@@ -1725,7 +1812,9 @@ multidoc ///
             : Boolean
         Description
             Text
-                checks that a set of vertices is closed under arrows with respect to the toricQuiver $Q$. That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. Note that this does not require that $V\subset Q_0$.
+                checks that a set of vertices is closed under arrows with respect to the toricQuiver {\tt Q}. 
+                That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. 
+                Note that this does not require that $V\subset Q_0$.
     Node
         Key
             (isClosedUnderArrows, ToricQuiver, List)
@@ -1778,9 +1867,10 @@ multidoc ///
                 list of subquivers, given in specified format
         Description
             Text
-                this routine takes all of the possible subquivers of a given quiver $Q$ and returns those that are both unstable and maximal
+                this routine takes all of the possible subquivers of a given quiver {\tt Q} 
+                and returns those that are both unstable and maximal
             Example
-                maximalUnstableSubquivers bipartiteQuiver (2,3)
+                maximalUnstableSubquivers bipartiteQuiver (2, 3)
     Node
         Key
             theta
@@ -1827,7 +1917,7 @@ multidoc ///
             : ZZ
         Description
             Text
-                computes the neighborliness of a given quiver $Q$
+                computes the neighborliness of a given quiver {\tt Q}
     Node
         Key
             (neighborliness, ToricQuiver)
@@ -1841,7 +1931,7 @@ multidoc ///
             : ZZ
         Description
             Text
-                computes the neighborliness of a given quiver $Q$
+                computes the neighborliness of a given quiver {\tt Q}
             Example
                 neighborliness bipartiteQuiver(2, 3)
     Node
@@ -1937,7 +2027,8 @@ multidoc ///
             : List
         Description
             Text
-                each wall is given in the form $(t^+,t^-), Q^+$, where $(t^+,t^-)$ is the wall type associated to the wall with vertex-partition $Q_0=Q^+\cup (Q_0\setminus Q^+)$
+                each wall is given in the form $(t^+,t^-), Q^+$, where $(t^+,t^-)$ is 
+                the wall type associated to the wall with vertex-partition $Q_0=Q^+\cup (Q_0\setminus Q^+)$
             Example
                 walls bipartiteQuiver (2, 3)
     Node
@@ -1956,7 +2047,8 @@ multidoc ///
             : ToricQuiver
         Description
             Text
-                create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
+                create a new quiver from joining two toricQuivers together by identifying 
+                vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
             Example
                 mergeOnVertex (bipartiteQuiver (2, 3), 1, bipartiteQuiver (2, 3), 0)
         Caveat
