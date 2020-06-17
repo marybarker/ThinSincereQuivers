@@ -1544,14 +1544,34 @@ multidoc ///
             "toric quiver representation"
         Description
             Text
-                toric quivers are represented as a type of HashTable with 
+                toric quivers are represented as a type of HashTable with the following keys:
+            Text
+                @UL{  
+                    {TT "connectivityMatrix: ","weighted connectivity matrix giving the vertex-edge connectivity structure of $Q$"},
+                    {TT "Q0: ","list of vertices"},
+                    {TT "Q1: ","list of edges"},
+                    {TT "flow: ","list of integers giving the flow on each edge"},
+                    {TT "weights: ","induced weights on vertices given by the image of the flow"},
+                }@
     Node
         Key
             "subquiver representation"
         Description
             Text
-                The ways to subset a quiver are many. 
-                For example
+                There are many ways to take a subset $R=(R_0,R_1)$ of a quiver $Q=(Q_0,Q_1)$. 
+                This is because we can consider $R_0\subset Q_0$ and $R_1\subset Q_1$. 
+                Alternatively, $R$ is itself a quiver, with $|R_1|$ arrows and $|R_0|$ 
+                vertices. Thus we can consider $R$ independently of the arrow/vertex labeling of $Q$. 
+
+            Text
+                The two methods corresponding to these ideas are referenced in the examples below. 
+            Example
+                Q = bipartiteQuiver(2, 3)
+                Q_{0,1,3}
+                Q^{0,1,3}
+        SeeAlso
+            (symbol ^, ToricQuiver, List)
+            (symbol _, ToricQuiver, List)
     Node
         Key
             (symbol _, ToricQuiver, List)
