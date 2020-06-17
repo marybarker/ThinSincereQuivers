@@ -1394,12 +1394,12 @@ multidoc ///
             Text   
                 @UL { 
                     {"Klaus Altmann, Benjamin Nill, Sabine Schwentner, Izolda Wiercinska, ", 
-                        HREF("sciencedirect.com/sceince/article/pii/S0012365X09001162",
+                        HREF("https://www.sciencedirect.com/science/article/pii/S0012365X09001162",
                             EM "Flow polytopes and the graph of reflexive polytopes"), ", 
                         Discrete Mathematics. 309.16(2009), pp 4992-4999."
                     }, 
                     {"Patricio Gallardo, Daniel Mckenzie, ", 
-                        HREF("http://arxiv.org/abs/1811.01993'>arXiv:1811.01993", 
+                        HREF("https://arxiv.org/abs/1811.01993", 
                              EM "On the neighborliness of dual flow polytopes of quivers"), ", 2018"
                     }
                 }@
