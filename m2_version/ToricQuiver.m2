@@ -797,7 +797,15 @@ getFirstGraphFromPair = (g0, g1) -> (
 
 ------------------------------------------------------------
 bipartiteQuiver = {Flow=>"Canonical"} >> opts -> (a, b) -> (
-    toricQuiver(flatten(for ai from 0 to a - 1 list(for bi from 0 to b - 1 list({ai, a+bi}))), Flow=>opts.Flow)
+    if instance(opts.Flow, List) then (
+        if #opts.Flow != a*b then (
+            print("error: provided flow is not correct length.");
+            return;
+        );
+        toricQuiver(flatten(for ai from 0 to a - 1 list(for bi from 0 to b - 1 list({ai, a+bi}))), opts.Flow)
+    ) else (
+        toricQuiver(flatten(for ai from 0 to a - 1 list(for bi from 0 to b - 1 list({ai, a+bi}))), Flow=>opts.Flow)
+    )
 )
 ------------------------------------------------------------
 
