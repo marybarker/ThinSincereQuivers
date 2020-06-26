@@ -1589,8 +1589,9 @@ multidoc ///
                 number of vertices that are sources
             M: ZZ
                 number of vertices that are sinks
-            Flow => String
-                specify flow to use
+            Flow => 
+                specify flow to use. Either a string with values {\tt Canonical} or {\tt Random}, 
+                or else a list of integer values. 
         Outputs
             Q: ToricQuiver
         Description
@@ -1602,6 +1603,8 @@ multidoc ///
                 Q = bipartiteQuiver (2, 3)
             Example
                 Q = bipartiteQuiver (2, 3, Flow=>"Random")
+            Example
+                Q = bipartiteQuiver (2, 3, Flow=>{1, 2, 1, 3, 1, 4})
     Node
         Key
             toricQuivers
