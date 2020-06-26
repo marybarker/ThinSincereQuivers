@@ -7,7 +7,9 @@ newPackage(
         {Name => "Mary Barker",
          Email => "marybarker@wustl.edu",
          HomePage => "https://github.com/marybarker"}, 
-        {Name => "Patricio Gallardo"}
+        {Name => "Patricio Gallardo",
+         HomePage => "http://patriciogallardo.com/"
+        }
     },
     PackageImports => {"Graphs"}
 )
@@ -1362,7 +1364,7 @@ multidoc ///
             Text
                 @UL {
             	{HREF("https://github.com/marybarker","Mary Barker")},
-            	{HREF("https://github.com/marybarker","Patricio Gallardo")},
+            	{HREF("http://patriciogallardo.com/","Patricio Gallardo")},
                 }@
             Text
                 @SUBSECTION "Menu"@
