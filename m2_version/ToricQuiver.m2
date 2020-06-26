@@ -13,7 +13,6 @@ newPackage(
 )
 export {
 -- Methods/Functions
-    "sampleQuiver",
     "bipartiteQuiver",
     "toricQuivers",
     "isTight",
@@ -795,51 +794,6 @@ getFirstGraphFromPair = (g0, g1) -> (
 
 
 ------------------------------------------------------------
--- extract a sample quiver in dimension n 
-sampleQuiver = {Flow=>"Canonical"} >> opts -> (n) -> (
-    metSq := false;
-    sq := {};
-    tries := 1;
-    g0 := 0;
-    g1 := 0;
-    possibleCols := 0;
-    rowCombs := 0;
-    M := 0;
-
-    while (not metSq) and (tries < 2*n - 1) do (
-        g0 = tries;
-        g1 = g0 + n - 1;
-        tries = tries + 1;
-        possibleCols = combinations(g0, {0,1,2}, Replacement=>true, MinSum=>2, MaxSum=>2);
-        rowCombs = combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
-
-        for rc in rowCombs do(
-            if metSq then break;
-            M = transpose(matrix(for j in rc list(asList(possibleCols#j))));
-            if min(sumList(entries(M), Axis=>"Row")) >= 3 then (
-                for i in splitLoopsAndEdges(M) do (
-                    if metSq then break;
-                    for j in allPossibleOrientations(i) do (
-                        if (not existsOrientedCycle(j)) then (
-                            sq = toricQuiver(matrix(j));
-                            metSq = true;
-                            break;
-                        )
-                    )
-                )
-            )
-        )
-    );
-    if opts.Flow == "Canonical" then (
-        sq
-    ) else (
-        toricQuiver(sq.connectivityMatrix, Flow=>"Random")
-    )
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
 bipartiteQuiver = {Flow=>"Canonical"} >> opts -> (a, b) -> (
     toricQuiver(flatten(for ai from 0 to a - 1 list(for bi from 0 to b - 1 list({ai, a+bi}))), Flow=>opts.Flow)
 )
@@ -1464,7 +1418,6 @@ multidoc ///
                 Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
         SeeAlso
-            "sampleQuiver"
             "bipartiteQuiver"
     Node
         Key
@@ -1639,29 +1592,6 @@ multidoc ///
                 Q = bipartiteQuiver (2, 3)
             Example
                 Q = bipartiteQuiver (2, 3, Flow=>"Random")
-    Node
-        Key
-            sampleQuiver
-        Headline
-            built-in functionality for sampling quivers in arbitrary dimensions
-        Usage
-            sampleQuiver N
-        Inputs
-            N: ZZ
-                specified dimension for quiver
-            Flow => String
-                specify flow to use
-        Outputs
-            : ToricQuiver
-        Description
-            Text
-                This method creates a toricQuiver in dimension {\tt N}. 
-                The algorithm returns the first valid result for a toricQuiver in this dimension. 
-                The dimension of a quiver {\tt Q=(Q_0,Q_1)} is {\tt d=|Q_1|-|Q_0|+1}. 
-            Example
-                Q = sampleQuiver 3
-            Example
-                Q = sampleQuiver (3, Flow=>"Random")
     Node
         Key
             toricQuivers
