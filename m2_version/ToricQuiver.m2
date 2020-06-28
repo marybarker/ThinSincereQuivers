@@ -1601,9 +1601,7 @@ multidoc ///
                 {\tt N} source vertices and {\tt M} sink vertices.
             Example
                 Q = bipartiteQuiver (2, 3)
-            Example
                 Q = bipartiteQuiver (2, 3, Flow=>"Random")
-            Example
                 Q = bipartiteQuiver (2, 3, Flow=>{1, 2, 1, 3, 1, 4})
     Node
         Key
@@ -1799,7 +1797,6 @@ multidoc ///
                 checks that a toric quiver does not contain any oriented cycles 
             Example
                 isAcyclic bipartiteQuiver(2, 3)
-            Example
                 isAcyclic toricQuiver matrix({{-1, 1, -1, -1}, {1, -1, 0, 0}, {0, 0, 1, 1}})
     Node
         Key
@@ -1836,7 +1833,6 @@ multidoc ///
         Description
             Example
                 isClosedUnderArrows (bipartiteQuiver(2, 3), {0, 2, 3})
-            Example
                 isClosedUnderArrows (bipartiteQuiver(2, 3), {2, 3, 4})
     Node
         Key
@@ -1854,7 +1850,6 @@ multidoc ///
         Description
             Example
                 isClosedUnderArrows ({0, 2, 3}, bipartiteQuiver(2, 3))
-            Example
                 isClosedUnderArrows ({2, 3, 4}, bipartiteQuiver(2, 3))
     Node
         Key
