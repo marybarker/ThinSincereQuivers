@@ -1127,40 +1127,44 @@ spanningTree = (Q) -> (
     -- number of edges to remove from spanning tree
     d := Q1 - Q0 + 1;
 
-    dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement=>false, Order=>false);
-    edgesKept := {};
-    edgesRemoved := {};
-    foundTree := false;
+    if d > 0 then (
+        dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement=>false, Order=>false);
+        edgesKept := {};
+        edgesRemoved := {};
+        foundTree := false;
 
-    for dTuple in dTuplesToRemove do (
-        edgeIndices := asList(set(0..#allEdges - 1) - set(dTuple));
-        edgesKept = allEdges_edgeIndices;
-        edgesRemoved = allEdges_dTuple;
+        for dTuple in dTuplesToRemove do (
+            edgeIndices := asList(set(0..#allEdges - 1) - set(dTuple));
+            edgesKept = allEdges_edgeIndices;
+            edgesRemoved = allEdges_dTuple;
 
-        reducedG := transpose(matrix(for e in edgesKept list(
-            t := e#0;
-            h := e#1;
-            localE := asList(Q0:0);
-            localE = replaceInList(h,  1, localE);
-            localE = replaceInList(t, -1, localE);
-            localE
-        )));
-        if numColumns(reducedG) > 1 then (
-            notAnyCycles := not existsUnorientedCycle(reducedG);
+            reducedG := transpose(matrix(for e in edgesKept list(
+                t := e#0;
+                h := e#1;
+                localE := asList(Q0:0);
+                localE = replaceInList(h,  1, localE);
+                localE = replaceInList(t, -1, localE);
+                localE
+            )));
+            if numColumns(reducedG) > 1 then (
+                notAnyCycles := not existsUnorientedCycle(reducedG);
 
-            if isGraphConnected(reducedG) and notAnyCycles then (
+                if isGraphConnected(reducedG) and notAnyCycles then (
+                    foundTree = true;
+                    break;
+                );
+            ) else (
                 foundTree = true;
                 break;
             );
-        ) else (
-            foundTree = true;
-            break;
         );
-    );
-    if foundTree then (
-        return (edgesKept, edgesRemoved);
+        if foundTree then (
+            return (edgesKept, edgesRemoved);
+        ) else (
+            return ({}, {});
+        );
     ) else (
-        return ({}, {});
+        return (allEdges, {});
     );
 )
 ------------------------------------------------------------
@@ -1181,36 +1185,40 @@ isIn = (v, l) -> (
 --  input: G(list of tuples): edges of graph G
 --  output: cycle(list of tuples): tuple representation of the edges contained in the cycle
 primalUndirectedCycle = (G) -> (
-    for i from 0 to #G - 1 do (
-        edge := G#i;
-        (isCycle, cycle) := isPathBetween(edge#1, edge#0, drop(G, {i, i}), 
-                                          Oriented=>false, SavePath=>true, EdgesAdded=>{edge});
-        if isCycle then (
-            edgeIndices := {};
-            metEdges := {};
+    if existsUnorientedCycle(graphFromEdges(G)) then (
+        for i from 0 to #G - 1 do (
+            edge := G#i;
+            (isCycle, cycle) := isPathBetween(edge#1, edge#0, drop(G, {i, i}), 
+                                              Oriented=>false, SavePath=>true, EdgesAdded=>{edge});
+            if isCycle then (
+                edgeIndices := {};
+                metEdges := {};
 
-            for cE in cycle do (
-                for gI in asList(0..#G - 1) do (
-                    if isIn(gI, metEdges) then (
-                        continue;
-                    ) else (
-                        gE := G#gI;
-                        if (gE#0 == cE#0) and (gE#1 == cE#1) then (
-                            metEdges = metEdges | {gI};
-                            edgeIndices = edgeIndices | {gI};
-                            break;
-                        ) else if (gE#1 == cE#0) and (gE#0 == cE#1) then (
-                            metEdges = metEdges | {gI};
-                            edgeIndices = edgeIndices | {-(gI+1)};
-                            break;
+                for cE in cycle do (
+                    for gI in asList(0..#G - 1) do (
+                        if isIn(gI, metEdges) then (
+                            continue;
+                        ) else (
+                            gE := G#gI;
+                            if (gE#0 == cE#0) and (gE#1 == cE#1) then (
+                                metEdges = metEdges | {gI};
+                                edgeIndices = edgeIndices | {gI};
+                                break;
+                            ) else if (gE#1 == cE#0) and (gE#0 == cE#1) then (
+                                metEdges = metEdges | {gI};
+                                edgeIndices = edgeIndices | {-(gI+1)};
+                                break;
+                            );
                         );
                     );
                 );
+                return edgeIndices;
             );
-            return edgeIndices;
         );
+        return {};
+    ) else (
+        return G;
     );
-    return {};
 )
 ------------------------------------------------------------
 
@@ -1255,7 +1263,9 @@ flowPolytope(Matrix) := opts-> (Q) -> (
     )
 )
 flowPolytope(ToricQuiver) := opts -> (Q) -> (
-    flowPolytope(Q.connectivityMatrix, Format=>opts.Format)
+    nonEmpties := positions(Q.flow, x -> x != 0);
+    sQ := Q_nonEmpties;
+    flowPolytope(sQ.connectivityMatrix, Format=>opts.Format)
 )
 ------------------------------------------------------------
 
