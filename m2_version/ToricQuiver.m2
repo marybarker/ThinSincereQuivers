@@ -1225,11 +1225,11 @@ primalUndirectedCycle = (G) -> (
 
 ------------------------------------------------------------
 flowPolytope = method(Options=>{Format=>"matrix"})
-flowPolytope(Matrix) := opts-> (Q) -> (
+flowPolytope(Matrix, List) := opts-> (Q, F) -> (
 
     (sT, removedEdges) := spanningTree(Q);
     es := sT | removedEdges;
-    Ws := #es:1;
+    Ws := 0.5*sumList(for x in entries(Q*diagonalMatrix(F)) list(for y in x list(abs(y))), Axis=>"Col");
 
     f := for i from 0 to #removedEdges - 1 list(
         edge := removedEdges#i;
@@ -1262,10 +1262,8 @@ flowPolytope(Matrix) := opts-> (Q) -> (
         matrix(output)
     )
 )
-flowPolytope(ToricQuiver) := opts -> (Q) -> (
-    nonEmpties := positions(Q.flow, x -> x != 0);
-    sQ := Q_nonEmpties;
-    flowPolytope(sQ.connectivityMatrix, Format=>opts.Format)
+flowPolytope(ToricQuiver, List) := opts -> (Q, F) -> (
+    flowPolytope(Q.connectivityMatrix, F, Format=>opts.Format)
 )
 ------------------------------------------------------------
 
@@ -1950,9 +1948,10 @@ multidoc ///
         Headline
             generate the dual polytope of a toric quiver
         Usage
-            flowPolytope Q
+            flowPolytope(Q, F)
         Inputs
             Q: ToricQuiver
+            F: List
             Format => String
                 optional formatting option for representing the polytope
         Outputs
@@ -1963,13 +1962,14 @@ multidoc ///
                 the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
     Node
         Key
-            (flowPolytope, ToricQuiver)
+            (flowPolytope, ToricQuiver, List)
         Headline
             generate the dual polytope of a toric quiver
         Usage
-            flowPolytope Q
+            flowPolytope(Q, F)
         Inputs
             Q: ToricQuiver
+            F: List
             Format => String
                 optional formatting option for representing the polytope
         Outputs
@@ -1979,7 +1979,7 @@ multidoc ///
             Text
                 the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
             Example
-                flowPolytope bipartiteQuiver(2, 3)
+                flowPolytope(bipartiteQuiver(2, 3), {2,1,2,0,1,0})
     Node
         Key
             wallType
