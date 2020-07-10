@@ -1262,6 +1262,10 @@ flowPolytope(Matrix, List) := opts-> (Q, F) -> (
         matrix(output)
     )
 )
+flowPolytope(ToricQuiver) := opts -> Q -> (
+    F := asList(numColumns(Q.connectivityMatrix):1);
+    flowPolytope(Q.connectivityMatrix, F, Format=>opts.Format)
+)
 flowPolytope(ToricQuiver, List) := opts -> (Q, F) -> (
     flowPolytope(Q.connectivityMatrix, F, Format=>opts.Format)
 )
