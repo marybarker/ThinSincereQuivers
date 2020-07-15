@@ -1229,7 +1229,8 @@ flowPolytope(Matrix, List) := opts-> (Q, F) -> (
 
     (sT, removedEdges) := spanningTree(Q);
     es := sT | removedEdges;
-    Ws := 0.5*sumList(for x in entries(Q*diagonalMatrix(F)) list(for y in x list(abs(y))), Axis=>"Col");
+    Ws := F;
+    --0.5*sumList(for x in entries(Q*diagonalMatrix(F)) list(for y in x list(abs(y))), Axis=>"Col");
 
     f := for i from 0 to #removedEdges - 1 list(
         edge := removedEdges#i;
