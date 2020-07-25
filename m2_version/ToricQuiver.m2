@@ -1225,50 +1225,55 @@ primalUndirectedCycle = (G) -> (
 
 ------------------------------------------------------------
 flowPolytope = method(Options=>{Format=>"matrix"})
-flowPolytope(Matrix, List) := opts-> (Q, F) -> (
+flowPolytope(Matrix) := opts-> (Q) -> (
 
     (sT, removedEdges) := spanningTree(Q);
     es := sT | removedEdges;
-    Ws := F;
-    --0.5*sumList(for x in entries(Q*diagonalMatrix(F)) list(for y in x list(abs(y))), Axis=>"Col");
+    Ws := 0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col");
 
-    f := for i from 0 to #removedEdges - 1 list(
-        edge := removedEdges#i;
-        cycle := primalUndirectedCycle(sT | {edge});
+    if isTight(toricQuiver(Q, Flow=>"Default")) then (
+        f := for i from 0 to #removedEdges - 1 list(
+            edge := removedEdges#i;
+            cycle := primalUndirectedCycle(sT | {edge});
 
-        cycle = for x in cycle list(
-            if x == #sT then (x+i) else if x == -(#sT + 1) then (-#sT - i - 1) else (x)
-        );
-
-        fi := #es:0;
-        for j in cycle do (
-            if j >= 0 then (
-                fi = replaceInList(j, Ws#j, fi)
-            ) else (
-                k := -(1 + j);
-                fi = replaceInList(k, -Ws#k, fi)
+            cycle = for x in cycle list(
+                if x == #sT then (x+i) else if x == -(#sT + 1) then (-#sT - i - 1) else (x)
             );
+
+            fi := #es:0;
+            for j in cycle do (
+                if j >= 0 then (
+                    fi = replaceInList(j, Ws#j, fi)
+                ) else (
+                    k := -(1 + j);
+                    fi = replaceInList(k, -Ws#k, fi)
+                );
+            );
+            fi
         );
-        fi
-    );
-    output := for j from 0 to #es - 1 list(
-        for i from 0 to #removedEdges - 1 list(
-            ff := f#i;
-            ff#j
+        output := for j from 0 to #es - 1 list(
+            for i from 0 to #removedEdges - 1 list(
+                ff := f#i;
+                ff#j
+            )
+        );
+        if (opts.Format == "matrix") then (
+            transpose(matrix(output))
+        ) else (
+            matrix(output)
         )
-    );
-    if (opts.Format == "matrix") then (
-        transpose(matrix(output))
     ) else (
-        matrix(output)
+        print("error in flowPolytope: algorithm is designed for tight quivers.");
+        return
     )
 )
 flowPolytope(ToricQuiver) := opts -> Q -> (
-    F := asList(numColumns(Q.connectivityMatrix):1);
-    flowPolytope(Q.connectivityMatrix, F, Format=>opts.Format)
+    flowPolytope(Q.connectivityMatrix, Format=>opts.Format)
 )
 flowPolytope(ToricQuiver, List) := opts -> (Q, F) -> (
-    flowPolytope(Q.connectivityMatrix, F, Format=>opts.Format)
+    nonzeroEntries := positions(F, x -> x != 0);
+    altQ := toricQuiver(Q_nonzeroEntries.connectivityMatrix, F_nonzeroEntries);
+    flowPolytope(altQ.connectivityMatrix, Format=>opts.Format)
 )
 ------------------------------------------------------------
 
