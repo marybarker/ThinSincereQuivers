@@ -1264,7 +1264,7 @@ flowPolytope(Matrix) := opts-> (Q) -> (
         )
     ) else (
         print("error in flowPolytope: algorithm is designed for tight quivers.");
-        return
+        generators kernel Q
     )
 )
 flowPolytope(ToricQuiver) := opts -> Q -> (
