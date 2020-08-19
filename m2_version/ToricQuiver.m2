@@ -180,6 +180,7 @@ sumList = {Axis=>"None"} >> opts -> x -> (
 ------------------------------------------------------------
 
 
+------------------------------------------------------------
 incInverse = (tQ, theta) -> (
     a := tQ.connectivityMatrix;
     k := entries generators kernel a;
@@ -187,6 +188,8 @@ incInverse = (tQ, theta) -> (
 
     asList(F + transpose(matrix({sumList(k, Axis=>"Row")})))
 )
+------------------------------------------------------------
+
 
 ------------------------------------------------------------
 -- take all possible combinations of length k from list l -- 
