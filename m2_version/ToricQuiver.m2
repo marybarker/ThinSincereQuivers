@@ -24,6 +24,7 @@ export {
     "isClosedUnderArrows",
     "maximalUnstableSubquivers",
     "theta",
+    "incInverse",
     "neighborliness",
     "flowPolytope",
     "wallType",
@@ -178,6 +179,14 @@ sumList = {Axis=>"None"} >> opts -> x -> (
 )
 ------------------------------------------------------------
 
+
+incInverse = (tQ, theta) -> (
+    a := tQ.connectivityMatrix;
+    k := entries generators kernel a;
+    F := solve(a, transpose(matrix({theta})));
+
+    asList(F + transpose(matrix({sumList(k, Axis=>"Row")})))
+)
 
 ------------------------------------------------------------
 -- take all possible combinations of length k from list l -- 
