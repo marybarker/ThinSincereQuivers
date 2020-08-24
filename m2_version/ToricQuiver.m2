@@ -29,6 +29,7 @@ export {
     "flowPolytope",
     "wallType",
     "walls",
+    "makeTight",
     "mergeOnVertex",
     "mergeOnArrow",
 -- Options
@@ -1046,6 +1047,17 @@ isTight(Matrix) := Q -> (
     all(maximalUnstableSubquivers(Q), x -> #x != (numArrows - 1))
 )
 
+isTight(ToricQuiver, List) := (Q, W) -> (
+    numArrows := #Q#Q1;
+    Q = toricQuiver(Q.connectivityMatrix, W);
+    all(maximalUnstableSubquivers(Q.connectivityMatrix), x -> #x != (numArrows - 1))
+)
+isTight(List, ToricQuiver) := (W, Q) -> (
+    numArrows := #Q#Q1;
+    Q = toricQuiver(Q.connectivityMatrix, W);
+    all(maximalUnstableSubquivers(Q.connectivityMatrix), x -> #x != (numArrows - 1))
+)
+
 isTight(ToricQuiver) := Q -> (
     numArrows := #Q#Q1;
     all(maximalUnstableSubquivers(Q.connectivityMatrix), x -> #x != (numArrows - 1))
@@ -1236,6 +1248,58 @@ primalUndirectedCycle = (G) -> (
 
 
 ------------------------------------------------------------
+makeTight = (Q, theta) -> (
+    if isTight(Q, theta) then (
+        return Q;
+    ) else (
+        Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(theta);
+        R := first(maximalUnstableSubquivers(Q));
+        Rvertices := asList set flatten Q.Q1_R;
+
+        S := {};
+        success := false;
+        for i from 1 to #Rvertices - 1 do (
+            combs := combinations(#Rvertices - i, Rvertices, Replacement=>false, Order=>false);
+            for c in combs do (
+                if sumList(Q.weights_c) > 0 then (
+                    if isClosedUnderArrows(Q^R, c) then (
+                        success = true;
+                        S = c;
+                        break;
+                    );
+                );
+            );
+            if success then break;
+        );
+        alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
+        a := sort(Q.Q1_alpha);
+        {aMinus, aPlus} := (a_0, a_1);
+
+        print(alpha, aMinus, aPlus);
+        newVertices := drop(Q.Q0, {aPlus, aPlus});
+        newRows := entries(Qcm);
+        print("got to here at least");
+        newM := matrix(for e in R list(
+            if e == aMinus then (
+                nRs := sumList(Qcm^{aPlus, aMinus}, Axis=>"Col");
+                nRs_newVertices
+            ) else if e == aPlus then (
+                continue;
+            ) else (
+                nR := newRows_e;
+                nR_newVertices
+            )
+        ));
+        newFlow := drop(Q.flow, {alpha, alpha});
+
+        QQ := makeTight(toricQuiver(newM, newFlow), theta_newVertices);
+        return QQ;
+    );
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 flowPolytope = method(Options=>{Format=>"matrix"})
 flowPolytope(Matrix) := opts-> (Q) -> (
 
@@ -1275,8 +1339,10 @@ flowPolytope(Matrix) := opts-> (Q) -> (
             matrix(output)
         )
     ) else (
-        print("error in flowPolytope: algorithm is designed for tight quivers.");
-        generators kernel Q
+        -- print("error in flowPolytope: algorithm is designed for tight quivers.");
+        -- generators kernel Q
+        QQ := makeTight(Q, Q.weights);
+        flowPolytope(QQ);
     )
 )
 flowPolytope(ToricQuiver) := opts -> Q -> (
@@ -1678,6 +1744,40 @@ multidoc ///
                 Determines if a toric quiver $Q$ is tight with respect to the vertex weights induced by its flow
             Example
                 isTight bipartiteQuiver(2, 3, Flow=>"Random")
+    Node
+        Key
+            (isTight, ToricQuiver, List)
+        Headline
+            determine if toric quiver is tight
+        Usage
+            isTight(Q, W)
+        Inputs
+            Q: ToricQuiver
+            W: List
+        Outputs
+            : Boolean
+        Description
+            Text
+                Determines if a toric quiver $Q$ is tight with respect to the vertex weights induced by its flow
+            Example
+                isTight (bipartiteQuiver(2, 3), {2,1,2,3,2,3})
+    Node
+        Key
+            (isTight, List, ToricQuiver)
+        Headline
+            determine if toric quiver is tight
+        Usage
+            isTight(W, Q)
+        Inputs
+            W: List
+            Q: ToricQuiver
+        Outputs
+            : Boolean
+        Description
+            Text
+                Determines if a toric quiver $Q$ is tight with respect to the vertex weights induced by its flow
+            Example
+                isTight ({2,1,2,3,2,3}, bipartiteQuiver(2, 3))
     Node
         Key
             subquivers
