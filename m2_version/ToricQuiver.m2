@@ -1275,25 +1275,23 @@ makeTight = (Q, theta) -> (
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
 
-        print(alpha, aMinus, aPlus);
         newVertices := drop(Q.Q0, {aPlus, aPlus});
         newRows := entries(Qcm);
-        print("got to here at least");
+        newCols := drop(asList(0..#Q.Q1 - 1), {alpha, alpha});
         newM := matrix(for e in R list(
             if e == aMinus then (
                 nRs := sumList(Qcm^{aPlus, aMinus}, Axis=>"Col");
-                nRs_newVertices
+                nRs_newCols
             ) else if e == aPlus then (
                 continue;
             ) else (
                 nR := newRows_e;
-                nR_newVertices
+                nR_newCols
             )
         ));
         newFlow := drop(Q.flow, {alpha, alpha});
 
-        QQ := makeTight(toricQuiver(newM, newFlow), theta_newVertices);
-        return QQ;
+        return makeTight(toricQuiver(newM, newFlow), newFlow);
     );
 )
 ------------------------------------------------------------
