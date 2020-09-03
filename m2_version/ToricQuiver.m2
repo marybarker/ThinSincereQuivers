@@ -1248,11 +1248,13 @@ primalUndirectedCycle = (G) -> (
 
 
 ------------------------------------------------------------
-makeTight = (Q, theta) -> (
-    if isTight(Q, theta) then (
-        return Q;
+makeTight = (Q, W) -> (
+    potentialF := flatten entries first incInverse(Q, W);
+
+    if isTight(Q, potentialF) then (
+        return toricQuiver(Q.connectivityMatrix, potentialF);
     ) else (
-        Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(theta);
+        Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(potentialF);
         R := first(maximalUnstableSubquivers(Q));
         Rvertices := asList set flatten Q.Q1_R;
 
@@ -1263,24 +1265,25 @@ makeTight = (Q, theta) -> (
             for c in combs do (
                 if sumList(Q.weights_c) > 0 then (
                     if isClosedUnderArrows(Q^R, c) then (
-                        success = true;
-                        S = c;
-                        break;
+                        if isGraphConnected(Q^S) then (
+                            success = true;
+                            S = c;
+                            break;
+                        );
                     );
                 );
             );
             if success then break;
         );
-        alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
+        alpha := first(positions(sumList(Qcm_R^S, Axis=>"Col"), x -> x > 0));
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
 
-        newVertices := drop(Q.Q0, {aPlus, aPlus});
-        newRows := entries(Qcm);
+        newRows := entries(Q.connectivityMatrix);
         newCols := drop(asList(0..#Q.Q1 - 1), {alpha, alpha});
-        newM := matrix(for e in R list(
+        newM := matrix(for e in Q.Q0 list(
             if e == aMinus then (
-                nRs := sumList(Qcm^{aPlus, aMinus}, Axis=>"Col");
+                nRs := sumList(Q.connectivityMatrix^{aPlus, aMinus}, Axis=>"Col");
                 nRs_newCols
             ) else if e == aPlus then (
                 continue;
@@ -1289,9 +1292,10 @@ makeTight = (Q, theta) -> (
                 nR_newCols
             )
         ));
-        newFlow := drop(Q.flow, {alpha, alpha});
-
-        return makeTight(toricQuiver(newM, newFlow), newFlow);
+        newFlow := drop(potentialF, {alpha, alpha});
+        newQ := toricQuiver(newM);
+        newW := theta(newQ.connectivityMatrix * diagonalMatrix(newFlow));
+        return makeTight(newQ, newW);
     );
 )
 ------------------------------------------------------------
