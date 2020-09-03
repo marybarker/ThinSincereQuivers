@@ -1265,7 +1265,7 @@ makeTight = (Q, W) -> (
             for c in combs do (
                 if sumList(Q.weights_c) > 0 then (
                     if isClosedUnderArrows(Q^R, c) then (
-                        if isGraphConnected(Q^S) then (
+                        if isGraphConnected(Q^c) then (
                             success = true;
                             S = c;
                             break;
