@@ -966,7 +966,7 @@ unstableSubquivers(Matrix) := opts -> Q -> (
     arrows := asList(0..numArrows - 1);
 
     L := flatten(for i from 1 to numArrows - 1 list (
-        combinations(i, arrows, Replacement=>false, Order=>false) 
+        combinations(numArrows - i, arrows, Replacement=>false, Order=>false) 
     ));
 
     for sQ in L list(
@@ -1263,7 +1263,7 @@ makeTight = (Q, W) -> (
         for i from 1 to #Rvertices - 1 do (
             combs := combinations(#Rvertices - i, Rvertices, Replacement=>false, Order=>false);
             for c in combs do (
-                if sumList(Q.weights_c) > 0 then (
+                if sumList(Q.weights_c) < 0 then (
                     if isClosedUnderArrows(Q^R, c) then (
                         if isGraphConnected(Q^c) then (
                             success = true;
@@ -1275,7 +1275,7 @@ makeTight = (Q, W) -> (
             );
             if success then break;
         );
-        alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x > 0));
+        alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
 
@@ -1294,7 +1294,7 @@ makeTight = (Q, W) -> (
         ));
         newFlow := drop(potentialF, {alpha, alpha});
         newQ := toricQuiver(newM);
-        newW := theta(newQ.connectivityMatrix * diagonalMatrix(newFlow));
+        newW := theta(newQ.connectivityMatrix*diagonalMatrix(newFlow));
         return makeTight(newQ, newW);
     );
 )
