@@ -1275,7 +1275,7 @@ makeTight = (Q, W) -> (
             );
             if success then break;
         );
-        alpha := first(positions(sumList(Qcm_R^S, Axis=>"Col"), x -> x > 0));
+        alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x > 0));
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
 
