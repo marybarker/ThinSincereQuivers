@@ -54,6 +54,8 @@ protect Q1
 protect flow
 protect weights
 protect connectivityMatrix
+protect Singletons
+protect NonSingletons
 
 ToricQuiver = new Type of HashTable
 toricQuiver = method(Options=>{Flow=>"Default"})
@@ -969,7 +971,7 @@ unstableSubquivers(Matrix) := opts -> Q -> (
         combinations(numArrows - i, arrows, Replacement=>false, Order=>false) 
     ));
 
-    for sQ in L list(
+    sqsWithArrows := for sQ in L list(
         if not isStable(Q, asList(sQ)) then (
             if (opts.Format == "list") then (
                 sQ
@@ -979,7 +981,10 @@ unstableSubquivers(Matrix) := opts -> Q -> (
         ) else (
             continue;
         )
-    )
+    );
+    singletonUnstableSqs := for x in positions(sumList(entries Q, Axis=>"Row"), x -> x < 0) list ({x});
+
+    hashTable({NonSingletons => sqsWithArrows, Singletons => singletonUnstableSqs})
 )
 unstableSubquivers(ToricQuiver) := opts -> Q -> (
     unstableSubquivers(Q.connectivityMatrix, Format=>opts.Format)
@@ -1019,9 +1024,10 @@ isMaximal(ToricQuiver, List) := (Q, Qlist) -> (
 ------------------------------------------------------------
 maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
     unstableList := unstableSubquivers(Q, Format=>"list");
-    for subQ1 in unstableList list (
+
+    withArrows := for subQ1 in unstableList.NonSingletons list (
         IsMaximal := true;
-        for subQ2 in unstableList do (
+        for subQ2 in unstableList#NonSingletons do (
             if isProperSubset(subQ1, subQ2) then (
                 IsMaximal = false;
             );
@@ -1035,32 +1041,37 @@ maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
         ) else (
             continue;
         )
-    )
+    );
+    containedSingletons := flatten for subQ1 in unstableList#NonSingletons list (
+        for x in Q.Q1_subQ1 list ({x})
+    );
+    withoutArrows := asList(set(unstableList#Singletons) - set(containedSingletons));
+
+    hashTable {NonSingletons=>withArrows, Singletons=>withoutArrows}
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
 isTight = method()
-isTight(Matrix) := Q -> (
-    numArrows := numColumns(Q);
-    all(maximalUnstableSubquivers(Q), x -> #x != (numArrows - 1))
-)
-
-isTight(ToricQuiver, List) := (Q, W) -> (
-    numArrows := #Q#Q1;
-    Q = toricQuiver(Q.connectivityMatrix, W);
-    all(maximalUnstableSubquivers(Q.connectivityMatrix), x -> #x != (numArrows - 1))
-)
-isTight(List, ToricQuiver) := (W, Q) -> (
-    numArrows := #Q#Q1;
-    Q = toricQuiver(Q.connectivityMatrix, W);
-    all(maximalUnstableSubquivers(Q.connectivityMatrix), x -> #x != (numArrows - 1))
-)
-
 isTight(ToricQuiver) := Q -> (
     numArrows := #Q#Q1;
-    all(maximalUnstableSubquivers(Q.connectivityMatrix), x -> #x != (numArrows - 1))
+    maxUnstSubs := maximalUnstableSubquivers(Q);
+    if numArrows > 1 then (
+        all(maxUnstSubs#NonSingletons, x -> #x != (numArrows - 1))
+    ) else (
+        #maxUnstSubs#Singletons < 1
+    )
+)
+
+isTight(Matrix) := Q -> (
+    isTight(toricQuiver(Q))
+)
+isTight(ToricQuiver, List) := (Q, W) -> (
+    isTight(toricQuiver(Q.connectivityMatrix, W))
+)
+isTight(List, ToricQuiver) := (W, Q) -> (
+    isTight(toricQuiver(Q.connectivityMatrix, W))
 )
 ------------------------------------------------------------
 
@@ -1069,7 +1080,7 @@ isTight(ToricQuiver) := Q -> (
 neighborliness = method()
 neighborliness Matrix := (Q) -> (
     numArrows := numColumns(Q);
-    maxUnstables := maximalUnstableSubquivers(Q);
+    maxUnstables := maximalUnstableSubquivers(Q)#NonSingletons;
 
     k := max(
         for sQ in maxUnstables list(
@@ -1255,25 +1266,30 @@ makeTight = (Q, W) -> (
         return toricQuiver(Q.connectivityMatrix, potentialF);
     ) else (
         Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(potentialF);
-        R := first(maximalUnstableSubquivers(Q));
+        maxUnstSubs := maximalUnstableSubquivers(toricQuiver(Q.connectivityMatrix, potentialF));
+        R := first(maxUnstSubs#NonSingletons);
         Rvertices := asList set flatten Q.Q1_R;
-
         S := {};
-        success := false;
-        for i from 1 to #Rvertices - 1 do (
-            combs := combinations(#Rvertices - i, Rvertices, Replacement=>false, Order=>false);
-            for c in combs do (
-                if sumList(Q.weights_c) < 0 then (
-                    if isClosedUnderArrows(Q^R, c) then (
-                        if isGraphConnected(Q^c) then (
+
+        if #R < 1 then (
+            Rvertices = first(maxUnstSubs#Singletons);
+            S = Rvertices;
+        ) else (
+            success := false;
+            for i from 1 to #Rvertices - 1 do (
+                combs := combinations(#Rvertices - i, Rvertices, Replacement=>false, Order=>false);
+                for c in combs do (
+                    if sumList(W_c) < 0 then (
+                        if isClosedUnderArrows(Q^R, c) then (
                             success = true;
                             S = c;
                             break;
                         );
                     );
+                    if success then break;
                 );
+                if success then break;
             );
-            if success then break;
         );
         alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
         a := sort(Q.Q1_alpha);
@@ -1309,7 +1325,7 @@ flowPolytope(Matrix) := opts-> (Q) -> (
     es := sT | removedEdges;
     Ws := 0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col");
 
-    if isTight(toricQuiver(Q, Flow=>"Default")) then (
+    if isTight(Q) then (
         f := for i from 0 to #removedEdges - 1 list(
             edge := removedEdges#i;
             cycle := primalUndirectedCycle(sT | {edge});
