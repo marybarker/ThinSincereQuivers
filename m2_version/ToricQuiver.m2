@@ -949,6 +949,8 @@ isStable(Matrix, List) := (Q, subQ) -> (
             sumList(weights_subset)
         )
     );
+    print(" -- in algorithm isStable: the subsets closed under arrows are ", subsetsClosedUnderArrows(subMat));
+    print(" -- sums: ", sums);
     all(sums, x -> x + minWeight > 0)
 )
 isStable(ToricQuiver, List) := (Q, subQ) -> (
@@ -1261,8 +1263,10 @@ primalUndirectedCycle = (G) -> (
 ------------------------------------------------------------
 makeTight = (Q, W) -> (
     potentialF := flatten entries first incInverse(Q, W);
+    print("making the quiver: ", graphFromEdges(Q.Q1, Oriented=>true), "with weight ", W, " into a tight quiver.");
 
     if isTight(Q, potentialF) then (
+        print("already tight. Returning.");
         return toricQuiver(Q.connectivityMatrix, potentialF);
     ) else (
         Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(potentialF);
@@ -1294,6 +1298,7 @@ makeTight = (Q, W) -> (
         alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
+        print("this quiver is not tight yet. Our selected R=", R, "S = ", S, " alpha=", alpha, " and vertices to merge are: ", a);
 
         newRows := entries(Q.connectivityMatrix);
         newCols := drop(asList(0..#Q.Q1 - 1), {alpha, alpha});
@@ -1310,7 +1315,8 @@ makeTight = (Q, W) -> (
         ));
         newFlow := drop(potentialF, {alpha, alpha});
         newQ := toricQuiver(newM);
-        newW := theta(newQ.connectivityMatrix*diagonalMatrix(newFlow));
+        newW :=theta(newQ.connectivityMatrix*diagonalMatrix(newFlow));
+        print("after merging, we obtain the quiver: ", graphFromEdges(newQ.Q1, Oriented=>true), " with Flow: ", newFlow);
         return makeTight(newQ, newW);
     );
 )
