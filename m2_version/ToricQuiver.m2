@@ -1155,6 +1155,7 @@ spanningTree = (Q) -> (
     -- number of edges to remove from spanning tree
     d := Q1 - Q0 + 1;
 
+    edgeIndices := {};
     if d > 0 then (
         dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement=>false, Order=>false);
         edgesKept := {};
@@ -1162,7 +1163,7 @@ spanningTree = (Q) -> (
         foundTree := false;
 
         for dTuple in dTuplesToRemove do (
-            edgeIndices := asList(set(0..#allEdges - 1) - set(dTuple));
+            edgeIndices = asList(set(0..#allEdges - 1) - set(dTuple));
             edgesKept = allEdges_edgeIndices;
             edgesRemoved = allEdges_dTuple;
 
@@ -1187,7 +1188,8 @@ spanningTree = (Q) -> (
             );
         );
         if foundTree then (
-            return (edgesKept, edgesRemoved);
+            dTuple := asList(set(0..#allEdges - 1) - set(edgeIndices));
+            return (edgeIndices, dTuple);
         ) else (
             return ({}, {});
         );
@@ -1312,16 +1314,15 @@ makeTight = (Q, W) -> (
 
 ------------------------------------------------------------
 flowPolytope = method(Options=>{Format=>"matrix"})
-flowPolytope(Matrix) := opts-> (Q) -> (
-
-    (sT, removedEdges) := spanningTree(Q);
+flowPolytope(ToricQuiver) := opts-> (Q) -> (
+    (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
     es := sT | removedEdges;
-    Ws := 0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col");
+    Fs := Q.flow_sT | Q.flow_removedEdges;
 
     if isTight(Q) then (
         f := for i from 0 to #removedEdges - 1 list(
-            edge := removedEdges#i;
-            cycle := primalUndirectedCycle(sT | {edge});
+            edge := Q.Q1_removedEdges#i;
+            cycle := primalUndirectedCycle(Q.Q1_sT | {edge});
 
             cycle = for x in cycle list(
                 if x == #sT then (x+i) else if x == -(#sT + 1) then (-#sT - i - 1) else (x)
@@ -1330,10 +1331,10 @@ flowPolytope(Matrix) := opts-> (Q) -> (
             fi := #es:0;
             for j in cycle do (
                 if j >= 0 then (
-                    fi = replaceInList(j, Ws#j, fi)
+                    fi = replaceInList(j, Fs#j, fi)
                 ) else (
                     k := -(1 + j);
-                    fi = replaceInList(k, -Ws#k, fi)
+                    fi = replaceInList(k, -Fs#k, fi)
                 );
             );
             fi
@@ -1350,19 +1351,14 @@ flowPolytope(Matrix) := opts-> (Q) -> (
             matrix(output)
         )
     ) else (
-        -- print("error in flowPolytope: algorithm is designed for tight quivers.");
-        -- generators kernel Q
         QQ := makeTight(Q, Q.weights);
-        flowPolytope(QQ);
+        flowPolytope(QQ)
     )
-)
-flowPolytope(ToricQuiver) := opts -> Q -> (
-    flowPolytope(Q.connectivityMatrix, Format=>opts.Format)
 )
 flowPolytope(ToricQuiver, List) := opts -> (Q, F) -> (
     nonzeroEntries := positions(F, x -> x != 0);
-    altQ := toricQuiver(Q_nonzeroEntries.connectivityMatrix, F_nonzeroEntries);
-    flowPolytope(altQ.connectivityMatrix, Format=>opts.Format)
+    altQ := toricQuiver(Q.connectivityMatrix_nonzeroEntries, F_nonzeroEntries);
+    flowPolytope(altQ, Format=>opts.Format)
 )
 ------------------------------------------------------------
 
