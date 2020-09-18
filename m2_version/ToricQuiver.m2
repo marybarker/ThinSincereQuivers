@@ -1128,7 +1128,7 @@ walls(Matrix) := (Q) -> (
     )
 )
 walls(ToricQuiver) := (Q) -> (
-    walls(Q.connectivityMatrix)
+    walls(Q.connectivityMatrix*diagonalMatrix(Q.weights))
 )
 ------------------------------------------------------------
 
