@@ -72,13 +72,12 @@ toricQuiver(Matrix) := opts -> Q -> (
     );
     -- set Q to be unit valued to apply flow
     Q = matrix(for e in entries(Q) list(for x in e list(if abs(x) > 0 then x/abs(x) else 0)));
-    Q = Q*diagonalMatrix F;
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
         Q0=>toList(0..numRows(Q) - 1),
         Q1=>graphEdges(Q, Oriented=>true),
         flow=>F,
-        weights=>sumList(entries(Q), Axis=>"Row")
+        weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
 )
 
@@ -86,13 +85,12 @@ toricQuiver(Matrix) := opts -> Q -> (
 toricQuiver(Matrix, List) := opts -> (Q, F) -> (
     -- set Q to be unit valued to apply flow
     Q = matrix(for e in entries(Q) list(for x in e list(if abs(x) > 0 then x/abs(x) else 0)));
-    Q = Q*diagonalMatrix F;
     new ToricQuiver from hashTable{
-        connectivityMatrix=>Q*diagonalMatrix F,
+        connectivityMatrix=>Q,
         Q0=>toList(0..numRows(Q) - 1),
         Q1=>graphEdges(Q, Oriented=>true),
         flow=>asList(F),
-        weights=>sumList(entries(Q), Axis=>"Row")
+        weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
 )
 
@@ -103,25 +101,24 @@ toricQuiver(List) := opts -> E -> (
     if opts.Flow == "Random" then (
         F = for i in (0..#E - 1) list(random(FlowCeil));
     );
-    Q = Q*diagonalMatrix F;
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
         Q0=>asList(0..numRows(Q) - 1),
         Q1=>E,
         flow=>F,
-        weights=>sumList(entries(Q), Axis=>"Row")
+        weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
 )
 
 -- construct ToricQuiver from list of edges and a flow
 toricQuiver(List, List) := opts -> (E, F) -> (
-    Q := graphFromEdges(E, Oriented=>true)*diagonalMatrix F;
+    Q := graphFromEdges(E, Oriented=>true);
     new ToricQuiver from hashTable{
         connectivityMatrix=>Q,
         Q0=>toList(0..numRows(Q) - 1),
         Q1=>E,
         flow=>F,
-        weights=>sumList(entries(Q), Axis=>"Row")
+        weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
 )
 -- subquiver of a ToricQuiver by taking a subset of the arrows, represented as a "child" of the original quiver
@@ -131,8 +128,9 @@ ToricQuiver ^ List := (TQ, L) -> (
     for i in Lc do(newFlow = replaceInList(i, 0, newFlow));
     toricQuiver(TQ.connectivityMatrix, newFlow)
 )
+-- subquiver of a ToricQuiver by removing all vertices/arrows not in the subquiver
 ToricQuiver _ List := (TQ, L) -> (
-    M := matrix(for x in entries(TQ.connectivityMatrix_L) list(if sumList(x) != 0 then (x) else (continue;)));
+    M := matrix(for x in entries(TQ.connectivityMatrix_L) list(if any(x, y-> y != 0) then (x) else (continue;)));
     toricQuiver(M)
 )
 ------------------------------------------------------------
@@ -929,18 +927,23 @@ theta(Matrix) := Q -> (
 
 ------------------------------------------------------------
 isStable = method()
-isStable(Matrix, List) := (Q, subQ) -> (
+isStable(ToricQuiver, List) := (Q, subQ) -> (
+    Qcm := Q.connectivityMatrix;
+
     -- get the vertices in the subquiver
-    subQVertices := positions(entries(Q_subQ), x -> any(x, y -> y != 0));
+    subQVertices := positions(entries(Qcm_subQ), x -> any(x, y -> y != 0));
+
     -- weights of the original quiver
-    Qtheta := theta(Q);
+    Qtheta := Q.weights;
+
     -- inherited weights on the subquiver
     weights := Qtheta_subQVertices;
+
     -- negative weights in Q_0 \ subQ_0
     otherVertices := asList(set(0..#Qtheta - 1) - set(subQVertices));
     minWeight := sum(apply({0} | asList(Qtheta_otherVertices), x -> if(x <= 0) then x else 0));
 
-    subMat := Q_subQ;
+    subMat := Qcm_subQ;
     tSubMat := transpose(subMat);
     subMat = transpose(tSubMat_subQVertices);
 
@@ -949,24 +952,21 @@ isStable(Matrix, List) := (Q, subQ) -> (
             sumList(weights_subset)
         )
     );
-    print(" -- in algorithm isStable: the subsets closed under arrows are ", subsetsClosedUnderArrows(subMat));
+    print(" -- in algorithm isStable: the subsets of ", subQ, "closed under arrows are ", subsetsClosedUnderArrows(subMat));
     print(" -- sums: ", sums);
     all(sums, x -> x + minWeight > 0)
 )
-isStable(ToricQuiver, List) := (Q, subQ) -> (
-    isStable(Q.connectivityMatrix, subQ)
-)
 isStable(ToricQuiver, ToricQuiver) := (Q, subQ) -> (
     nonZeroEntries := positions(subQ.flow, x -> (x > 0) or (x < 0));
-    isStable(Q.connectivityMatrix, nonZeroEntries)
+    isStable(Q, nonZeroEntries)
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
 unstableSubquivers = method(Options=>{Format=>"list"})
-unstableSubquivers(Matrix) := opts -> Q -> (
-    numArrows := numColumns(Q);
+unstableSubquivers(ToricQuiver) := opts -> Q -> (
+    numArrows := #Q.Q1;
     arrows := asList(0..numArrows - 1);
 
     L := flatten(for i from 1 to numArrows - 1 list (
@@ -984,12 +984,9 @@ unstableSubquivers(Matrix) := opts -> Q -> (
             continue;
         )
     );
-    singletonUnstableSqs := for x in positions(sumList(entries Q, Axis=>"Row"), x -> x < 0) list ({x});
+    singletonUnstableSqs := for x in positions(Q.weights, x -> x < 0) list ({x});
 
     hashTable({NonSingletons => sqsWithArrows, Singletons => singletonUnstableSqs})
-)
-unstableSubquivers(ToricQuiver) := opts -> Q -> (
-    unstableSubquivers(Q.connectivityMatrix, Format=>opts.Format)
 )
 ------------------------------------------------------------
 
@@ -1065,15 +1062,11 @@ isTight(ToricQuiver) := Q -> (
         #maxUnstSubs#Singletons < 1
     )
 )
-
-isTight(Matrix) := Q -> (
-    isTight(toricQuiver(Q))
+isTight(ToricQuiver, List) := (Q, F) -> (
+    isTight(toricQuiver(Q.connectivityMatrix, F))
 )
-isTight(ToricQuiver, List) := (Q, W) -> (
-    isTight(toricQuiver(Q.connectivityMatrix, W))
-)
-isTight(List, ToricQuiver) := (W, Q) -> (
-    isTight(toricQuiver(Q.connectivityMatrix, W))
+isTight(List, ToricQuiver) := (F, Q) -> (
+    isTight(toricQuiver(Q.connectivityMatrix, F))
 )
 ------------------------------------------------------------
 
@@ -1263,7 +1256,6 @@ primalUndirectedCycle = (G) -> (
 ------------------------------------------------------------
 makeTight = (Q, W) -> (
     potentialF := flatten entries first incInverse(Q, W);
-    print("making the quiver: ", graphFromEdges(Q.Q1, Oriented=>true), "with weight ", W, " into a tight quiver.");
 
     if isTight(Q, potentialF) then (
         print("already tight. Returning.");
@@ -1284,7 +1276,7 @@ makeTight = (Q, W) -> (
                 combs := combinations(#Rvertices - i, Rvertices, Replacement=>false, Order=>false);
                 for c in combs do (
                     if sumList(W_c) < 0 then (
-                        if isClosedUnderArrows(Q^R, c) then (
+                        if isClosedUnderArrows(Q_R, c) then (
                             success = true;
                             S = c;
                             break;
@@ -1296,6 +1288,7 @@ makeTight = (Q, W) -> (
             );
         );
         alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
+        print("alpha = ", alpha);
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
         print("this quiver is not tight yet. Our selected R=", R, "S = ", S, " alpha=", alpha, " and vertices to merge are: ", a);
