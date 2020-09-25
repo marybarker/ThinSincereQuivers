@@ -1274,7 +1274,7 @@ makeTight = (Q, W) -> (
             for i from 1 to #Rvertices - 1 do (
                 combs := combinations(#Rvertices - i, Rvertices, Replacement=>false, Order=>false);
                 for c in combs do (
-                    if sumList(W_c) < 0 then (
+                    if sumList(W_c) <= 0 then (
                         if isClosedUnderArrows(Q_R, c) then (
                             success = true;
                             S = c;
