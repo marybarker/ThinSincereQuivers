@@ -1504,12 +1504,14 @@ multidoc ///
             the toricQuiver constructor
         Usage
             Q = toricQuiver M
+            Q = toricQuiver T
             Q = toricQuiver (M, F)
             Q = toricQuiver E
             Q = toricQuiver (E, F)
         Inputs
             M: Matrix 
                 of integers giving the connectivity structure of the quiver
+            T: ToricQuiver 
             F: List 
                 the flow on the quiver given as a list of integers
             E: List
@@ -1601,6 +1603,21 @@ multidoc ///
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
     Node
         Key
+            (toricQuiver, ToricQuiver)
+        Headline
+            make a toric quiver by copying
+        Usage
+            toricQuiver (Q)
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            R: ToricQuiver
+        Description
+            Example
+                Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
+                R = toricQuiver(Q)
+    Node
+        Key
             (toricQuiver, List, List)
         Headline
             make a toric quiver from a list of edges and a flow
@@ -1690,7 +1707,24 @@ multidoc ///
                 Q = bipartiteQuiver(2, 3)
                 Q^{0,1,3}
         SeeAlso
-            (symbol _, ToricQuiver, List)
+    Node
+        Key
+            (symbol ==, ToricQuiver, ToricQuiver)
+        Headline
+            comparing instances of ToricQuiver
+        Usage
+            Q1 == Q2
+        Inputs
+            Q1: ToricQuiver
+            Q2: ToricQuiver
+        Description
+            Text
+                This method takes two toric quivers and returns the 
+                boolean of the statement {\tt Q1} is equal to {\tt Q2}. 
+            Example
+                Q = bipartiteQuiver(2, 3)
+                R = bipartiteQuiver(2, 2)
+                Q == R
     Node
         Key
             bipartiteQuiver
@@ -2100,6 +2134,25 @@ multidoc ///
         Description
             Text
                 the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
+    Node
+        Key
+            (flowPolytope, ToricQuiver)
+        Headline
+            generate the dual polytope of a toric quiver
+        Usage
+            flowPolytope Q
+        Inputs
+            Q: ToricQuiver
+            Format => String
+                optional formatting option for representing the polytope
+        Outputs
+            : Matrix
+                giving the coordinates of the vertices defining the flow polytope
+        Description
+            Text
+                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
+            Example
+                flowPolytope(bipartiteQuiver(2, 3))
     Node
         Key
             (flowPolytope, ToricQuiver, List)
