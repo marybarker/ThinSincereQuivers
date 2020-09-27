@@ -81,6 +81,7 @@ toricQuiver(Matrix) := opts -> Q -> (
     }
 )
 
+
 -- construct ToricQuiver from connectivity matrix and a flow
 toricQuiver(Matrix, List) := opts -> (Q, F) -> (
     -- set Q to be unit valued to apply flow
@@ -92,6 +93,10 @@ toricQuiver(Matrix, List) := opts -> (Q, F) -> (
         flow=>asList(F),
         weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
+)
+
+toricQuiver(ToricQuiver) := opts-> Q -> (
+    toricQuiver(Q.connectivityMatrix, Q.flow, Flow=>opts.Flow)
 )
 
 -- construct ToricQuiver from list of edges
@@ -132,6 +137,12 @@ ToricQuiver ^ List := (TQ, L) -> (
 ToricQuiver _ List := (TQ, L) -> (
     M := matrix(for x in entries(TQ.connectivityMatrix_L) list(if any(x, y-> y != 0) then (x) else (continue;)));
     toricQuiver(M)
+)
+-- equality of two quivers:
+ToricQuiver == ToricQuiver := (TQ1, TQ2) -> (
+    TQ1i := sortedIndices(TQ1.Q1);
+    TQ2i := sortedIndices(TQ2.Q1);
+    (sort(TQ1.Q1) === sort(TQ2.Q1)) and (TQ1.flow_TQ1i == TQ2.flow_TQ2i)
 )
 ------------------------------------------------------------
 
@@ -187,7 +198,7 @@ incInverse = (tQ, theta) -> (
     k := entries generators kernel a;
     F := solve(a, transpose(matrix({theta})));
 
-    asList(F + transpose(matrix({sumList(k, Axis=>"Row")})))
+    flatten entries first asList(F + transpose(matrix({sumList(k, Axis=>"Row")})))
 )
 ------------------------------------------------------------
 
@@ -1255,7 +1266,7 @@ primalUndirectedCycle = (G) -> (
 
 ------------------------------------------------------------
 makeTight = (Q, W) -> (
-    potentialF := flatten entries first incInverse(Q, W);
+    potentialF := incInverse(Q, W);
 
     if isTight(Q, potentialF) then (
         return toricQuiver(Q.connectivityMatrix, potentialF);
