@@ -1463,12 +1463,12 @@ beginDocumentation()
 multidoc ///
     Node
         Key 
-            ToricQuiver
+            ThinSincereQuiver
         Headline
-            creating a Toric Quiver
+            creating and manipulating Toric Quivers
         Description
             Text
-                {\em ToricQuiver} is a package for creating and manipulating toric quivers.
+                {\em ThinSincereQuivers} is a package for creating and manipulating toric quivers.
             Text   
                 @UL { 
                     {"Klaus Altmann, Benjamin Nill, Sabine Schwentner, Izolda Wiercinska, ", 
