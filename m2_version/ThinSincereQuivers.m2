@@ -1,5 +1,5 @@
 newPackage(
-    "ToricQuiver",
+    "ThinSincereQuivers",
     Headline => "Construction of flow polytopes and their associated quivers in arbitrary (up to computing power) dimension",
     Version => "0.0",
     Date => "November 20, 2019",
