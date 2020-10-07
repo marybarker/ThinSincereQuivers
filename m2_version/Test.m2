@@ -1,4 +1,4 @@
-needsPackage("ToricQuiver")
+needsPackage("ThinSincereQuivers")
 
 Q = bipartiteQuiver(2, 3)
 assert isTight Q
