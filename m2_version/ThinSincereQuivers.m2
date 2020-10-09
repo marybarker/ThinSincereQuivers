@@ -1860,9 +1860,9 @@ multidoc ///
             Q: ToricQuiver
         Description
             Example
-                Q = chainQuiver (3, {1,2,3})
-                Q = chainQuiver (3, {1,2,3}, Flow=>"Random")
-                Q = chainQuiver (3, {1,2,3}, Flow=>{1, 2, 1, 3, 1, 4})
+                Q = chainQuiver (3, {1,2})
+                Q = chainQuiver (3, {1,2}, Flow=>"Random")
+                Q = chainQuiver (3, {1,2}, Flow=>{1, 2, 1, 3, 1, 4})
     Node
         Key
             toricQuivers
