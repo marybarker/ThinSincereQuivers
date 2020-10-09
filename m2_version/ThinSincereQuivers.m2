@@ -1563,6 +1563,8 @@ multidoc ///
         SeeAlso
             "toricQuiver"
             "bipartiteQuiver"
+            "threeVertexQuiver"
+            "chainQuiver"
             "toricQuivers"
 
     Node
@@ -1819,6 +1821,48 @@ multidoc ///
                 Q = bipartiteQuiver (2, 3)
                 Q = bipartiteQuiver (2, 3, Flow=>"Random")
                 Q = bipartiteQuiver (2, 3, Flow=>{1, 2, 1, 3, 1, 4})
+    Node
+        Key
+            threeVertexQuiver
+        Headline
+            make a toric quiver on underlying graph with three vertices and a specified number of edges between each
+        Usage
+            threeVertexQuiver E
+        Inputs
+            E: List
+                number of edges between each pair of vertices
+            Flow => 
+                specify flow to use. Either a string with values {\tt Canonical} or {\tt Random}, 
+                or else a list of integer values. 
+        Outputs
+            Q: ToricQuiver
+        Description
+            Example
+                Q = threeVertexQuiver {1,2,3}
+                Q = threeVertexQuiver ({1,2,3}, Flow=>"Random")
+                Q = threeVertexQuiver ({1,2,3}, Flow=>{1, 2, 1, 3, 1, 4})
+    Node
+        Key
+            chainQuiver
+        Headline
+            make a toric quiver on underlying graph in the form of a chain
+        Usage
+            chainQuiver (N, E)
+        Inputs
+            N: ZZ
+                number of vertices in the chain
+            E: List
+                number of edges linking each vertex to the next
+            Flow => 
+                specify flow to use. Either a string with values {\tt Canonical} or {\tt Random}, 
+                or else a list of integer values. 
+        Outputs
+            Q: ToricQuiver
+        Description
+            Example
+                Q = chainQuiver (3, {1,2,3})
+                Q = chainQuiver (3, {1,2,3}, Flow=>"Random")
+                Q = chainQuiver (3, {1,2,3}, Flow=>{1, 2, 1, 3, 1, 4})
     Node
         Key
             toricQuivers
