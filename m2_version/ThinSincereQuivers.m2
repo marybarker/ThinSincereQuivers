@@ -1082,9 +1082,10 @@ isTight(List, ToricQuiver) := (F, Q) -> (
 
 ------------------------------------------------------------
 neighborliness = method()
-neighborliness Matrix := (Q) -> (
-    numArrows := numColumns(Q);
-    maxUnstables := maximalUnstableSubquivers(Q)#NonSingletons;
+neighborliness ToricQuiver := (Q) -> (
+    numArrows := #Q.Q1;
+    maxUnstables := maximalUnstableSubquivers(Q);
+    maxUnstables = maxUnstables#NonSingletons;
 
     k := max(
         for sQ in maxUnstables list(
@@ -1092,9 +1093,6 @@ neighborliness Matrix := (Q) -> (
         )
     );
     k
-)
-neighborliness ToricQuiver := (Q) -> (
-    neighborliness(Q.connectivityMatrix)
 )
 ------------------------------------------------------------
 
@@ -1107,7 +1105,7 @@ wallType(Matrix, List) := (Q, Qp) -> (
     (tp, tm)
 )
 wallType(ToricQuiver, List) := (Q, Qp) -> (
-    wallType(Q.connectivityMatrix, Qp)
+    wallType(Q.connectivityMatrix*diagonalMatrix(Q.flow), Qp)
 )
 ------------------------------------------------------------
 
@@ -1139,7 +1137,7 @@ walls(Matrix) := (Q) -> (
     )
 )
 walls(ToricQuiver) := (Q) -> (
-    walls(Q.connectivityMatrix*diagonalMatrix(Q.weights))
+    walls(Q.connectivityMatrix*diagonalMatrix(Q.flow))
 )
 ------------------------------------------------------------
 
@@ -1463,7 +1461,7 @@ beginDocumentation()
 multidoc ///
     Node
         Key 
-            ThinSincereQuiver
+            ThinSincereQuivers
         Headline
             creating and manipulating Toric Quivers
         Description
@@ -2171,8 +2169,8 @@ multidoc ///
         Description
             Text
                 the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
-            Example
-                flowPolytope(bipartiteQuiver(2, 3), {2,1,2,0,1,0})
+            -- Example
+                -- flowPolytope(bipartiteQuiver(2, 3), {2,1,2,0,1,0})
     Node
         Key
             wallType
