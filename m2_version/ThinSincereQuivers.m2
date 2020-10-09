@@ -16,6 +16,8 @@ newPackage(
 export {
 -- Methods/Functions
     "bipartiteQuiver",
+    "chainQuiver",
+    "threeVertexQuiver",
     "toricQuivers",
     "isTight",
     "subquivers",
@@ -835,6 +837,53 @@ bipartiteQuiver = {Flow=>"Canonical"} >> opts -> (a, b) -> (
 
 
 ------------------------------------------------------------
+chainQuiver = {Flow=>"Canonical"} >> opts -> (numVertices, chainLinks) -> (
+    if #chainLinks != numVertices - 1 then (
+        print("error: need a number of edges for each link in chain");
+        return;
+    );
+    Es := flatten for v from 0 to numVertices-2 list(
+        numEs := chainLinks#v;
+        for j from 1 to numEs list({v, v+1})
+    );
+    if instance(opts.Flow, List) then (
+        if #opts.Flow != sum(chainLinks) then (
+            print("error: provided flow is not correct length.");
+            return;
+        );
+        return toricQuiver(Es, opts.Flow)
+    ) else (
+        return toricQuiver(Es, Flow=>opts.Flow)
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+threeVertexQuiver = {Flow=>"Canonical"} >> opts -> (numEdges) -> (
+    if #numEdges != 3 then (
+        print("error: need a list of 3 numbers, denoting the number of edges between each pair of vertices");
+        return;
+    );
+    Es0 := for i from 0 to numEdges#0 - 1 list({0, 1});
+    Es1 := for i from 0 to numEdges#1 - 1 list({1, 2});
+    Es2 := for i from 0 to numEdges#2 - 1 list({0, 2});
+    Es := Es0 | Es1 | Es2;
+
+    if instance(opts.Flow, List) then (
+        if #opts.Flow != sum(numEdges) then (
+            print("error: provided flow is not correct length.");
+            return;
+        );
+        return toricQuiver(Es, opts.Flow)
+    ) else (
+        return toricQuiver(Es, Flow=>opts.Flow)
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 -- yield the subquivers of a given quiver Q
 subquivers = method(Options=>{Format=>"quiver", AsSubquiver=>false})
 subquivers Matrix := opts -> Q -> (
@@ -1495,6 +1544,27 @@ multidoc ///
                     -- {TO "toricQuiver"},
                     -- {TO "flowPolytope"},
                 }@
+    Node
+        Key
+            ToricQuiver
+        Headline
+            the ToricQuiver datatype
+        Description
+            Text
+                The ToricQuiver data type is a type of Hash Table with the following keys: 
+            Text
+                @UL {
+                    {TT "connectivityMatrix:", "matrix representation of the connected graph underlying the quiver"},
+                    {TT "flow:              ", "list of integers representing the flow associated to each edge of the quiver"},
+                    {TT "Q0:                ", "the list of vertices"},
+                    {TT "Q1:                ", "the list of edges "},
+                    {TT "weights:           ", "the values on each vertex induced by the flow"},
+                }@
+        SeeAlso
+            "toricQuiver"
+            "bipartiteQuiver"
+            "toricQuivers"
+
     Node
         Key
             toricQuiver
