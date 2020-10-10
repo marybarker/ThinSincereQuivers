@@ -1580,6 +1580,7 @@ multidoc ///
             Q = toricQuiver (M, F)
             Q = toricQuiver E
             Q = toricQuiver (E, F)
+            Q = toricQuiver G
         Inputs
             M: Matrix 
                 of integers giving the connectivity structure of the quiver
@@ -1588,6 +1589,7 @@ multidoc ///
                 the flow on the quiver given as a list of integers
             E: List
                 of pairs {\tt (V1, V2)} giving the edges of the quiver in terms of the vertices
+            G: Graph
             Flow => String
                 that specifies the flow for the polytope
         Outputs
@@ -1688,6 +1690,26 @@ multidoc ///
             Example
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
                 R = toricQuiver(Q)
+    Node
+        Key
+            (toricQuiver, Graph)
+        Headline
+            make an (acyclic) toric quiver from a graph object
+        Usage
+            toricQuiver (G)
+        Inputs
+            G: Graph
+        Outputs
+            Q: ToricQuiver
+        Description
+            Text
+                This algorithm creates an acyclic quiver based on the 
+                undirected graph object {\tt G} by preserving the edges 
+                of {\tt G} that respect the total 
+                order induced by the integer-valued vertex labels
+            -- Example
+            --     G = completeMultipartiteGraph {1,2,3}
+            --     Q = toricQuiver(G)
     Node
         Key
             (toricQuiver, List, List)
