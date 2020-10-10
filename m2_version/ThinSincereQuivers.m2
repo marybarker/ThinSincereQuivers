@@ -128,6 +128,12 @@ toricQuiver(List, List) := opts -> (E, F) -> (
         weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
 )
+-- construct ToricQuiver from a Graph object
+toricQuiver(Graph) := opts -> G -> (
+    E := for e in edges(G) list toList(e);
+    toricQuiver(E, Flow=>opts.Flow)
+)
+
 -- subquiver of a ToricQuiver by taking a subset of the arrows, represented as a "child" of the original quiver
 ToricQuiver ^ List := (TQ, L) -> (
     newFlow := TQ.flow;
@@ -837,17 +843,13 @@ bipartiteQuiver = {Flow=>"Canonical"} >> opts -> (a, b) -> (
 
 
 ------------------------------------------------------------
-chainQuiver = {Flow=>"Canonical"} >> opts -> (numVertices, chainLinks) -> (
-    if #chainLinks != numVertices - 1 then (
-        print("error: need a number of edges for each link in chain");
-        return;
-    );
-    Es := flatten for v from 0 to numVertices-2 list(
-        numEs := chainLinks#v;
+chainQuiver = {Flow=>"Canonical"} >> opts -> (numEdges) -> (
+    Es := flatten for v from 0 to #numEdges - 1 list(
+        numEs := numEdges#v;
         for j from 1 to numEs list({v, v+1})
     );
     if instance(opts.Flow, List) then (
-        if #opts.Flow != sum(chainLinks) then (
+        if #opts.Flow != sum(numEdges) then (
             print("error: provided flow is not correct length.");
             return;
         );
@@ -1847,10 +1849,8 @@ multidoc ///
         Headline
             make a toric quiver on underlying graph in the form of a chain
         Usage
-            chainQuiver (N, E)
+            chainQuiver E
         Inputs
-            N: ZZ
-                number of vertices in the chain
             E: List
                 number of edges linking each vertex to the next
             Flow => 
@@ -1860,9 +1860,9 @@ multidoc ///
             Q: ToricQuiver
         Description
             Example
-                Q = chainQuiver (3, {1,2})
-                Q = chainQuiver (3, {1,2}, Flow=>"Random")
-                Q = chainQuiver (3, {1,2}, Flow=>{1, 2, 1, 3, 1, 4})
+                Q = chainQuiver {1,2,3}
+                Q = chainQuiver ({1,2,3}, Flow=>"Random")
+                Q = chainQuiver ({1,2,3}, Flow=>{1, 2, 1, 3, 1, 4})
     Node
         Key
             toricQuivers
