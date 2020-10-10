@@ -58,8 +58,11 @@ protect weights
 protect connectivityMatrix
 protect Singletons
 protect NonSingletons
+protect Qplus
+protect WallType
 
 ToricQuiver = new Type of HashTable
+Wall = new Type of HashTable
 toricQuiver = method(Options=>{Flow=>"Default"})
 
 FlowCeil := 100;
@@ -1182,7 +1185,7 @@ walls(Matrix) := (Q) -> (
             pSums := sumList(Q^Qp, Axis=>"Col");
             QpEdgeIndices := for s in (0..#pSums - 1) list(if (pSums_s == 0) then (s) else (continue;));
             if (#Qp < 2) or (isGraphConnected(Q^Qp_QpEdgeIndices)) then (
-               (Qp, wallType(Q, Qp))
+               new Wall from hashTable ({Qplus=>Qp, WallType=>wallType(Q, Qp)})
             )
         )
     )
