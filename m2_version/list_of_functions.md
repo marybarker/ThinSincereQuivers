@@ -1,36 +1,42 @@
 # Functions exported from `ToricQuiver.m2'
-* `toricQuiver' : construct a Toric Quiver for a range of inputs (connectivity matrix, list of edges)
+* `bipartiteQuiver(n, m)' : returns the toric quiver on an underlying bipartite graph with $n$ sources and $m$ sinks.o
 
-* `sampleQuiver (d)' : returns a random quiver in dimension d
+* `chainQuiver(L)' : returns the quiver on a graph with the form of a chain of length $\#L$, where links between pairs of vertices given by values in the list $L$. 
 
-* `toricQuivers (d)' : returns a list of all d-dimensinoal quivers
+* `flowPolytope(Q)' : returns the dual polytope associated to Q if Q is stable. 
 
-* `isTight (Q)': answers question: is the quiver Q tight? (Q given in matrix form)
+* `incInverse(Q, th)' : returns a preimage of the weights th under the inc map associated to Q.
 
-* `subquivers (Q)' : returns a list of the subquivers of Q, given as sets of vertices 
+* `isAcyclic(Q)' : answers the question: is Q acyclic? 
 
 * `isClosedUnderArrows (Q, V)': answers question: for V a subset of the vertices of Q, is V closed under arrows? 
 
-* `subsetsClosedUnderArrows (Q)': returns the subsets of subquivers(Q) satisfying the closed under arrows condition
+* `isStable (Q, sQ)' : answers the question: is sQ a stable subquiver of Q? 
 
-* `isStable (Q, sQ)' : answers the question: subQ is a stable subquiver of Q
+* `isTight (Q)' : answers question: is the quiver Q tight? (Q given in matrix form)
 
-* `isMaximal (Q, listOfQs)': answers question: Q is maximal with respect to the list of quivers listOfQs
-
-* `isAcyclic (Q)': answers question: Is Q an acyclic quiver?
+* `makeTight(Q, W) : make the quiver Q tight with respect to the weight W.
 
 * `maximalUnstableSubquivers (Q)' : returns the maximal Unstable subqivers of Q
 
-* `theta (Q)' : returns the weights on the vertices for a weighted quiver Q
+* `mergeOnArrow(Q1, a1, Q2, a2)' : Creates a new quiver by identifying arrow a1 from quiver Q1 with arrow a2 of quiver Q2. 
+
+* `mergeOnVertex(Q1, v1, Q2, v2)' : Creates a new quiver by identifying vertex v1 from quiver Q1 with vertex v2 of quiver Q2. 
 
 * `neighborliness (Q)' : returns the neighborliness of quiver Q
+
+* `subquivers (Q)' : returns a list of the subquivers of Q, given as sets of vertices 
+
+* `theta (Q)' : returns the weights on the vertices for a weighted quiver Q
+
+* `threeVertexQuiver(L)' : return the triangular quiver with three vertices and the number of edges between each pair of vertices specified by values of the list $L$.
+
+* `toricQuiver' : construct a Toric Quiver for a range of inputs (connectivity matrix, list of edges, etc.)
+
+* `toricQuivers (d)' : returns a list of all d-dimensinoal quivers
 
 * `walls (Q)' : returns the walls for the weight chamber system associated to a weighted quiver Q
 
 * `wallType (Q, Qplus)' : returns the type of wall(wall index set and type (tplus, tminus)) for the wall specified by the partition of Q0 into Qplus and Q0 \ Qplus
 
-* `flowPolytope(Q)' : **under construction** returns the dual polytope associated to Q
 
-* `mergeOnVertex(Q1, v1, Q2, V2)' : **under construction** 
-
-* `mergeOnArrow(Q1, a1, Q2, a2)' : **under construction** 
