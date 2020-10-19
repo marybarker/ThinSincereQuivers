@@ -954,8 +954,8 @@ isClosedUnderArrows (Matrix, ToricQuiver) := (SQ, Q) -> (
     isClosedUnderArrows(Q.connectivityMatrix, V)
 )
 isClosedUnderArrows (ToricQuiver, ToricQuiver) := (SQ, Q) -> (
-    SQM := entries transpose(SQ.connectivityMatrix*diagonalMatrix(SQ.flow));
-    V := positions(SQM, x -> all(x, y-> y != 0));
+    SQM := entries (SQ.connectivityMatrix*diagonalMatrix(SQ.flow));
+    V := positions(SQM, x -> any(x, y -> y != 0));
     isClosedUnderArrows(Q.connectivityMatrix, V)
 )
 ------------------------------------------------------------
