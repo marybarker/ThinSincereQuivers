@@ -873,7 +873,7 @@ threeVertexQuiver = {Flow=>"Canonical"} >> opts -> (numEdges) -> (
     Es0 := for i from 0 to numEdges#0 - 1 list({0, 1});
     Es1 := for i from 0 to numEdges#1 - 1 list({1, 2});
     Es2 := for i from 0 to numEdges#2 - 1 list({0, 2});
-    Es := Es0 | Es1 | Es2;
+    Es := Es0 | Es2 | Es1;
 
     if instance(opts.Flow, List) then (
         if #opts.Flow != sum(numEdges) then (
@@ -941,15 +941,21 @@ isClosedUnderArrows (Matrix, List) := (Q, V) -> (
     Qt := transpose(Q);
     sQ := entries(Qt_V);
     all(sumList(sQ, Axis=>"Row"), x -> x >=0)
-    
 )
 isClosedUnderArrows (List, Matrix) := (V, Q) -> (
     isClosedUnderArrows(Q, V)
 )
-isClosedUnderArrows (ToricQuiver, List) := (Q, V) -> (
+isClosedUnderArrows (List, ToricQuiver) := (V, Q) -> (
     isClosedUnderArrows(Q.connectivityMatrix, V)
 )
-isClosedUnderArrows (List, ToricQuiver) := (V, Q) -> (
+isClosedUnderArrows (Matrix, ToricQuiver) := (SQ, Q) -> (
+    SQM := entries transpose SQ;
+    V := positions(SQM, x -> all(x, y-> y != 0));
+    isClosedUnderArrows(Q.connectivityMatrix, V)
+)
+isClosedUnderArrows (ToricQuiver, ToricQuiver) := (SQ, Q) -> (
+    SQM := entries transpose(SQ.connectivityMatrix*diagonalMatrix(SQ.flow));
+    V := positions(SQM, x -> all(x, y-> y != 0));
     isClosedUnderArrows(Q.connectivityMatrix, V)
 )
 ------------------------------------------------------------
@@ -963,7 +969,7 @@ subsetsClosedUnderArrows Matrix := (Q) -> (
 
     flatten(for i from 1 to #currentVertices - 1 list(
         for c in combinations(i, currentVertices, Order=>false, Replacement=>false) list(
-            if isClosedUnderArrows(Q, c) then (
+            if isClosedUnderArrows(c, Q) then (
                 c
             )
             else(
@@ -1338,7 +1344,7 @@ makeTight = (Q, W) -> (
                 combs := combinations(#Rvertices - i, Rvertices, Replacement=>false, Order=>false);
                 for c in combs do (
                     if sumList(W_c) <= 0 then (
-                        if isClosedUnderArrows(Q_R, c) then (
+                        if isClosedUnderArrows(c, Q_R) then (
                             success = true;
                             S = c;
                             break;
@@ -2123,7 +2129,6 @@ multidoc ///
         Headline
             is a subquiver closed under arrows?
         Usage
-            isClosedUnderArrows (Q, V)
             isClosedUnderArrows (V, Q)
         Inputs
             Q: ToricQuiver
@@ -2136,23 +2141,6 @@ multidoc ///
                 checks that a set of vertices is closed under arrows with respect to the toricQuiver {\tt Q}. 
                 That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. 
                 Note that this does not require that $V\subset Q_0$.
-    Node
-        Key
-            (isClosedUnderArrows, ToricQuiver, List)
-        Headline
-            is a subquiver closed under arrows?
-        Usage
-            isClosedUnderArrows (Q, V)
-        Inputs
-            Q: ToricQuiver
-            V: List
-                set of vertices 
-        Outputs
-            : Boolean
-        Description
-            Example
-                isClosedUnderArrows (bipartiteQuiver(2, 3), {0, 2, 3})
-                isClosedUnderArrows (bipartiteQuiver(2, 3), {2, 3, 4})
     Node
         Key
             (isClosedUnderArrows, List, ToricQuiver)
@@ -2170,6 +2158,42 @@ multidoc ///
             Example
                 isClosedUnderArrows ({0, 2, 3}, bipartiteQuiver(2, 3))
                 isClosedUnderArrows ({2, 3, 4}, bipartiteQuiver(2, 3))
+    Node
+        Key
+            (isClosedUnderArrows, Matrix, ToricQuiver)
+        Headline
+            is a subquiver closed under arrows?
+        Usage
+            isClosedUnderArrows (M, Q)
+        Inputs
+            M: Matrix
+                connectivity matrix of subquiver to check
+            Q: ToricQuiver
+        Outputs
+            : Boolean
+        Description
+            Example
+                Q = threeVertexQuiver {1, 2, 3}
+                SQ = Q_{0,1}
+                isClosedUnderArrows (SQ, Q)
+    Node
+        Key
+            (isClosedUnderArrows, ToricQuiver, ToricQuiver)
+        Headline
+            is a subquiver closed under arrows?
+        Usage
+            isClosedUnderArrows (SQ, Q)
+        Inputs
+            SQ: ToricQuiver
+                subquiver of Q to check 
+            Q: ToricQuiver
+        Outputs
+            : Boolean
+        Description
+            Example
+                Q = threeVertexQuiver {1, 2, 3}
+                SQ = Q^{0,1}
+                isClosedUnderArrows (SQ, Q)
     Node
         Key
             maximalUnstableSubquivers
