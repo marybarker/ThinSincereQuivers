@@ -21,6 +21,7 @@ export {
     "toricQuivers",
     "isTight",
     "subquivers",
+    "isSemistable",
     "isStable",
     "isAcyclic",
     "isClosedUnderArrows",
@@ -1028,6 +1029,42 @@ isStable(ToricQuiver, List) := (Q, subQ) -> (
 isStable(ToricQuiver, ToricQuiver) := (Q, subQ) -> (
     nonZeroEntries := positions(subQ.flow, x -> (x > 0) or (x < 0));
     isStable(Q, nonZeroEntries)
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+isSemistable = method()
+isSemistable(ToricQuiver, List) := (Q, subQ) -> (
+    Qcm := Q.connectivityMatrix;
+
+    -- get the vertices in the subquiver
+    subQVertices := positions(entries(Qcm_subQ), x -> any(x, y -> y != 0));
+
+    -- weights of the original quiver
+    Qtheta := Q.weights;
+
+    -- inherited weights on the subquiver
+    weights := Qtheta_subQVertices;
+
+    -- negative weights in Q_0 \ subQ_0
+    otherVertices := asList(set(0..#Qtheta - 1) - set(subQVertices));
+    minWeight := sum(apply({0} | asList(Qtheta_otherVertices), x -> if(x <= 0) then x else 0));
+
+    subMat := Qcm_subQ;
+    tSubMat := transpose(subMat);
+    subMat = transpose(tSubMat_subQVertices);
+
+    sums := asList(
+        for subset in subsetsClosedUnderArrows(subMat) list(
+            sumList(weights_subset)
+        )
+    );
+    all(sums, x -> x + minWeight >= 0)
+)
+isSemistable(ToricQuiver, ToricQuiver) := (Q, subQ) -> (
+    nonZeroEntries := positions(subQ.flow, x -> (x > 0) or (x < 0));
+    isSemistable(Q, nonZeroEntries)
 )
 ------------------------------------------------------------
 
@@ -2092,6 +2129,61 @@ multidoc ///
                 Q = bipartiteQuiver(2, 3)
                 S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
                 isStable (Q, S)
+    Node
+        Key
+            isSemistable
+        Headline
+            determines if a subquiver is semi-stable
+        Usage
+            isSemistable (Q, L)
+            isSemistable (Q, SQ)
+        Inputs
+            Q: ToricQuiver
+            SQ: ToricQuiver
+                A subquiver of the quiver {\tt Q}
+            L: List
+                of the indices of arrows in {\tt Q} that make up the subquiver in question
+        Outputs
+            :Boolean
+        Description
+            Text
+                A subquiver is semistable if 
+    Node
+        Key
+            (isSemistable, ToricQuiver, List)
+        Headline
+            determines if a subquiver is semistable
+        Usage
+            isSemistable (Q, L)
+        Inputs
+            Q: ToricQuiver
+            L: List
+                of the indices of arrows in {\tt Q} that make up the subquiver in question
+        Outputs
+            :Boolean
+        Description
+            Text 
+                a subquiver {\tt SQ} of the quiver {\tt Q} is semistable if 
+            Example
+                isSemistable (bipartiteQuiver(2, 3), {0, 1})
+    Node
+        Key
+            (isSemistable, ToricQuiver, ToricQuiver)
+        Headline
+            determines if a subquiver is semistable
+        Usage
+            isSemistable (Q, SQ)
+        Inputs
+            Q: ToricQuiver
+            SQ: ToricQuiver
+                A subquiver of the quiver $Q$
+        Outputs
+            :Boolean
+        Description
+            Example
+                Q = bipartiteQuiver(2, 3)
+                S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
+                isSemistable (Q, S)
     Node
         Key
             isAcyclic
