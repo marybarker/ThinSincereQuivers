@@ -11,6 +11,8 @@
 
 * `isClosedUnderArrows (Q, V)': answers question: for V a subset of the vertices of Q, is V closed under arrows? 
 
+* `isSemistable (Q, sQ)' : answers the question: is sQ a semi-stable subquiver of Q? 
+
 * `isStable (Q, sQ)' : answers the question: is sQ a stable subquiver of Q? 
 
 * `isTight (Q)' : answers question: is the quiver Q tight? (Q given in matrix form)
