@@ -11,7 +11,7 @@ newPackage(
          HomePage => "http://patriciogallardo.com/"
         }
     },
-    PackageImports => {"Graphs"}
+    PackageImports => {"Graphs", "Polyhedra"}
 )
 export {
 -- Methods/Functions
@@ -29,6 +29,7 @@ export {
     "theta",
     "incInverse",
     "neighborliness",
+    "dualFlowPolytope",
     "flowPolytope",
     "wallType",
     "walls",
@@ -1419,8 +1420,8 @@ makeTight = (Q, W) -> (
 
 
 ------------------------------------------------------------
-flowPolytope = method(Options=>{Format=>"matrix"})
-flowPolytope(ToricQuiver) := opts-> (Q) -> (
+dualFlowPolytope = method(Options=>{Format=>"matrix"})
+dualFlowPolytope(ToricQuiver) := opts-> (Q) -> (
     (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
     es := sT | removedEdges;
     Fs := Q.flow_sT | Q.flow_removedEdges;
@@ -1461,12 +1462,19 @@ flowPolytope(ToricQuiver) := opts-> (Q) -> (
         flowPolytope(QQ)
     )
 )
-flowPolytope(ToricQuiver, List) := opts -> (Q, F) -> (
+dualFlowPolytope(ToricQuiver, List) := opts -> (Q, F) -> (
     nonzeroEntries := positions(F, x -> x != 0);
     altQ := toricQuiver(Q.connectivityMatrix_nonzeroEntries, F_nonzeroEntries);
-    flowPolytope(altQ, Format=>opts.Format)
+    dualFlowPolytope(altQ, Format=>opts.Format)
 )
 ------------------------------------------------------------
+flowPolytope = method(Options=>{Format=>"matrix"})
+flowPolytope(ToricQuiver, List) := opts -> (Q, F) -> (
+    vertices polar convexHull dualFlowPolytope(Q, F)
+)
+flowPolytope ToricQuiver := opts -> Q -> (
+    vertices polar convexHull dualFlowPolytope(Q)
+)
 
 
 ------------------------------------------------------------
@@ -1591,6 +1599,7 @@ multidoc ///
                     {TO "subquiver representation"},
                     -- {TO "toricQuiver"},
                     -- {TO "flowPolytope"},
+                    -- {TO "dualFlowPolytope"},
                 }@
     Node
         Key
@@ -2373,7 +2382,7 @@ multidoc ///
         Key
             flowPolytope
         Headline
-            generate the dual polytope of a toric quiver
+            generate the polytope associated to a toric quiver
         Usage
             flowPolytope(Q, F)
         Inputs
@@ -2391,7 +2400,7 @@ multidoc ///
         Key
             (flowPolytope, ToricQuiver)
         Headline
-            generate the dual polytope of a toric quiver
+            generate the polytope associated to a toric quiver
         Usage
             flowPolytope Q
         Inputs
@@ -2410,7 +2419,7 @@ multidoc ///
         Key
             (flowPolytope, ToricQuiver, List)
         Headline
-            generate the dual polytope of a toric quiver
+            generate the polytope associated to a toric quiver
         Usage
             flowPolytope(Q, F)
         Inputs
@@ -2426,6 +2435,63 @@ multidoc ///
                 the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
             -- Example
                 -- flowPolytope(bipartiteQuiver(2, 3), {2,1,2,0,1,0})
+    Node
+        Key
+            dualFlowPolytope
+        Headline
+            generate the dual polytope associated to a toric quiver
+        Usage
+            dualFlowPolytope(Q, F)
+        Inputs
+            Q: ToricQuiver
+            F: List
+            Format => String
+                optional formatting option for representing the polytope
+        Outputs
+            : Matrix
+                giving the coordinates of the vertices defining the flow polytope
+        Description
+            Text
+                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
+    Node
+        Key
+            (dualFlowPolytope, ToricQuiver)
+        Headline
+            generate the dual polytope associated to a toric quiver
+        Usage
+            dualFlowPolytope Q
+        Inputs
+            Q: ToricQuiver
+            Format => String
+                optional formatting option for representing the polytope
+        Outputs
+            : Matrix
+                giving the coordinates of the vertices defining the flow polytope
+        Description
+            Text
+                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
+            Example
+                dualFlowPolytope(bipartiteQuiver(2, 3))
+    Node
+        Key
+            (dualFlowPolytope, ToricQuiver, List)
+        Headline
+            generate the dual polytope associated to a toric quiver
+        Usage
+            dualFlowPolytope(Q, F)
+        Inputs
+            Q: ToricQuiver
+            F: List
+            Format => String
+                optional formatting option for representing the polytope
+        Outputs
+            : Matrix
+                giving the coordinates of the vertices defining the flow polytope
+        Description
+            Text
+                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
+            -- Example
+                -- dualFlowPolytope(bipartiteQuiver(2, 3), {2,1,2,0,1,0})
     Node
         Key
             wallType
