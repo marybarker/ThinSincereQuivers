@@ -1219,13 +1219,18 @@ walls(Matrix) := (Q) -> (
         combinations(i, asList(nvSet), Replacement=>false)
     ));
 
+    alreadyMet := set ();
     Qedges := graphEdges(Q, Oriented=>true);
+
     for Qm in Qms list(
         mSums := sumList(Q^Qm, Axis=>"Col");
         QmEdgeIndices := for s in (0..#mSums - 1) list(if (mSums_s == 0) then (s) else (continue;));
+        Qp := asList(nvSet - set(Qm));
 
-        if (#Qm < 2) or (isGraphConnected(Q^Qm_QmEdgeIndices)) then (
-            Qp := asList(nvSet - set(Qm));
+        if member(Qm, alreadyMet) or #Qp < 2 then (
+            continue;
+        ) else if isGraphConnected(Q^Qm_QmEdgeIndices) then (
+            alreadyMet = alreadyMet + set ({Qp}) + set ({Qm});
             pSums := sumList(Q^Qp, Axis=>"Col");
             QpEdgeIndices := for s in (0..#pSums - 1) list(if (pSums_s == 0) then (s) else (continue;));
             if (#Qp < 2) or (isGraphConnected(Q^Qp_QpEdgeIndices)) then (
