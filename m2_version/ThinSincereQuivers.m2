@@ -1174,7 +1174,7 @@ isTight(ToricQuiver, List) := opts -> (Q, F) -> (
         isTight(toricQuiver(Q.connectivityMatrix, F))
     ) else (
         FF := incInverse(Q, F);
-        isTight(toricQuiver(Q.connectivityMatrix, F))
+        isTight(toricQuiver(Q.connectivityMatrix, FF))
     )
 )
 isTight(List, ToricQuiver) := opts -> (F, Q) -> (
@@ -1182,7 +1182,7 @@ isTight(List, ToricQuiver) := opts -> (F, Q) -> (
         isTight(toricQuiver(Q.connectivityMatrix, F))
     ) else (
         FF := incInverse(Q, F);
-        isTight(toricQuiver(Q.connectivityMatrix, F))
+        isTight(toricQuiver(Q.connectivityMatrix, FF))
     )
 )
 ------------------------------------------------------------
