@@ -53,15 +53,15 @@ export {
     "ToricQuiver",
     "toricQuiver"
 }
+protect connectivityMatrix
+protect flow
+protect NonSingletons
 protect Q0
 protect Q1
-protect flow
-protect weights
-protect connectivityMatrix
-protect Singletons
-protect NonSingletons
 protect Qplus
+protect Singletons
 protect WallType
+protect weights
 
 ToricQuiver = new Type of HashTable
 Wall = new Type of HashTable
@@ -1159,8 +1159,8 @@ maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
 
 
 ------------------------------------------------------------
-isTight = method()
-isTight(ToricQuiver) := Q -> (
+isTight = method(Options=>{Format=>"Flow"})
+isTight(ToricQuiver) := opts -> Q -> (
     numArrows := #Q#Q1;
     maxUnstSubs := maximalUnstableSubquivers(Q);
     if numArrows > 1 then (
@@ -1169,11 +1169,21 @@ isTight(ToricQuiver) := Q -> (
         #maxUnstSubs#Singletons < 1
     )
 )
-isTight(ToricQuiver, List) := (Q, F) -> (
-    isTight(toricQuiver(Q.connectivityMatrix, F))
+isTight(ToricQuiver, List) := opts -> (Q, F) -> (
+    if opts.Format == "Flow" then (
+        isTight(toricQuiver(Q.connectivityMatrix, F))
+    ) else (
+        FF := incInverse(Q, F);
+        isTight(toricQuiver(Q.connectivityMatrix, F))
+    )
 )
-isTight(List, ToricQuiver) := (F, Q) -> (
-    isTight(toricQuiver(Q.connectivityMatrix, F))
+isTight(List, ToricQuiver) := opts -> (F, Q) -> (
+    if opts.Format == "Flow" then (
+        isTight(toricQuiver(Q.connectivityMatrix, F))
+    ) else (
+        FF := incInverse(Q, F);
+        isTight(toricQuiver(Q.connectivityMatrix, F))
+    )
 )
 ------------------------------------------------------------
 
@@ -1366,7 +1376,12 @@ primalUndirectedCycle = (G) -> (
 
 
 ------------------------------------------------------------
+-- makeTight = {InputType=>"Weight"} >> opts -> (Q, W) -> (
 makeTight = (Q, W) -> (
+    --potentialF := W;
+    --if opts.InputType == "Weight" then (
+    --    potentialF = incInverse(Q, W);
+    --);
     potentialF := incInverse(Q, W);
 
     if isTight(Q, potentialF) then (
