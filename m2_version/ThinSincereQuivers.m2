@@ -1216,7 +1216,7 @@ walls(Matrix) := (Q) -> (
     subs := (1..ceiling(nv/2));
 
     Qms := flatten(for i from 1 to ceiling(nv/2) list (
-        combinations(i, asList(nvSet), Replacement=>false)
+        combinations(i, asList(nvSet), Replacement=>false, Order=>false)
     ));
 
     alreadyMet := set ();
@@ -1227,7 +1227,7 @@ walls(Matrix) := (Q) -> (
         QmEdgeIndices := for s in (0..#mSums - 1) list(if (mSums_s == 0) then (s) else (continue;));
         Qp := asList(nvSet - set(Qm));
 
-        if member(Qm, alreadyMet) or #Qp < 2 then (
+        if member(Qm, alreadyMet) then ( 
             continue;
         ) else if isGraphConnected(Q^Qm_QmEdgeIndices) then (
             alreadyMet = alreadyMet + set ({Qp}) + set ({Qm});
