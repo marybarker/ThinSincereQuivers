@@ -2121,7 +2121,10 @@ multidoc ///
             :Boolean
         Description
             Text 
-                a subquiver {\tt SQ} of the quiver {\tt Q} is stable if 
+                a subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
+		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
+		the sum of the weights associated to {\tt V} is positive. 
+		
     Node
         Key
             (isStable, ToricQuiver, List)
@@ -2136,8 +2139,6 @@ multidoc ///
         Outputs
             :Boolean
         Description
-            Text 
-                a subquiver {\tt SQ} of the quiver {\tt Q} is stable if 
             Example
                 isStable (bipartiteQuiver(2, 3), {0, 1})
     Node
@@ -2176,7 +2177,9 @@ multidoc ///
             :Boolean
         Description
             Text
-                A subquiver is semistable if 
+                A subquiver {\tt SQ} of the quiver {\tt Q} is semistable if for every subset 
+		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
+		the sum of the weights associated to {\tt V} is nonnegative. 
     Node
         Key
             (isSemistable, ToricQuiver, List)
