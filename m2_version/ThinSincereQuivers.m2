@@ -1432,8 +1432,17 @@ makeTight = (Q, W) -> (
         ));
         newFlow := drop(potentialF, {alpha, alpha});
         newQ := toricQuiver(newM);
-        newW :=theta(newQ.connectivityMatrix*diagonalMatrix(newFlow));
-        return makeTight(newQ, newW);
+        newW := theta(newQ.connectivityMatrix*diagonalMatrix(newFlow));
+
+	nonEmptyEdges := for i in 0..#newQ.Q1 - 1 list (
+		e := newQ.Q1#i;
+		if toString e#0 == "null" then (
+			continue;
+		) else (
+			i
+		)
+	);
+        return makeTight(newQ_nonEmptyEdges, newW);
     );
 )
 ------------------------------------------------------------
