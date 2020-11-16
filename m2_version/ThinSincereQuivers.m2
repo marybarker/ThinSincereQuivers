@@ -15,6 +15,7 @@ newPackage(
 )
 export {
 -- Methods/Functions
+    "allSpanningTrees",
     "bipartiteQuiver",
     "chainQuiver",
     "threeVertexQuiver",
@@ -1322,6 +1323,56 @@ spanningTree = (Q) -> (
 ------------------------------------------------------------
 
 
+------------------------------------------------------------
+allSpanningTrees = (TQ) -> (
+    Q := TQ.connectivityMatrix;
+    Q0 := numRows(Q);
+    Q1 := numColumns(Q);
+
+    --  edges of quiver Q represented as a list of tuples
+    allEdges := graphEdges(Q, Oriented=>true);
+    allNodes := asList(0..Q0-1);
+
+    trees := {};
+    edgeIndices := {};
+    
+    -- in any tree, the number of edges should be #vertices - 1, 
+    -- and so we need to remove Q1 - (Q0-1) edges to obtain a tree
+
+    d := Q1 - Q0 + 1;
+    if d > 0 then (
+        dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement=>false, Order=>false);
+        edgesKept := {};
+        edgesRemoved := {};
+
+        trees = for dTuple in dTuplesToRemove list (
+            edgeIndices = asList(set(0..#allEdges - 1) - set(dTuple));
+            edgesKept = allEdges_edgeIndices;
+            edgesRemoved = allEdges_dTuple;
+
+            reducedG := transpose(matrix(for e in edgesKept list(
+                t := e#0;
+                h := e#1;
+                localE := asList(Q0:0);
+                localE = replaceInList(h,  1, localE);
+                localE = replaceInList(t, -1, localE);
+                localE
+            )));
+            if numColumns(reducedG) > 1 then (
+                notAnyCycles := not existsUnorientedCycle(reducedG);
+                if isGraphConnected(reducedG) and notAnyCycles then (
+                    edgeIndices
+                ) else ( 
+                    continue;
+                )
+            ) else (
+                edgeIndices
+            )
+        );
+    );
+    trees
+)
+------------------------------------------------------------
 ------------------------------------------------------------
 isIn = (v, l) -> (
     p := positions(l, x -> x == v);
