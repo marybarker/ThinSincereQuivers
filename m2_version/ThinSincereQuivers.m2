@@ -1377,6 +1377,8 @@ allSpanningTrees = (TQ) -> (
 ------------------------------------------------------------
 
 ------------------------------------------------------------
+-- this function lists all of the spanning trees T of TQ
+-- such that T admits a regular flow in the preimage of weight th
 stableTrees = (th, TQ) -> (
     allTrees := allSpanningTrees(TQ);
     for x in allTrees list(if all(incInverse(TQ_x, th), y -> y > 0) then (x) else continue )
@@ -1384,6 +1386,8 @@ stableTrees = (th, TQ) -> (
 ------------------------------------------------------------
 
 ------------------------------------------------------------
+-- this function checks if the weights theta1 and theta2 
+-- belong to the same chamber in the wall chamber decomposition for Q
 sameChamber = (theta1, theta2, Q) -> (
     treesTheta1 := stableTrees(theta1, Q);
     treesTheta2 := stableTrees(theta2, Q);
