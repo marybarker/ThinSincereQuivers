@@ -29,6 +29,8 @@ export {
     "maximalUnstableSubquivers",
     "theta",
     "incInverse",
+    "stableTrees",
+    "sameChamber",
     "neighborliness",
     "dualFlowPolytope",
     "flowPolytope",
@@ -208,9 +210,9 @@ sumList = {Axis=>"None"} >> opts -> x -> (
 
 ------------------------------------------------------------
 incInverse = (tQ, theta) -> (
-    a := tQ.connectivityMatrix;
+    a := tQ.connectivityMatrix **RR;
     k := entries generators kernel a;
-    F := solve(a, transpose(matrix({theta})));
+    F := solve(a, transpose(matrix({theta})**RR));
 
     flatten entries first asList(F + transpose(matrix({sumList(k, Axis=>"Row")})))
 )
@@ -1373,6 +1375,23 @@ allSpanningTrees = (TQ) -> (
     trees
 )
 ------------------------------------------------------------
+
+------------------------------------------------------------
+stableTrees = (th, TQ) -> (
+    allTrees := allSpanningTrees(TQ);
+    for x in allTrees list(if all(incInverse(TQ_x, th), y -> y > 0) then (x) else continue )
+)
+------------------------------------------------------------
+
+------------------------------------------------------------
+sameChamber = (theta1, theta2, Q) -> (
+    treesTheta1 := stableTrees(theta1, Q);
+    treesTheta2 := stableTrees(theta2, Q);
+    return all(0..#treesTheta1 - 1, x -> treesTheta1#x == treesTheta2#x)
+)
+------------------------------------------------------------
+
+
 ------------------------------------------------------------
 isIn = (v, l) -> (
     p := positions(l, x -> x == v);
