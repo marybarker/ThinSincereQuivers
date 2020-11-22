@@ -210,11 +210,14 @@ sumList = {Axis=>"None"} >> opts -> x -> (
 
 ------------------------------------------------------------
 incInverse = (tQ, theta) -> (
-    a := tQ.connectivityMatrix **RR;
-    k := entries generators kernel a;
-    F := solve(a, transpose(matrix({theta})**RR));
-
-    flatten entries first asList(F + transpose(matrix({sumList(k, Axis=>"Row")})))
+    a := tQ.connectivityMatrix * diagonalMatrix(tQ.flow);
+    b := transpose matrix {theta};
+    F := try (solve(a, b)) else (
+        try (solve(a **QQ, b **QQ)) else (
+            try (solve(a **RR, b **RR))
+        )
+    );
+    flatten entries first asList F
 )
 ------------------------------------------------------------
 
