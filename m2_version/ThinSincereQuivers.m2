@@ -209,14 +209,11 @@ sumList = {Axis=>"None"} >> opts -> x -> (
 
 
 ------------------------------------------------------------
-incInverse = (tQ, theta) -> (
-    a := tQ.connectivityMatrix * diagonalMatrix(tQ.flow);
-    b := transpose matrix {theta};
-    F := try (solve(a, b)) else (
-        try (solve(a **QQ, b **QQ)) else (
-            try (solve(a **RR, b **RR))
-        )
-    );
+incInverse = (tQ, th) -> (
+    a := tQ.connectivityMatrix;
+    a = a * diagonalMatrix(for t in tQ.flow list floor t);
+    b := promote(transpose(matrix({th})), QQ);
+    F := solve(a **QQ, b);
     flatten entries first asList F
 )
 ------------------------------------------------------------
