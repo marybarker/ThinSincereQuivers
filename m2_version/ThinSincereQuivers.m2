@@ -18,40 +18,40 @@ export {
     "allSpanningTrees",
     "bipartiteQuiver",
     "chainQuiver",
-    "threeVertexQuiver",
-    "toricQuivers",
+    "dualFlowPolytope",
+    "flowPolytope",
     "isTight",
-    "subquivers",
+    "incInverse",
     "isSemistable",
     "isStable",
     "isAcyclic",
     "isClosedUnderArrows",
-    "maximalUnstableSubquivers",
-    "theta",
-    "incInverse",
-    "stableTrees",
-    "sameChamber",
-    "neighborliness",
-    "dualFlowPolytope",
-    "flowPolytope",
-    "wallType",
-    "walls",
     "makeTight",
+    "maximalUnstableSubquivers",
     "mergeOnVertex",
     "mergeOnArrow",
+    "neighborliness",
+    "stableTrees",
+    "subquivers",
+    "sameChamber",
+    "theta",
+    "threeVertexQuiver",
+    "toricQuivers",
+    "walls",
+    "wallType",
 -- Options
-    "Flow",
-    "MatrixType",
     "AsSubquiver",
     "Axis",
-    "SavePath",
+    "EdgesAdded",
+    "Flow",
+    "MatrixType",
     "MaxSum",
     "MinSum",
     "Oriented",
+    "Output",
     "RavelLoops",
     "Replacement",
-    "EdgesAdded",
-    "Output",
+    "SavePath",
 -- Quiver objects 
     "ToricQuiver",
     "toricQuiver"
@@ -1523,61 +1523,37 @@ makeTight = (Q, W) -> (
 
 
 ------------------------------------------------------------
-dualFlowPolytope = method(Options=>{Format=>"matrix"})
-dualFlowPolytope(ToricQuiver) := opts-> (Q) -> (
-    (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
-    es := sT | removedEdges;
-    Fs := Q.flow_sT | Q.flow_removedEdges;
-
-    if isTight(Q) then (
-        f := for i from 0 to #removedEdges - 1 list(
-            edge := Q.Q1_removedEdges#i;
-            cycle := primalUndirectedCycle(Q.Q1_sT | {edge});
-
-            cycle = for x in cycle list(
-                if x == #sT then (x+i) else if x == -(#sT + 1) then (-#sT - i - 1) else (x)
-            );
-
-            fi := #es:0;
-            for j in cycle do (
-                if j >= 0 then (
-                    fi = replaceInList(j, Fs#j, fi)
-                ) else (
-                    k := -(1 + j);
-                    fi = replaceInList(k, -Fs#k, fi)
-                );
-            );
-            fi
-        );
-        output := for j from 0 to #es - 1 list(
-            for i from 0 to #removedEdges - 1 list(
-                ff := f#i;
-                ff#j
-            )
-        );
-        if (opts.Format == "matrix") then (
-            transpose(matrix(output))
+flowPolytope = method()
+------------------------------------------------------------
+flowPolytope(ToricQuiver, List) := (Q, th) -> (
+    allTrees := allSpanningTrees(Q);
+    regularFlows := for x in allTrees list(
+        if all(incInverse(Q_x, th), y -> y >= 0) then (
+            incInverse(Q^x, th)
         ) else (
-            matrix(output)
+            continue;
         )
-    ) else (
-        QQ := makeTight(Q, Q.weights);
-        flowPolytope(QQ)
-    )
-)
-dualFlowPolytope(ToricQuiver, List) := opts -> (Q, F) -> (
-    nonzeroEntries := positions(F, x -> x != 0);
-    altQ := toricQuiver(Q.connectivityMatrix_nonzeroEntries, F_nonzeroEntries);
-    dualFlowPolytope(altQ, Format=>opts.Format)
+    );
+    vertices convexHull matrix regularFlows
 )
 ------------------------------------------------------------
-flowPolytope = method(Options=>{Format=>"matrix"})
-flowPolytope(ToricQuiver, List) := opts -> (Q, F) -> (
-    vertices polar convexHull dualFlowPolytope(Q, F)
+flowPolytope ToricQuiver := Q -> (
+    flowPolytope(Q, Q.weights)
 )
-flowPolytope ToricQuiver := opts -> Q -> (
-    vertices polar convexHull dualFlowPolytope(Q)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+dualFlowPolytope = method()
+------------------------------------------------------------
+dualFlowPolytope(ToricQuiver) := (Q) -> (
+    vertices polar convexHull flowPolytope(Q)
 )
+------------------------------------------------------------
+dualFlowPolytope(ToricQuiver, List) := (Q, F) -> (
+    vertices polar convexHull flowPolytope(Q, F)
+)
+------------------------------------------------------------
 
 
 ------------------------------------------------------------
@@ -2494,14 +2470,9 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             F: List
-            Format => String
-                optional formatting option for representing the polytope
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
-        Description
-            Text
-                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
     Node
         Key
             (flowPolytope, ToricQuiver)
@@ -2511,14 +2482,10 @@ multidoc ///
             flowPolytope Q
         Inputs
             Q: ToricQuiver
-            Format => String
-                optional formatting option for representing the polytope
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
-            Text
-                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
             Example
                 flowPolytope(bipartiteQuiver(2, 3))
     Node
@@ -2531,14 +2498,10 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             F: List
-            Format => String
-                optional formatting option for representing the polytope
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
-            Text
-                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
             -- Example
                 -- flowPolytope(bipartiteQuiver(2, 3), {2,1,2,0,1,0})
     Node
@@ -2551,14 +2514,10 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             F: List
-            Format => String
-                optional formatting option for representing the polytope
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
-            Text
-                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
     Node
         Key
             (dualFlowPolytope, ToricQuiver)
@@ -2568,14 +2527,10 @@ multidoc ///
             dualFlowPolytope Q
         Inputs
             Q: ToricQuiver
-            Format => String
-                optional formatting option for representing the polytope
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
-            Text
-                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
             Example
                 dualFlowPolytope(bipartiteQuiver(2, 3))
     Node
@@ -2588,14 +2543,10 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             F: List
-            Format => String
-                optional formatting option for representing the polytope
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
-            Text
-                the default option for Format now allows this function to interface with the normalToricVariety constructor in Macaulay2
             -- Example
                 -- dualFlowPolytope(bipartiteQuiver(2, 3), {2,1,2,0,1,0})
     Node
