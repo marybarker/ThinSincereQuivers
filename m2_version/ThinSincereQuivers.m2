@@ -16,6 +16,7 @@ newPackage(
 export {
 -- Methods/Functions
     "allSpanningTrees",
+    "basisForFlowPolytope",
     "bipartiteQuiver",
     "chainQuiver",
     "dualFlowPolytope",
@@ -105,8 +106,12 @@ toricQuiver(Matrix, List) := opts -> (Q, F) -> (
     }
 )
 
-toricQuiver(ToricQuiver) := opts-> Q -> (
+toricQuiver(ToricQuiver) := opts -> Q -> (
     toricQuiver(Q.connectivityMatrix, Q.flow, Flow=>opts.Flow)
+)
+
+toricQuiver(ToricQuiver, List) := opts -> (Q, F) -> (
+    toricQuiver(Q.connectivityMatrix, F)
 )
 
 -- construct ToricQuiver from list of edges
@@ -140,6 +145,11 @@ toricQuiver(List, List) := opts -> (E, F) -> (
 toricQuiver(Graph) := opts -> G -> (
     E := for e in edges(G) list toList(e);
     toricQuiver(E, Flow=>opts.Flow)
+)
+
+toricQuiver(Graph, List) := opts -> (G, F) -> (
+    E := for e in edges(G) list toList(e);
+    toricQuiver(E, F)
 )
 
 -- subquiver of a ToricQuiver by taking a subset of the arrows, represented as a "child" of the original quiver
@@ -237,30 +247,32 @@ combinations = {Replacement=>true, MinSum=>-1000, MaxSum=>-1000, Order=>true} >>
            combs1 = unique(subsets(combs, k));
            combs2 = unique(subsets(combs, k));
            for i in combs2 do (combs1 = append(combs1, reverse(i)));
-           combs = unique(combs1);
+           --combs = unique(combs1);
         )
         else (
            combs = flatten(for i in l list(i));
            combs1 = unique(subsets(combs, k));
            combs2 = unique(subsets(combs, k));
            for i in combs2 do (combs1 = append(combs1, reverse(i)));
-           combs = unique(combs1);
+           -- combs = unique(combs1);
         );
     )
-    else
-        combs = for i in l list(asList(i));
+    else combs1 = for i in l list(asList(i));
 
     -- if we are using restricting either by a minimum or maximum sum -- 
     if opts.MinSum != -1000 then (
-       combs = for i in combs list(if sumList(i) < opts.MinSum then (continue;) else (i));
+       combs1 = for i in combs1 list(if sumList(i) < opts.MinSum then (continue;) else (i));
     );
     if opts.MaxSum != -1000 then (
-       combs = for i in combs list(if sumList(i) > opts.MaxSum then (continue;) else (i));
+       combs1 = for i in combs1 list(if sumList(i) > opts.MaxSum then (continue;) else (i));
     );
+
     if opts.Order != true then (
         combs = unique(
-            for i in combs list(sort(i))
+            for i in combs1 list(sort(i))
         );
+    ) else (
+        combs = unique(flatten for c in combs1 list permutations(c));
     );
     combs
 )
@@ -306,7 +318,7 @@ isPermutation = (x, y) -> (
                 cs := toList(0..#xcols - 1);
                 -- colPermutations := permutations(cs);
                 for cPerm in permutations(cs) do (
-                    if sort(entries(xrowsP_cPerm)) == yrows then (
+                    if entries(xrowsP_cPerm) == yrows then (
                         toRet = true;
                         break;
                     );
@@ -350,16 +362,49 @@ allPossibleBaseGraphsForPair = x -> (
    g1 := x#1;
 
    -- get all possible columns for connectivity matrix (entries must be 0,1, or 2)
-   possibleCols := combinations(g0, {0,1,2}, Replacement=>true, MinSum=>2, MaxSum=>2);
+   possibleCols := asList({{2}});
+   if g0 > 1 then (
+       possibleCols = permutations({2} | toList(g0-1:0));
+       possibleCols = possibleCols | permutations({1,1} | toList(g0-2:0));
+   );
 
    -- all combinations of columns to create rows
-   rowCombs := combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
+   rowCombs := combinations(g1, (0..(#possibleCols - 1)), Order=>false, Replacement=>true);
+
    candidateMats := for i in rowCombs list(for j in i list(asList(possibleCols#j)));
    candidateMats = for i in candidateMats list(transpose(matrix(i)));
    candidateMats = for i in candidateMats list(if min(sumList(entries(i), Axis=>"Row")) >= 3 then (i) else continue);
    candidateMats = unorientedUniqueUpToPermutation(candidateMats);
    return for m in candidateMats list (if isGraphConnected(m) then (m) else (continue;));
 )
+------------------------------------------------------------
+--allPossibleBaseGraphsForPair = x -> (
+--   g0 := x#0;
+--   g1 := x#1;
+--
+--   if g0 > 1 then (
+--       allRows := combinations(g1, {0,1,2}, Replacement=>true, Order=>false, MinSum=>3);
+--
+--       -- possible columns that begin with 0, 1, or 2 respectively
+--       twoStartCol := {2} | asList(g0-1:0);
+--       oneStartCols := for x in permutations({1} | asList(g0-2:0)) list({1} | x);
+--
+--       if g0 > 2 then (
+--           zeroStartCols := for x in permutations({1} | asList(g0-3:0)) list({0} | x);
+--           lens := {{0}, 1:#zeroStartCols, #zeroStartCols:#zeroStartCols+#oneStartCols};
+--
+--           for r in allRows list (
+--               
+--           );
+--       ) else (
+--           lens := {#oneStartCols, 1};
+--           
+--       );
+--
+--   ) else (
+--        matrix {toList(g1:2)}
+--   );
+--)
 ------------------------------------------------------------
 
 
@@ -672,12 +717,11 @@ splitLoopsAndEdges = m -> (
     loops := A#1;
     originalLooplessEdges := set(0..origNumEdges - 1) - set(loops);
 
-
     if #originalLooplessEdges > 0 then (
-        otherEdgeCombs := for i from 1 to #originalLooplessEdges list(
+        otherEdgeCombs := for i from 0 to #originalLooplessEdges list(
             asList(combinations(i, asList(originalLooplessEdges), Replacement=>false, Order=>false))
         );
-        outputs := flatten(for i from 0 to #originalLooplessEdges - 1 list(
+        outputs := flatten(for i from 0 to #otherEdgeCombs - 1 list(
             for comb in otherEdgeCombs#i list(
                 splitEdges(M, asList(comb))
             )
@@ -1450,15 +1494,12 @@ primalUndirectedCycle = (G) -> (
 
 
 ------------------------------------------------------------
--- makeTight = {InputType=>"Weight"} >> opts -> (Q, W) -> (
 makeTight = (Q, W) -> (
-    --potentialF := W;
-    --if opts.InputType == "Weight" then (
-    --    potentialF = incInverse(Q, W);
-    --);
     potentialF := incInverse(Q, W);
+    print("calling makeTight with quiver ", Q, " and flow ", potentialF);
 
     if isTight(Q, potentialF) then (
+        print("Combination is tight. Returning");
         return toricQuiver(Q.connectivityMatrix, potentialF);
     ) else (
         Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(potentialF);
@@ -1487,9 +1528,14 @@ makeTight = (Q, W) -> (
                 if success then break;
             );
         );
+
+        print("Step 1: maximalUnstableSubquiver is: ", R);
+        print("Step 2: Subset S of vertices is: ", S);
+
         alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
+        print("Step 3: arrow chosen is ", alpha, " with endpoints ", aMinus,aPlus);
 
         newRows := entries(Q.connectivityMatrix);
         newCols := drop(asList(0..#Q.Q1 - 1), {alpha, alpha});
@@ -1516,12 +1562,45 @@ makeTight = (Q, W) -> (
 			i
 		)
 	);
+        print("Step 4: quiver with alpha removed is: ", newQ_nonEmptyEdges);
+        print("Step 5: passing to makeTight to check if we're done...");
         return makeTight(newQ_nonEmptyEdges, newW);
     );
 )
 ------------------------------------------------------------
 
 
+basisForFlowPolytope = (Q) -> (
+   (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
+    es := sT | removedEdges;
+
+    f := for i from 0 to #removedEdges - 1 list(
+        edge := Q.Q1_removedEdges#i;
+        cycle := primalUndirectedCycle(Q.Q1_sT | {edge});
+
+        cycle = for x in cycle list(
+            if x == #sT then (x+i) else if x == -(#sT + 1) then (-#sT - i - 1) else (x)
+        );
+
+        fi := #es:0;
+        for j in cycle do (
+            if j >= 0 then (
+                fi = replaceInList(j, 1, fi)
+            ) else (
+                k := -(1 + j);
+                fi = replaceInList(k, -1, fi)
+            );
+        );
+        fi
+    );
+    output := for j from 0 to #es - 1 list(
+        for i from 0 to #removedEdges - 1 list(
+            ff := f#i;
+            ff#j
+        )
+    );
+    transpose matrix output
+)
 ------------------------------------------------------------
 flowPolytope = method()
 ------------------------------------------------------------
@@ -1561,24 +1640,28 @@ mergeOnVertex = method()
 mergeOnVertex(Matrix, ZZ, Matrix, ZZ) := (Q1, v1, Q2, v2) -> (
     nrow := numRows(Q1) + numRows(Q2) - 1;
     ncol := numColumns(Q1) + numColumns(Q2);
+    Q1rs := numRows(Q1);
+    Q1cs := numColumns(Q1);
+    Q2cs := numColumns(Q2);
 
     i1 := asList(join(drop(0..numRows(Q1) - 1, {v1, v1}), {v1}));
     i2 := asList(join({v2}, drop(0..numRows(Q2) - 1, {v2, v2})));
-    Q1 = transpose(Q1^i1);
-    Q2 = transpose(Q2^i2);
 
-    paddingSize := 0;
+    Q1 = entries(Q1^i1);
+    Q2 = entries(Q2^i2);
+
+    paddingSize := ncol - Q1cs;
+    r := 0;
     matrix(
-        for row from 0 to nrow - 1 list(
-            if row < (numColumns(Q1) - 1) then (
-                paddingSize = ncol - numColumns(Q1) - 1;
-                join(entries(Q1)_row, paddingSize:0)
-            ) else if row < numColumns(Q1) then (
-                join(entries(Q1)_row, entries(Q2)_0)
+        for row in (0..nrow - 1) list(
+            if row < (Q1rs - 1) then (
+                Q1_row | asList(paddingSize:0)
+            ) else if (row < Q1rs) then (
+                Q1_row | Q2_0
             ) else (
-                j := row - numColumns(Q1) + 1;
-                paddingSize = ncol - numRows(Q2);
-                asList(join(paddingSize:0, entries(Q2)_j))
+                r = row - (Q1rs - 1);
+                paddingSize = ncol - Q2cs;
+                asList(paddingSize:0) | Q2_r 
             )
         )
     )
@@ -1598,34 +1681,38 @@ mergeOnVertex(ToricQuiver, ZZ, ToricQuiver, ZZ) := (Q1, v1, Q2, v2) -> (
 ------------------------------------------------------------
 mergeOnArrow = method()
 mergeOnArrow(Matrix, ZZ, Matrix, ZZ) := (Q1, a1, Q2, a2) -> (
-    nrow := numRows(Q1) + numRows(Q2) - 2;
-    ncol := numColumns(Q1) + numColumns(Q2) - 1;
+    Q1nr := numRows(Q1);
+    Q2nr := numRows(Q2);
+    Q1nc := numColumns(Q1);
+    Q2nc := numColumns(Q2);
+    nrow := Q1nr + Q2nr - 2;
+    ncol := Q1nc + Q2nc - 1;
 
     q1E := asList(graphEdges(Q1, Oriented=>true))_a1;
     q2E := asList(graphEdges(Q2, Oriented=>true))_a2;
 
-    c1 := asList(join(drop(0..numColumns(Q1) - 1, {a1, a1}), {a1}));
-    c2 := asList(drop(0..numColumns(Q2) - 1, {a1, a1}));
+    c1 := asList(join(drop(0..Q1nc - 1, {a1, a1}), {a1}));
+    c2 := asList(drop(0..Q2nc - 1, {a2, a2}));
 
-    r1 := asList(join(asList(set(0..numRows(Q1) - 1) - set(q1E)), q1E));
-    r2 := asList(join(q2E, asList(set(0..numRows(Q2) - 1) - set(q2E))));
+    r1 := asList(join(asList(set(0..Q1nr - 1) - set(q1E)), q1E));
+    r2 := asList(join(q2E, asList(set(0..Q2nr - 1) - set(q2E))));
 
-    Q1 = transpose((Q1^r1)_c1);
-    Q2 = transpose((Q2^r2)_c2);
+    Q1 = entries(Q1^r1)_c1;
+    Q2 = entries(Q2^r2)_c2;
 
     paddingSize := 0;
     matrix(
         for row from 0 to nrow - 1 list(
-            if row < (numColumns(Q1) - 2) then (
-                paddingSize = ncol - numColumns(Q1) - 1;
-                join(entries(Q1)_row, asList(paddingSize:0))
+            if row < (Q1nr - 2) then (
+                paddingSize = Q2nc - 1;
+                join(Q1_row, asList(paddingSize:0))
 
-            ) else if row < numColumns(Q1) then (
-                join(entries(Q1)_row, entries(Q2)_(2 + row - numColumns(Q1)))
+            ) else if row < Q1nr then (
+                join(Q1_row, Q2_(2 + row - Q1nr))
             ) else (
-                j := row - numColumns(Q1) + 2;
-                paddingSize = ncol - numRows(Q2);
-                asList(join(paddingSize:0, entries(Q2)_j))
+                j := (row - Q1nr) + 2;
+                paddingSize = Q1nc;
+                asList(join(paddingSize:0, Q2_j))
             )
         )
     )
