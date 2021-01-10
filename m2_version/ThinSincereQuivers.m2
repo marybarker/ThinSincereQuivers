@@ -1496,10 +1496,8 @@ primalUndirectedCycle = (G) -> (
 ------------------------------------------------------------
 makeTight = (Q, W) -> (
     potentialF := incInverse(Q, W);
-    print("calling makeTight with quiver ", Q, " and flow ", potentialF);
 
     if isTight(Q, potentialF) then (
-        print("Combination is tight. Returning");
         return toricQuiver(Q.connectivityMatrix, potentialF);
     ) else (
         Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(potentialF);
@@ -1529,13 +1527,9 @@ makeTight = (Q, W) -> (
             );
         );
 
-        print("Step 1: maximalUnstableSubquiver is: ", R);
-        print("Step 2: Subset S of vertices is: ", S);
-
         alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
-        print("Step 3: arrow chosen is ", alpha, " with endpoints ", aMinus,aPlus);
 
         newRows := entries(Q.connectivityMatrix);
         newCols := drop(asList(0..#Q.Q1 - 1), {alpha, alpha});
@@ -1562,8 +1556,6 @@ makeTight = (Q, W) -> (
 			i
 		)
 	);
-        print("Step 4: quiver with alpha removed is: ", newQ_nonEmptyEdges);
-        print("Step 5: passing to makeTight to check if we're done...");
         return makeTight(newQ_nonEmptyEdges, newW);
     );
 )
@@ -1751,13 +1743,6 @@ multidoc ///
                     }
                 }@
             Text
-                @SUBSECTION "Contributors"@
-            Text
-                @UL {
-            	{HREF("https://github.com/marybarker","Mary Barker")},
-            	{HREF("http://patriciogallardo.com/","Patricio Gallardo")},
-                }@
-            Text
                 @SUBSECTION "Menu"@
             Text
                 @UL {
@@ -1798,10 +1783,12 @@ multidoc ///
         Usage
             Q = toricQuiver M
             Q = toricQuiver T
-            Q = toricQuiver (M, F)
             Q = toricQuiver E
-            Q = toricQuiver (E, F)
             Q = toricQuiver G
+            Q = toricQuiver (M, F)
+            Q = toricQuiver (T, F)
+            Q = toricQuiver (E, F)
+            Q = toricQuiver (G, F)
         Inputs
             M: Matrix 
                 of integers giving the connectivity structure of the quiver
@@ -1898,6 +1885,23 @@ multidoc ///
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
     Node
         Key
+            (toricQuiver, List, List)
+        Headline
+            make a toric quiver from a list of edges
+        Usage
+            toricQuiver (E, F)
+        Inputs
+            E: List
+                of pairs of the form {\tt (v_1, v_2)}, one for each edge between vertices {\tt v_1} and {\tt v_2}
+            F: List
+                of integers specifying the flow for each arrow
+        Outputs
+            Q: ToricQuiver
+        Description
+            Example
+                Q = toricQuiver ({{0,1},{0,1},{0,2},{0,2}}, {1,2,3,4})
+    Node
+        Key
             (toricQuiver, ToricQuiver)
         Headline
             make a toric quiver by copying
@@ -1911,6 +1915,23 @@ multidoc ///
             Example
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
                 R = toricQuiver(Q)
+    Node
+        Key
+            (toricQuiver, ToricQuiver, List)
+        Headline
+            make a toric quiver by copying
+        Usage
+            toricQuiver (Q, F)
+        Inputs
+            Q: ToricQuiver
+            F: List
+                of integers specifying the flow for each arrow
+        Outputs
+            R: ToricQuiver
+        Description
+            Example
+                Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
+                R = toricQuiver(Q, {1,2,3,4})
     Node
         Key
             (toricQuiver, Graph)
@@ -1930,24 +1951,25 @@ multidoc ///
                 order induced by the integer-valued vertex labels
             -- Example
             --     G = completeMultipartiteGraph {1,2,3}
-            --     Q = toricQuiver(G)
     Node
         Key
-            (toricQuiver, List, List)
+            (toricQuiver, Graph, List)
         Headline
-            make a toric quiver from a list of edges and a flow
+            make an (acyclic) toric quiver from a graph object
         Usage
-            toricQuiver (E, F)
+            toricQuiver (G, F)
         Inputs
-            E: List
-                of pairs of the form {\tt (v_1, v_2)}, one for each edge between vertices {\tt v_1} and {\tt v_2}
+            G: Graph
             F: List
-                of integers specifying the flow for each arrow
+                of integers specifying the flow for each edge
         Outputs
             Q: ToricQuiver
         Description
-            Example
-                Q = toricQuiver({{0,1},{0,1},{0,2},{0,2}}, {3, 1, 0, 5})
+            Text
+                This algorithm creates an acyclic quiver based on the 
+                undirected graph object {\tt G} by preserving the edges 
+                of {\tt G} that respect the total 
+                order induced by the integer-valued vertex labels
     Node
         Key
             "toric quiver representation"
@@ -2042,6 +2064,23 @@ multidoc ///
                 Q == R
     Node
         Key
+            allSpanningTrees
+        Headline
+            find the spanning trees of the underlying graph
+        Usage
+            allSpanningTrees Q
+        Inputs
+            Q: ToricQuiver
+        Description
+            Text
+                This method returns all of the spanning trees of the 
+                underlying graph of the quiver {\tt Q}. Trees are 
+                represented as lists of arrow indices.
+            Example
+                Q = bipartiteQuiver(2, 3)
+                allSpanningTrees(Q)
+    Node
+        Key
             bipartiteQuiver
         Headline
             make a toric quiver on underlying bipartite graph
@@ -2119,6 +2158,17 @@ multidoc ///
         Outputs
             Qs: List
                 of all toric quivers (up to quiver isomorphism) in dimension $N$
+    Node
+        Key
+            incInverse
+        Headline
+            compute a flow in the preimage for a given weight
+        Usage
+            incInverse(Q, W)
+        Inputs
+            Q: ToricQuiver
+            W: List
+                of integers, specifying the weight on each vertex
     Node
         Key
             isTight
