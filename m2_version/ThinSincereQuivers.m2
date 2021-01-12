@@ -247,14 +247,12 @@ combinations = {Replacement=>true, MinSum=>-1000, MaxSum=>-1000, Order=>true} >>
            combs1 = unique(subsets(combs, k));
            combs2 = unique(subsets(combs, k));
            for i in combs2 do (combs1 = append(combs1, reverse(i)));
-           --combs = unique(combs1);
         )
         else (
            combs = flatten(for i in l list(i));
            combs1 = unique(subsets(combs, k));
            combs2 = unique(subsets(combs, k));
            for i in combs2 do (combs1 = append(combs1, reverse(i)));
-           -- combs = unique(combs1);
         );
     )
     else combs1 = for i in l list(asList(i));
@@ -1496,6 +1494,10 @@ primalUndirectedCycle = (G) -> (
 ------------------------------------------------------------
 makeTight = (Q, W) -> (
     potentialF := incInverse(Q, W);
+    k := entries generators kernel Q.connectivityMatrix;
+    potentialF = potentialF + flatten entries first asList(transpose(matrix({sumList(k, Axis=>"Row")})));
+    print("calling makeTight with quiver ", Q, " and flow ", potentialF);
+
 
     if isTight(Q, potentialF) then (
         return toricQuiver(Q.connectivityMatrix, potentialF);
@@ -1507,6 +1509,7 @@ makeTight = (Q, W) -> (
         S := {};
 
         if #R < 1 then (
+            print("Combination is tight. Returning");
             Rvertices = first(maxUnstSubs#Singletons);
             S = Rvertices;
         ) else (
@@ -1527,10 +1530,13 @@ makeTight = (Q, W) -> (
             );
         );
 
+        print("Step 1: maximalUnstableSubquiver is: ", R);
+        print("Step 2: Subset S of vertices is: ", S);
         alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
 
+        print("Step 3: arrow chosen is ", alpha, " with endpoints ", aMinus,aPlus);
         newRows := entries(Q.connectivityMatrix);
         newCols := drop(asList(0..#Q.Q1 - 1), {alpha, alpha});
         newM := matrix(for e in Q.Q0 list(
@@ -1556,6 +1562,8 @@ makeTight = (Q, W) -> (
 			i
 		)
 	);
+        print("Step 4: quiver with alpha removed is: ", newQ_nonEmptyEdges);
+        print("Step 5: passing to makeTight to check if we're done...");
         return makeTight(newQ_nonEmptyEdges, newW);
     );
 )
