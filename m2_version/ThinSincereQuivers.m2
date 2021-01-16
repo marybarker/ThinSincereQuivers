@@ -1496,12 +1496,16 @@ makeTight = (Q, W) -> (
     potentialF := incInverse(Q, W);
     k := entries generators kernel Q.connectivityMatrix;
     potentialF = potentialF + flatten entries first asList(transpose(matrix({sumList(k, Axis=>"Row")})));
-    print("calling makeTight with quiver ", Q, " and flow ", potentialF);
 
 
     if isTight(Q, potentialF) then (
         return toricQuiver(Q.connectivityMatrix, potentialF);
     ) else (
+        if (#stableTrees(W, Q) < 1) then (
+            print("Error: provided weight theta is not in C(Q) and so does not admit a tight toric quiver");
+            return ;
+        );
+
         Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(potentialF);
         maxUnstSubs := maximalUnstableSubquivers(toricQuiver(Q.connectivityMatrix, potentialF));
         R := first(maxUnstSubs#NonSingletons);
@@ -1509,7 +1513,6 @@ makeTight = (Q, W) -> (
         S := {};
 
         if #R < 1 then (
-            print("Combination is tight. Returning");
             Rvertices = first(maxUnstSubs#Singletons);
             S = Rvertices;
         ) else (
@@ -1529,14 +1532,10 @@ makeTight = (Q, W) -> (
                 if success then break;
             );
         );
-
-        print("Step 1: maximalUnstableSubquiver is: ", R);
-        print("Step 2: Subset S of vertices is: ", S);
-        alpha := first(positions(sumList(Qcm^S, Axis=>"Col"), x -> x < 0));
+        alpha := first toList (set(0..#Q.Q1-1) - set(R));
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
 
-        print("Step 3: arrow chosen is ", alpha, " with endpoints ", aMinus,aPlus);
         newRows := entries(Q.connectivityMatrix);
         newCols := drop(asList(0..#Q.Q1 - 1), {alpha, alpha});
         newM := matrix(for e in Q.Q0 list(
@@ -1562,8 +1561,6 @@ makeTight = (Q, W) -> (
 			i
 		)
 	);
-        print("Step 4: quiver with alpha removed is: ", newQ_nonEmptyEdges);
-        print("Step 5: passing to makeTight to check if we're done...");
         return makeTight(newQ_nonEmptyEdges, newW);
     );
 )
