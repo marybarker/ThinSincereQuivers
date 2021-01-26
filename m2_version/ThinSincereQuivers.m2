@@ -8,6 +8,7 @@ newPackage(
          Email => "marybarker@wustl.edu",
          HomePage => "https://github.com/marybarker"}, 
         {Name => "Patricio Gallardo",
+         Email => "pgallard@ucr.edu",
          HomePage => "http://patriciogallardo.com/"
         }
     },
@@ -37,7 +38,6 @@ export {
     "sameChamber",
     "theta",
     "threeVertexQuiver",
-    "toricQuivers",
     "walls",
     "wallType",
 -- Options
@@ -330,93 +330,6 @@ isPermutation = (x, y) -> (
 
 
 ------------------------------------------------------------
--- get unique entries from list of undirected graphs -- 
-unorientedUniqueUpToPermutation = x -> (
-    if #x > 1 then (
-        toSave := (0..(#x - 1));
-        for i from 0 to #x - 2 do (
-            for j from i + 1 to #x - 1 do (
-                if #positions(toSave, a -> a == j) > 0 then (
-                    if isPermutation(x#i, x#j) == false then (
-                        continue;
-                    )
-                    else (
-                        toSave = delete(j, toSave);
-                    )
-                )
-            )
-        );
-        for i in toSave list(x#i)
-    )
-    else x
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
--- create all possible undirected graphs with #vertices=x#0 and #edges=x#1 -- 
-allPossibleBaseGraphsForPair = x -> (
-   g0 := x#0;
-   g1 := x#1;
-
-   -- get all possible columns for connectivity matrix (entries must be 0,1, or 2)
-   possibleCols := asList({{2}});
-   if g0 > 1 then (
-       possibleCols = permutations({2} | toList(g0-1:0));
-       possibleCols = possibleCols | permutations({1,1} | toList(g0-2:0));
-   );
-
-   -- all combinations of columns to create rows
-   rowCombs := combinations(g1, (0..(#possibleCols - 1)), Order=>false, Replacement=>true);
-
-   candidateMats := for i in rowCombs list(for j in i list(asList(possibleCols#j)));
-   candidateMats = for i in candidateMats list(transpose(matrix(i)));
-   candidateMats = for i in candidateMats list(if min(sumList(entries(i), Axis=>"Row")) >= 3 then (i) else continue);
-   candidateMats = unorientedUniqueUpToPermutation(candidateMats);
-   return for m in candidateMats list (if isGraphConnected(m) then (m) else (continue;));
-)
-------------------------------------------------------------
---allPossibleBaseGraphsForPair = x -> (
---   g0 := x#0;
---   g1 := x#1;
---
---   if g0 > 1 then (
---       allRows := combinations(g1, {0,1,2}, Replacement=>true, Order=>false, MinSum=>3);
---
---       -- possible columns that begin with 0, 1, or 2 respectively
---       twoStartCol := {2} | asList(g0-1:0);
---       oneStartCols := for x in permutations({1} | asList(g0-2:0)) list({1} | x);
---
---       if g0 > 2 then (
---           zeroStartCols := for x in permutations({1} | asList(g0-3:0)) list({0} | x);
---           lens := {{0}, 1:#zeroStartCols, #zeroStartCols:#zeroStartCols+#oneStartCols};
---
---           for r in allRows list (
---               
---           );
---       ) else (
---           lens := {#oneStartCols, 1};
---           
---       );
---
---   ) else (
---        matrix {toList(g1:2)}
---   );
---)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
--- create all possible undirected base graphs for quiver generation in dimension d-- 
-undirectedGraphs = (d) -> (
-   graphPairs := apply((1..2*(d - 1)), i -> {i, i+d-1});
-   connectivityMatrices := allPossibleBaseGraphsForPair \ graphPairs;
-   flatten(connectivityMatrices)
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
 -- yield the edges of a graph in the form of a list of pairs 
 -- (v1, v2), where edge E is from v1 to v2
 graphEdges = method(Options=>{Oriented=>false, RavelLoops=>false});
@@ -686,193 +599,6 @@ splitEdges = (m, E) -> (
         Es = append(replace(i, {e#0, nVerts+i}, Es), {nVerts+i, e#1});
     );
     graphFromEdges(Es)
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
--- generate the undirected graphs with admissable #vertices and #arrows to generate quivers
-undirectedBaseGraphs = (n) -> (
-    for m in undirectedGraphs(n) list(
-        es := graphEdges(m, Oriented=>false, RavelLoops=>true);
-        if #es > 0 then (
-            inCycle := for i from 0 to #es - 1 list( isEdgeInCycle(i, es) );
-            if all(inCycle, i -> i == true) then (m) else (continue;)
-        )
-    )
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
--- remove all loops from a given graph given in matrix form
--- and return the set of all loop-free copies with every 
--- combination of the remaining edges split
-splitLoopsAndEdges = m -> (
-    origNumEdges := #graphEdges(m);
-    A := splitLoops(m);
-    M := A#0;
-    loops := A#1;
-    originalLooplessEdges := set(0..origNumEdges - 1) - set(loops);
-
-    if #originalLooplessEdges > 0 then (
-        otherEdgeCombs := for i from 0 to #originalLooplessEdges list(
-            asList(combinations(i, asList(originalLooplessEdges), Replacement=>false, Order=>false))
-        );
-        outputs := flatten(for i from 0 to #otherEdgeCombs - 1 list(
-            for comb in otherEdgeCombs#i list(
-                splitEdges(M, asList(comb))
-            )
-        ));
-        outputs = append(outputs, M);
-        unorientedUniqueUpToPermutation(outputs)
-    )
-    else (
-        {M}
-    )
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
--- put set of all admissable orientations on the matrix m
-allPossibleOrientations = m -> (
-    rows := entries(m);
-
-    -- first make all vertices of valence 2 into sinks. 
-    mat := matrix(for i in rows list(
-        if sumList(i) == 2 then (-1*i) else (i)
-    ));
-    cols := entries(transpose(mat));
-    es := graphEdges(mat, Oriented=>false);
-
-    -- now take every combination of +-1 for the columns that do 
-    -- not yet add up to 0
-    columnsToChange := for i from 0 to #cols - 1 list(
-        if sumList(cols#i) == 0 then (continue;) else (i)
-    );
-
-    if #columnsToChange > 0 then (
-        columnChoices := for i in columnsToChange list(
-            edge := es#i;
-            tail := edge#0;
-            head := edge#1;
-            {replaceInList(tail, -1, cols#i), replaceInList(head, -1, cols#i)}
-        );
-
-        combinationsOfChoices := combinations(#columnsToChange, {0, 1}, Replacement=>true, Order=>false);
-        for choice in combinationsOfChoices list(-1*transpose(matrix(
-            for c from 0 to #cols - 1 list(
-                if #columnsToChange == #delete(c, columnsToChange) then (
-                    cols#c
-                )
-                else (
-                    p := position(columnsToChange, i -> i == c);
-                    colOpts := columnChoices#p;
-                    choiceForCol := choice#p;
-                    colOpts#choiceForCol
-                )
-            )
-        )))
-    )
-    else (
-        {-1*mat}
-    )
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
--- take a list of quivers(directed graphs) and return the ones
--- that do not contain any oriented cycles. 
-removeOrientedCycles = (l) -> (
-    for m in l list(
-        if existsOrientedCycle(m) then (
-            continue;
-        )
-        else (
-            m
-        )
-    )
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
--- take a list of quivers(directed graphs) and return the 
--- unique up to isomorphism list 
-uniqueUpToQuiverIsomorphism = M -> (
-    if #M > 1 then (
-        toSave := asList(0..(#M - 1));
-        for mi from 0 to #M - 2 do (
-            m := M_mi;
-            mShape := {numgens(target(m)), numgens(source(m))};
-            mValences := sort(sumList(entries(m), Axis=>"Row"));
-
-            for ni from mi + 1 to #M - 1 do(
-                if #positions(toSave, jj -> jj == ni) < 1 then (
-                    continue;
-                )
-                else (
-                    n := M_ni;
-                    if n == m or n == -1*m then (
-                        toSave = delete(ni, toSave);
-                    )
-                    else (
-                        nShape := {numgens(target(m)), numgens(source(m))};
-                        nValences := sort(sumList(entries(n), Axis=>"Row"));
-                        if nShape == mShape and nValences == mValences then (
-                            possiblePermutations := combinations(nShape#1, (0..(nShape#1-1)), Replacement=>false);
-                            for p in possiblePermutations do (
-                                nPoss := n_p;
-                                if isPermutation(nPoss, m) or isPermutation(nPoss, -1*m) then(
-                                    toSave = delete(ni, toSave);
-                                );
-                            );
-                        );
-                    );
-                );
-            );
-        );
-        M_toSave
-    )
-    else M
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
--- generates the Toric Quivers in dimension n
-toricQuivers = n -> (
-    gs := undirectedBaseGraphs(n);
-    gs = flatten(for i in gs list(splitLoopsAndEdges(i)));
-    gs = flatten(for i in gs list(allPossibleOrientations(i)));
-    qs := removeOrientedCycles(gs);
-    qs = uniqueUpToQuiverIsomorphism(qs);
-    for q in qs list(
-        toricQuiver(q)
-    )
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
-getFirstGraphFromPair = (g0, g1) -> (
-    -- get all possible columns for connectivity matrix (entries must be 0,1, or 2)
-    possibleCols := combinations(g0, {0,1,2}, Replacement=>true, MinSum=>2, MaxSum=>2);
-
-    -- all combinations of columns to create rows
-    rowCombs := combinations(g1, (0..(#possibleCols - 1)), Replacement=>true);
-    M := 0;
-    firstG := 0;
-    for i in rowCombs do(
-        M = transpose(matrix(for j in i list(asList(possibleCols#j))));
-        if min(sumList(entries(M), Axis=>"Row")) >= 3 then (
-            firstG = M; 
-            break;
-        ) else (continue;)
-    );
-    firstG
 )
 ------------------------------------------------------------
 
@@ -1736,15 +1462,14 @@ multidoc ///
             Text
                 {\em ThinSincereQuivers} is a package for creating and manipulating toric quivers.
             Text   
+                For further details in the theory, we suggest the following articles and the references within them:
+            Text
                 @UL { 
-                    {"Klaus Altmann, Benjamin Nill, Sabine Schwentner, Izolda Wiercinska, ", 
-                        HREF("https://www.sciencedirect.com/science/article/pii/S0012365X09001162",
-                            EM "Flow polytopes and the graph of reflexive polytopes"), ", 
-                        Discrete Mathematics. 309.16(2009), pp 4992-4999."
-                    }, 
-                    {"Patricio Gallardo, Daniel Mckenzie, ", 
-                        HREF("https://arxiv.org/abs/1811.01993", 
-                             EM "On the neighborliness of dual flow polytopes of quivers"), ", 2018"
+                      {"Lutz Hille, ", HREF{"https://doi.org/10.1016/S0024-3795(02)00406-8", EM "Quivers, cones and polytopes, "}, "
+                       Linear algebra and its applications 365 (2003): 215-237."},
+                      {"Mátyás Domokos and  Dániel Joó, ", HREF{"https://arxiv.org/abs/1402.5096v1", 
+                            EM "On the equations and classification of toric quiver varieties"},",  
+                          Proceedings. Section A, Mathematics-The Royal Society of Edinburgh 146.2 (2016): 265."
                     }
                 }@
             Text
@@ -1778,7 +1503,6 @@ multidoc ///
             "bipartiteQuiver"
             "threeVertexQuiver"
             "chainQuiver"
-            "toricQuivers"
 
     Node
         Key
@@ -1989,6 +1713,14 @@ multidoc ///
                     {TT "flow: ","list of integers giving the flow on each edge"},
                     {TT "weights: ","induced weights on vertices given by the image of the flow"},
                 }@
+
+            Text
+                One can generate the quiver {\tt Q} associated to the bipartite graph 
+                {\tt K_{2,3}} with a random flow {\tt w} as follows:
+
+            Example
+                Q0 = {{0,2},{0,3},{0,4},{1,2},{1,3},{1,4}}
+                Q = toricQuiver(Q0, Flow=>"Random")
     Node
         Key
             "subquiver representation"
@@ -2152,19 +1884,6 @@ multidoc ///
                 Q = chainQuiver ({1,2,3}, Flow=>{1, 2, 1, 3, 1, 4})
     Node
         Key
-            toricQuivers
-        Headline
-            create all toric quivers in a given dimension
-        Usage
-            toricQuivers N
-        Inputs
-            N: ZZ
-                dimension of the toric quivers
-        Outputs
-            Qs: List
-                of all toric quivers (up to quiver isomorphism) in dimension $N$
-    Node
-        Key
             incInverse
         Headline
             compute a flow in the preimage for a given weight
@@ -2174,6 +1893,11 @@ multidoc ///
             Q: ToricQuiver
             W: List
                 of integers, specifying the weight on each vertex
+        Description
+            Example
+                Q = toricQuiver(bipartiteQuiver(2,3));
+                th = {-5,-1,2,2,2};
+                incInverse(Q,th)
     Node
         Key
             isTight
@@ -2189,7 +1913,7 @@ multidoc ///
             Text
                 Determines if a toric quiver {\tt Q} is tight with respect to the vertex weights induced by its flow
             Example
-                isTight bipartiteQuiver(2, 3, Flow=>"Random")
+                isTight bipartiteQuiver(2, 3)
     Node
         Key
             (isTight, ToricQuiver)
@@ -2242,6 +1966,25 @@ multidoc ///
                 isTight ({2,1,2,3,2,3}, bipartiteQuiver(2, 3))
     Node
         Key
+            makeTight
+        Headline
+            return a tight quiver with the same flow polytope
+        Usage
+            makeTight(Q, W)
+        Inputs
+            Q: ToricQuiver
+            W: List
+               of values corresponding to a weight on each arrow of Q
+        Outputs
+            Q: ToricQuiver
+               that is tight with respect to the flow on the input, and which has the same flow polytope as the input.
+        Description
+            Example
+                Q = bipartiteQuiver(2,3)
+                w = {-5,-1,2,2,2}
+                makeTight(Q,w)
+    Node
+        Key
             subquivers
         Headline
             return all possible subquivers of a given quiver
@@ -2269,6 +2012,11 @@ multidoc ///
                     {"as a subset of rows and columns of the original connectivity matrix, and"},
                     {"as a copy of the original connectivity matrix with certain rows and columns zeroed out. "}
                 }@
+
+            Example
+                Q = chainQuiver {2}
+                subquivers Q
+                subquivers(Q, Format=>"list")
     Node
         Key
             (subquivers, ToricQuiver)
@@ -2308,7 +2056,7 @@ multidoc ///
         Key
             isStable
         Headline
-            determines if a subquiver is stable
+            determines if a subquiver is semistable with respect to a given weight
         Usage
             isStable (Q, L)
             isStable (Q, SQ)
@@ -2322,9 +2070,15 @@ multidoc ///
             :Boolean
         Description
             Text 
-                a subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
+                This function determines if a given subquiver 
+                is semi-stable with respect to the weight saved on {\tt Q}. 
+                A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
 		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
 		the sum of the weights associated to {\tt V} is positive. 
+            Example
+                Q = bipartiteQuiver(2, 3);
+                P = Q^{0,1,4,5};
+                isStable(Q, P)
 		
     Node
         Key
@@ -2364,7 +2118,7 @@ multidoc ///
         Key
             isSemistable
         Headline
-            determines if a subquiver is semi-stable
+            determines if a subquiver is semistable with respect to a given weight
         Usage
             isSemistable (Q, L)
             isSemistable (Q, SQ)
@@ -2378,6 +2132,8 @@ multidoc ///
             :Boolean
         Description
             Text
+                This function determines if a given subquiver 
+                is semi-stable with respect to the weight saved on {\tt Q}. 
                 A subquiver {\tt SQ} of the quiver {\tt Q} is semistable if for every subset 
 		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
 		the sum of the weights associated to {\tt V} is nonnegative. 
@@ -2414,9 +2170,28 @@ multidoc ///
             :Boolean
         Description
             Example
-                Q = bipartiteQuiver(2, 3)
+                Q = bipartiteQuiver(2, 3);
                 S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
                 isSemistable (Q, S)
+    Node
+        Key
+            stableTrees
+        Headline
+            return the spanning trees that are stable
+        Usage
+            stableTrees(th, Q)
+        Inputs
+            th: List
+                of weights corresponding to each vertex
+            Q: ToricQuiver
+        Outputs
+            L: List
+                of lists, each representing the arrows that comprise a spanning tree that is stable with respect to the weight th
+        Description
+            Example
+                Q = bipartiteQuiver(2,3);
+                th = {-3,-3,2,2,2};
+                stableTrees(th, Q)
     Node
         Key
             isAcyclic
@@ -2431,6 +2206,9 @@ multidoc ///
         Description
             Text
                 checks that a toric quiver does not contain any oriented cycles 
+            Example
+                Q = bipartiteQuiver(2, 3);
+                isAcyclic Q
     Node
         Key
             (isAcyclic, ToricQuiver)
@@ -2531,12 +2309,14 @@ multidoc ///
             Format => String
                 format for representing the subquivers
         Outputs
-            L: List
-                list of subquivers, given in specified format
+            L: HashTable
+                consisting of two keys: {\tt Nonsingletons} and {\tt Singletons}
         Description
             Text
                 this routine takes all of the possible subquivers of a given quiver {\tt Q} 
-                and returns those that are both unstable and maximal
+                and returns those that are both unstable and maximal with respect to the weight on the quiver {\tt Q}
+            Text
+                Subquivers are represented by lists of arrows, except in the case of subquivers that consist of singleton vertices. 
             Example
                 maximalUnstableSubquivers bipartiteQuiver (2, 3)
     Node
@@ -2554,6 +2334,9 @@ multidoc ///
         Description
             Text
                 this is the image of the $Inc$ map 
+            Example
+                Q = bipartiteQuiver(2, 3, Flow=>"Random")
+                theta Q
     Node
         Key
             (theta, ToricQuiver)
@@ -2705,6 +2488,17 @@ multidoc ///
             : 
                 wall type is given by (ZZ, ZZ)
         Description
+            Text
+                every wall can be represented uniquely by a partition of the vertices 
+                {\tt Q0} of {\tt Q} into two sets {\tt Qplus} and {\tt Qminus}. 
+                We denote the wall {\tt W} by the subset of vertices {\tt Qplus} used for defining it. 
+            Text
+                The type of the wall is defined as {\tt (t+,t-)} where {\tt t^+} 
+                is the number of arrows starting {\tt Qplus} and ending in 
+                {\tt Qminus}, and {\tt t-} is the number of arrows starting {\tt Qminus} 
+                and ending in {\tt Qplus}. 
+            Example
+                wallType(bipartiteQuiver(2, 3), {0,2,3})
     Node
         Key
             (wallType, ToricQuiver, List)
@@ -2720,7 +2514,14 @@ multidoc ///
                 wall type is given by (ZZ, ZZ)
         Description
             Text
-                every wall can be represented uniquely by a partition of the vertiecs 
+                every wall can be represented uniquely by a partition of the vertices 
+                {\tt Q0} of {\tt Q} into two sets {\tt Qplus} and {\tt Qminus}. 
+                We denote the wall {\tt W} by the subset of vertices {\tt Qplus} used for defining it. 
+            Text
+                The type of the wall is defined as {\tt (t+,t-)} where {\tt t^+} 
+                is the number of arrows starting {\tt Qplus} and ending in 
+                {\tt Qminus}, and {\tt t-} is the number of arrows starting {\tt Qminus} 
+                and ending in {\tt Qplus}. 
             Example
                 wallType(bipartiteQuiver(2, 3), {0,2,3})
     Node
@@ -2735,6 +2536,15 @@ multidoc ///
         Outputs
             : List
         Description
+            Text
+                every wall can be represented uniquely by a partition of the vertices 
+                {\tt Q0} of {\tt Q} into two sets {\tt Qplus} and {\tt Qminus}. As a partition 
+                can be expressed in terms of only one of the subsets, only one of the two sets {\tt Qplus} 
+                and {\tt Qminus} is used in every case. 
+                Thus we denote the wall {\tt W} by the subset of vertices {\tt Qplus} used for defining it. 
+            Example
+                Q = toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
+                walls Q
     Node
         Key
             (walls, ToricQuiver)
@@ -2751,7 +2561,8 @@ multidoc ///
                 each wall is given in the form $(t^+,t^-), Q^+$, where $(t^+,t^-)$ is 
                 the wall type associated to the wall with vertex-partition $Q_0=Q^+\cup (Q_0\setminus Q^+)$
             Example
-                walls bipartiteQuiver (2, 3)
+                Q = toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
+                walls Q
     Node
         Key
             mergeOnVertex
@@ -2772,8 +2583,6 @@ multidoc ///
                 vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
             Example
                 mergeOnVertex (bipartiteQuiver (2, 3), 1, bipartiteQuiver (2, 3), 0)
-        Caveat
-            this has not been studied extensively
     Node
         Key
             (mergeOnVertex, ToricQuiver, ZZ, ToricQuiver, ZZ)
@@ -2793,8 +2602,6 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
             Example
                 mergeOnVertex (bipartiteQuiver (2, 3), 1, bipartiteQuiver (2, 3), 0)
-        Caveat
-            this has not been studied extensively
     Node
         Key
             (mergeOnVertex, ToricQuiver, ZZ, Matrix, ZZ)
@@ -2814,8 +2621,6 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
             Example
                 mergeOnVertex (bipartiteQuiver (2, 3), 1, matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0)
-        Caveat
-            this has not been studied extensively
     Node
         Key
             (mergeOnVertex, Matrix, ZZ, ToricQuiver, ZZ)
@@ -2835,8 +2640,6 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
             Example
                 mergeOnVertex (matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 1, bipartiteQuiver (2, 3), 0)
-        Caveat
-            this has not been studied extensively
     Node
         Key
             mergeOnArrow
@@ -2856,8 +2659,6 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
             Example
                 mergeOnArrow (bipartiteQuiver (2, 3), 0, bipartiteQuiver (2, 3), 0)
-        Caveat
-            this has not been studied extensively
     Node
         Key
             (mergeOnArrow, ToricQuiver, ZZ, ToricQuiver, ZZ)
@@ -2877,8 +2678,6 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
             Example
                 mergeOnArrow (bipartiteQuiver (2, 3), 0, bipartiteQuiver (2, 3), 0)
-        Caveat
-            this has not been studied extensively
     Node
         Key
             (mergeOnArrow, ToricQuiver, ZZ, Matrix, ZZ)
@@ -2898,8 +2697,6 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
             Example
                 mergeOnArrow (bipartiteQuiver (2, 3), 0, matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0)
-        Caveat
-            this has not been studied extensively
     Node
         Key
             (mergeOnArrow, Matrix, ZZ, ToricQuiver, ZZ)
@@ -2919,7 +2716,5 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
             Example
                 mergeOnArrow (matrix ({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0, bipartiteQuiver (2, 3), 0)
-        Caveat
-            this has not been studied extensively
 ///
 end--
