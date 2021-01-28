@@ -1,6 +1,6 @@
 newPackage(
     "ThinSincereQuivers",
-    Headline => "Construction of flow polytopes and their associated quivers in arbitrary (up to computing power) dimension",
+    Headline => "Construction of flow polytopes and their associated quivers",
     Version => "0.0",
     Date => "November 20, 2019",
     Authors => {
@@ -295,41 +295,6 @@ replaceInList = (i, v, l) -> (
 
 
 ------------------------------------------------------------
-isPermutation = (x, y) -> (
-    toRet := false;
-
-    xrows := entries(x);
-    yrows := sort(entries(y));
-    xcols := entries(transpose(x));
-    ycols := entries(transpose(y));
-
-    if #xrows == #yrows and #xcols == #ycols then (
-        rs := toList(0..#xrows - 1);
-        -- rowPermutations = permutations(rs);
-        for rPerm in permutations(rs) do (
-            if xrows_rPerm == yrows then (
-                toRet = true;
-                break;
-            )
-            else (
-                xrowsP := matrix(xrows_rPerm);
-                cs := toList(0..#xcols - 1);
-                -- colPermutations := permutations(cs);
-                for cPerm in permutations(cs) do (
-                    if entries(xrowsP_cPerm) == yrows then (
-                        toRet = true;
-                        break;
-                    );
-                );
-            );
-        );
-    );
-    toRet
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
 -- yield the edges of a graph in the form of a list of pairs 
 -- (v1, v2), where edge E is from v1 to v2
 graphEdges = method(Options=>{Oriented=>false, RavelLoops=>false});
@@ -556,49 +521,6 @@ isEdgeInCycle = (i, E) -> (
     else (
         false
     )
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
-splitLoops = m -> (
-    Es := graphEdges(m, Oriented=>false);
-    nVerts := numRows(m);
-    loopsBroken := for i from 0 to #Es - 1 list(
-        e := Es#i;
-        if (#e < 2) or #(delete(e#0, e)) < 1 then (
-            i
-        )
-        else (continue;)
-    );
-    altLB := flatten(for i in loopsBroken list(i));
-    newEdges := flatten(for i from 0 to #Es - 1 list (
-        e := Es#i;
-        if #loopsBroken != #delete(i, loopsBroken) then (
-            p := position(loopsBroken, x -> x == i);
-            altLB = append(replaceInList(p, loopsBroken_p + p, altLB), loopsBroken_p + p + 1);
-            {{e#0, nVerts+p}, {nVerts+p, e#0}}
-        )
-        else (
-            {e}
-        )
-    ));
-    (graphFromEdges(newEdges), altLB)
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
-splitEdges = (m, E) -> (
-    Es := graphEdges(m, Oriented=>false);
-    nVerts := numRows(m);
-
-    for i from 0 to #E - 1 do (
-        ei := E#i;
-        e := Es#ei;
-        Es = append(replace(i, {e#0, nVerts+i}, Es), {nVerts+i, e#1});
-    );
-    graphFromEdges(Es)
 )
 ------------------------------------------------------------
 
@@ -1293,6 +1215,7 @@ makeTight = (Q, W) -> (
 ------------------------------------------------------------
 
 
+------------------------------------------------------------
 basisForFlowPolytope = (Q) -> (
    (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
     es := sT | removedEdges;
@@ -1325,8 +1248,10 @@ basisForFlowPolytope = (Q) -> (
     transpose matrix output
 )
 ------------------------------------------------------------
-flowPolytope = method()
+
+
 ------------------------------------------------------------
+flowPolytope = method()
 flowPolytope(ToricQuiver, List) := (Q, th) -> (
     allTrees := allSpanningTrees(Q);
     regularFlows := for x in allTrees list(
@@ -1338,7 +1263,6 @@ flowPolytope(ToricQuiver, List) := (Q, th) -> (
     );
     vertices convexHull matrix regularFlows
 )
-------------------------------------------------------------
 flowPolytope ToricQuiver := Q -> (
     flowPolytope(Q, Q.weights)
 )
@@ -1347,11 +1271,9 @@ flowPolytope ToricQuiver := Q -> (
 
 ------------------------------------------------------------
 dualFlowPolytope = method()
-------------------------------------------------------------
 dualFlowPolytope(ToricQuiver) := (Q) -> (
     vertices polar convexHull flowPolytope(Q)
 )
-------------------------------------------------------------
 dualFlowPolytope(ToricQuiver, List) := (Q, F) -> (
     vertices polar convexHull flowPolytope(Q, F)
 )
@@ -1451,6 +1373,8 @@ mergeOnArrow(ToricQuiver, ZZ, ToricQuiver, ZZ) := (Q1, a1, Q2, a2) -> (
 )
 ------------------------------------------------------------
 
+
+------------------------------------------------------------
 beginDocumentation()
 multidoc ///
     Node
@@ -1729,7 +1653,7 @@ multidoc ///
                 There are many ways to take a subset $R=(R_0,R_1)$ of a quiver $Q=(Q_0,Q_1)$. 
                 This is because we can consider $R_0\subset Q_0$ and $R_1\subset Q_1$. 
                 Alternatively, $R$ is itself a quiver, with $|R_1|$ arrows and $|R_0|$ 
-                vertices. Thus we can consider $R$ independently of the arrow/vertex labeling of $Q$. 
+                vertices. Thus we can also consider $R$ independently of the arrow/vertex labeling of $Q$. 
 
             Text
                 The two methods corresponding to these ideas are referenced in the examples below. 
@@ -1927,7 +1851,10 @@ multidoc ///
             : Boolean
         Description
             Text
-                Determines if a toric quiver $Q$ is tight with respect to the vertex weights induced by its flow
+                A toric quiver $Q$ is tight with respect to a given flow if there is no maximal 
+                unstable subquiver of codimension 1. That is, every unstable subquiver of $Q$ 
+                has at most $|Q_1|-2$ arrows. This method determines if a toric quiver $Q$ is 
+                tight with respect to the vertex weights induced by its flow. 
             Example
                 isTight bipartiteQuiver(2, 3, Flow=>"Random")
     Node
@@ -1940,11 +1867,17 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             W: List
+            Format => 
+                specify whether input W is a flow (integer values associated to each arrow) 
+                or the image of the flow under the map {\tt theta} (integer values associated to each vertex). 
         Outputs
             : Boolean
         Description
             Text
-                Determines if a toric quiver $Q$ is tight with respect to the vertex weights induced by its flow
+                A toric quiver $Q$ is tight with respect to a given flow if there is no maximal 
+                unstable subquiver of codimension 1. That is, every unstable subquiver of $Q$ 
+                has at most $|Q_1|-2$ arrows. This method determines if a toric quiver $Q$ is 
+                tight with respect to the vertex weights induced by its flow. 
             Example
                 isTight (bipartiteQuiver(2, 3), {2,1,2,3,2,3})
     Node
@@ -1957,11 +1890,17 @@ multidoc ///
         Inputs
             W: List
             Q: ToricQuiver
+            Format => 
+                specify whether input W is a flow (integer values associated to each arrow) 
+                or the image of the flow under the map {\tt theta} (integer values associated to each vertex). 
         Outputs
             : Boolean
         Description
             Text
-                Determines if a toric quiver $Q$ is tight with respect to the vertex weights induced by its flow
+                A toric quiver $Q$ is tight with respect to a given flow if there is no maximal 
+                unstable subquiver of codimension 1. That is, every unstable subquiver of $Q$ 
+                has at most $|Q_1|-2$ arrows. This method determines if a toric quiver $Q$ is 
+                tight with respect to the vertex weights induced by its flow. 
             Example
                 isTight ({2,1,2,3,2,3}, bipartiteQuiver(2, 3))
     Node
@@ -1974,7 +1913,7 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             W: List
-               of values corresponding to a weight on each arrow of Q
+               of values corresponding to a weight on each arrow of {\tt Q}
         Outputs
             Q: ToricQuiver
                that is tight with respect to the flow on the input, and which has the same flow polytope as the input.
@@ -2071,7 +2010,7 @@ multidoc ///
         Description
             Text 
                 This function determines if a given subquiver 
-                is semi-stable with respect to the weight saved on {\tt Q}. 
+                is stable with respect to the weight saved on {\tt Q}. 
                 A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
 		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
 		the sum of the weights associated to {\tt V} is positive. 
@@ -2094,6 +2033,12 @@ multidoc ///
         Outputs
             :Boolean
         Description
+            Text 
+                This function determines if a given subquiver 
+                is stable with respect to the weight saved on {\tt Q}. 
+                A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
+		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
+		the sum of the weights associated to {\tt V} is positive. 
             Example
                 isStable (bipartiteQuiver(2, 3), {0, 1})
     Node
@@ -2110,6 +2055,12 @@ multidoc ///
         Outputs
             :Boolean
         Description
+            Text 
+                This function determines if a given subquiver 
+                is stable with respect to the weight saved on {\tt Q}. 
+                A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
+		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
+		the sum of the weights associated to {\tt V} is positive. 
             Example
                 Q = bipartiteQuiver(2, 3)
                 S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
@@ -2152,7 +2103,11 @@ multidoc ///
             :Boolean
         Description
             Text 
-                a subquiver {\tt SQ} of the quiver {\tt Q} is semistable if 
+                This function determines if a given subquiver 
+                is semi-stable with respect to the weight saved on {\tt Q}. 
+                A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
+		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
+		the sum of the weights associated to {\tt V} is nonnegative. 
             Example
                 isSemistable (bipartiteQuiver(2, 3), {0, 1})
     Node
@@ -2169,6 +2124,12 @@ multidoc ///
         Outputs
             :Boolean
         Description
+            Text 
+                This function determines if a given subquiver 
+                is semi-stable with respect to the weight saved on {\tt Q}. 
+                A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
+		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
+		the sum of the weights associated to {\tt V} is nonnegative. 
             Example
                 Q = bipartiteQuiver(2, 3);
                 S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
@@ -2205,7 +2166,7 @@ multidoc ///
             :Boolean
         Description
             Text
-                checks that a toric quiver does not contain any oriented cycles 
+                This method determines whether a quiver is free from oriented cycles.
             Example
                 Q = bipartiteQuiver(2, 3);
                 isAcyclic Q
@@ -2222,7 +2183,7 @@ multidoc ///
             :Boolean
         Description
             Text
-                checks that a toric quiver does not contain any oriented cycles 
+                This method determines whether a quiver is free from oriented cycles.
             Example
                 isAcyclic bipartiteQuiver(2, 3)
                 isAcyclic toricQuiver matrix({{-1, 1, -1, -1}, {1, -1, 0, 0}, {0, 0, 1, 1}})
@@ -2258,6 +2219,10 @@ multidoc ///
         Outputs
             : Boolean
         Description
+            Text
+                checks that a set of vertices is closed under arrows with respect to the toricQuiver {\tt Q}. 
+                That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. 
+                Note that this does not require that $V\subset Q_0$.
             Example
                 isClosedUnderArrows ({0, 2, 3}, bipartiteQuiver(2, 3))
                 isClosedUnderArrows ({2, 3, 4}, bipartiteQuiver(2, 3))
@@ -2275,6 +2240,10 @@ multidoc ///
         Outputs
             : Boolean
         Description
+            Text
+                checks that a set of vertices is closed under arrows with respect to the toricQuiver {\tt Q}. 
+                That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. 
+                Note that this does not require that $V\subset Q_0$.
             Example
                 Q = threeVertexQuiver {1, 2, 3}
                 SQ = Q_{0,1}
@@ -2293,6 +2262,10 @@ multidoc ///
         Outputs
             : Boolean
         Description
+            Text
+                checks that a set of vertices is closed under arrows with respect to the toricQuiver {\tt Q}. 
+                That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. 
+                Note that this does not require that $V\subset Q_0$.
             Example
                 Q = threeVertexQuiver {1, 2, 3}
                 SQ = Q^{0,1}
@@ -2411,6 +2384,8 @@ multidoc ///
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
+            Text
+                Associated to every acyclic toric quiver is a flow polytope. 
             Example
                 flowPolytope(bipartiteQuiver(2, 3))
     Node
@@ -2456,6 +2431,9 @@ multidoc ///
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
+            Text
+                Associated to every acyclic toric quiver is a flow polytope. 
+                This Function returns the polar dual of the given flow polytope.
             Example
                 dualFlowPolytope(bipartiteQuiver(2, 3))
     Node
