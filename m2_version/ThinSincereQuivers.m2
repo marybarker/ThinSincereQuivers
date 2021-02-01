@@ -20,7 +20,6 @@ export {
     "basisForFlowPolytope",
     "bipartiteQuiver",
     "chainQuiver",
-    "dualFlowPolytope",
     "flowPolytope",
     "isTight",
     "incInverse",
@@ -1270,17 +1269,6 @@ flowPolytope ToricQuiver := Q -> (
 
 
 ------------------------------------------------------------
-dualFlowPolytope = method()
-dualFlowPolytope(ToricQuiver) := (Q) -> (
-    vertices polar convexHull flowPolytope(Q)
-)
-dualFlowPolytope(ToricQuiver, List) := (Q, F) -> (
-    vertices polar convexHull flowPolytope(Q, F)
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
 mergeOnVertex = method()
 mergeOnVertex(Matrix, ZZ, Matrix, ZZ) := (Q1, v1, Q2, v2) -> (
     nrow := numRows(Q1) + numRows(Q2) - 1;
@@ -2402,56 +2390,8 @@ multidoc ///
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
-            -- Example
-                -- flowPolytope(bipartiteQuiver(2, 3), {2,1,2,0,1,0})
-    Node
-        Key
-            dualFlowPolytope
-        Headline
-            generate the dual polytope associated to a toric quiver
-        Usage
-            dualFlowPolytope(Q, F)
-        Inputs
-            Q: ToricQuiver
-            F: List
-        Outputs
-            : Matrix
-                giving the coordinates of the vertices defining the flow polytope
-        Description
-    Node
-        Key
-            (dualFlowPolytope, ToricQuiver)
-        Headline
-            generate the dual polytope associated to a toric quiver
-        Usage
-            dualFlowPolytope Q
-        Inputs
-            Q: ToricQuiver
-        Outputs
-            : Matrix
-                giving the coordinates of the vertices defining the flow polytope
-        Description
-            Text
-                Associated to every acyclic toric quiver is a flow polytope. 
-                This Function returns the polar dual of the given flow polytope.
             Example
-                dualFlowPolytope(bipartiteQuiver(2, 3))
-    Node
-        Key
-            (dualFlowPolytope, ToricQuiver, List)
-        Headline
-            generate the dual polytope associated to a toric quiver
-        Usage
-            dualFlowPolytope(Q, F)
-        Inputs
-            Q: ToricQuiver
-            F: List
-        Outputs
-            : Matrix
-                giving the coordinates of the vertices defining the flow polytope
-        Description
-            -- Example
-                -- dualFlowPolytope(bipartiteQuiver(2, 3), {2,1,2,0,1,0})
+                flowPolytope(bipartiteQuiver(2, 3), {-3,-3,2,2,2})
     Node
         Key
             wallType
