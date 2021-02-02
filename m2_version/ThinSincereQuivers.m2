@@ -1228,12 +1228,14 @@ makeTight = (Q, W) -> (
 
 ------------------------------------------------------------
 basisForFlowPolytope = (Q) -> (
-    (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
+    --(sT, removedEdges) := spanningTree(Q.connectivityMatrix);
+    sT := first stableTrees(Q.weights, toricQuiver(Q.connectivityMatrix));
+    removedEdges := toList(set(0..#Q.Q1 - 1) - set(sT));
     es := sT | removedEdges;
 
     f := for i from 0 to #removedEdges - 1 list(
         edge := Q.Q1_removedEdges#i;
-        edgeList := sT | {i};
+        edgeList := sT | {removedEdges#i};
         cycle := primalUndirectedCycle(Q.Q1_sT | {edge});
 
         fi := #es:0;
@@ -1253,7 +1255,7 @@ basisForFlowPolytope = (Q) -> (
             ff#j
         )
     );
-    transpose matrix output
+    entries transpose matrix output
 )
 ------------------------------------------------------------
 
