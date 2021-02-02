@@ -12,7 +12,7 @@ newPackage(
          HomePage => "http://patriciogallardo.com/"
         }
     },
-    PackageImports => {"Graphs", "Polyhedra"}
+    PackageImports => {"Graphs", "Polyhedra","LatticePolytopes"}
 )
 export {
 -- Methods/Functions
@@ -37,7 +37,7 @@ export {
     "sameChamber",
     "theta",
     "threeVertexQuiver",
-    "walls",
+    "potentialWalls",
     "wallType",
 -- Options
     "AsSubquiver",
@@ -911,8 +911,8 @@ wallType(ToricQuiver, List) := (Q, Qp) -> (
 
 
 ------------------------------------------------------------
-walls = method()
-walls(Matrix) := (Q) -> (
+potentialWalls = method()
+potentialWalls(Matrix) := (Q) -> (
     nv := numRows(Q);
     nvSet := set(0..nv - 1);
     subs := (1..ceiling(nv/2));
@@ -941,8 +941,8 @@ walls(Matrix) := (Q) -> (
         )
     )
 )
-walls(ToricQuiver) := (Q) -> (
-    walls(Q.connectivityMatrix*diagonalMatrix(Q.flow))
+potentialWalls(ToricQuiver) := (Q) -> (
+    potentialWalls(Q.connectivityMatrix*diagonalMatrix(Q.flow))
 )
 ------------------------------------------------------------
 
@@ -1080,7 +1080,19 @@ stableTrees = (th, TQ) -> (
 sameChamber = (theta1, theta2, Q) -> (
     treesTheta1 := stableTrees(theta1, Q);
     treesTheta2 := stableTrees(theta2, Q);
-    return all(0..#treesTheta1 - 1, x -> treesTheta1#x == treesTheta2#x)
+    if (#treesTheta1 < 1 or #treesTheta2 < 1) then (
+        return "cannot be determined. stableTrees are empty"
+    ) else if all(0..#treesTheta1 - 1, x -> treesTheta1#x == treesTheta2#x) then (
+        return true
+    ) else (
+        p1 := flowPolytope(Q, theta1);
+        p2 := flowPolytope(Q, theta2);
+        if areIsomorphic(p1, p2) then (
+            return true
+        ) else (
+            return "cannot be determined"
+        )
+    )
 )
 ------------------------------------------------------------
 
@@ -1216,24 +1228,21 @@ makeTight = (Q, W) -> (
 
 ------------------------------------------------------------
 basisForFlowPolytope = (Q) -> (
-   (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
+    (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
     es := sT | removedEdges;
 
     f := for i from 0 to #removedEdges - 1 list(
         edge := Q.Q1_removedEdges#i;
+        edgeList := sT | {i};
         cycle := primalUndirectedCycle(Q.Q1_sT | {edge});
-
-        cycle = for x in cycle list(
-            if x == #sT then (x+i) else if x == -(#sT + 1) then (-#sT - i - 1) else (x)
-        );
 
         fi := #es:0;
         for j in cycle do (
             if j >= 0 then (
-                fi = replaceInList(j, 1, fi)
+                fi = replaceInList(edgeList#j, 1, fi)
             ) else (
                 k := -(1 + j);
-                fi = replaceInList(k, -1, fi)
+                fi = replaceInList(edgeList#k, -1, fi)
             );
         );
         fi
@@ -2444,11 +2453,11 @@ multidoc ///
                 wallType(bipartiteQuiver(2, 3), {0,2,3})
     Node
         Key
-            walls
+            potentialWalls
         Headline
-            return the walls in the weight chamber decomposition for a given quiver
+            return the potential walls in the weight chamber decomposition for a given quiver
         Usage
-            walls Q
+            potentialWalls Q
         Inputs
             Q: ToricQuiver
         Outputs
@@ -2462,14 +2471,14 @@ multidoc ///
                 Thus we denote the wall {\tt W} by the subset of vertices {\tt Qplus} used for defining it. 
             Example
                 Q = toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
-                walls Q
+                potentialWalls Q
     Node
         Key
-            (walls, ToricQuiver)
+            (potentialWalls, ToricQuiver)
         Headline
-            return the walls in the weight chamber decomposition for a given quiver
+            return the potential walls in the weight chamber decomposition for a given quiver
         Usage
-            walls Q
+            potentialWalls Q
         Inputs
             Q: ToricQuiver
         Outputs
@@ -2480,7 +2489,7 @@ multidoc ///
                 the wall type associated to the wall with vertex-partition $Q_0=Q^+\cup (Q_0\setminus Q^+)$
             Example
                 Q = toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
-                walls Q
+                potentialWalls Q
     Node
         Key
             mergeOnVertex
@@ -2634,5 +2643,28 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
             Example
                 mergeOnArrow (matrix ({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0, bipartiteQuiver (2, 3), 0)
+    Node
+        Key
+            sameChamber
+        Headline 
+            determine if two weights lie in the same chamber
+        Usage
+            sameChamber(Th1, Th2, TQ)
+        Inputs
+            Th1: List
+            Th1: List
+            TQ: ToricQuiver
+        Description
+            Text
+                This function returns either a boolean value of {\tt true} or else a string
+                describing why the outcome cannot be determined. It requires that polytopes be 
+                smooth and that the set of stable trees for both weights be nonempty.
+            Example
+                Q = toricQuiver({{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}});
+                sameChamber({-3,2,-1,2},{-2,1,-2,3}, Q)    
+                --sameChamber(-{2,-1,1,-2},-{3,-1,-1,-1}, Q)  
+
+
+     
 ///
 end--
