@@ -1228,9 +1228,7 @@ makeTight = (Q, W) -> (
 
 ------------------------------------------------------------
 basisForFlowPolytope = (Q) -> (
-    --(sT, removedEdges) := spanningTree(Q.connectivityMatrix);
-    sT := first stableTrees(Q.weights, toricQuiver(Q.connectivityMatrix));
-    removedEdges := toList(set(0..#Q.Q1 - 1) - set(sT));
+    (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
     es := sT | removedEdges;
 
     f := for i from 0 to #removedEdges - 1 list(
@@ -1255,26 +1253,35 @@ basisForFlowPolytope = (Q) -> (
             ff#j
         )
     );
-    entries transpose matrix output
+    matrix output
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
-flowPolytope = method()
-flowPolytope(ToricQuiver, List) := (Q, th) -> (
+flowPolytope = method(Options=>{Format=>"SimplifiedBasis"})
+flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
     allTrees := allSpanningTrees(Q);
     regularFlows := for x in allTrees list(
-        if all(incInverse(Q_x, th), y -> y >= 0) then (
+        if all(incInverse(Q^x, th), y -> y >= 0) then (
             incInverse(Q^x, th)
         ) else (
             continue;
         )
     );
-    vertices convexHull matrix regularFlows
+    if opts.Format == "SimplifiedBasis" then (
+        fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th))) **QQ;
+        kerF := for f in regularFlows list(
+            ff := f - regularFlows#0;
+            solve(fpb, matrix(for fff in ff list ({fff})))
+        );
+        for k in kerF list flatten entries k
+    ) else (
+        matrix regularFlows
+    )
 )
-flowPolytope ToricQuiver := Q -> (
-    flowPolytope(Q, Q.weights)
+flowPolytope ToricQuiver := opts -> Q -> (
+    flowPolytope(Q, Q.weights, Format=>opts.Format)
 )
 ------------------------------------------------------------
 
@@ -2367,6 +2374,9 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             F: List
+            Format => String
+                specifying what basis to use. Default value is {\tt SimplifiedBasis} 
+                which returns the polytope in a basis giving the minimal degree necessary for polytope dimension. 
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
@@ -2379,14 +2389,20 @@ multidoc ///
             flowPolytope Q
         Inputs
             Q: ToricQuiver
+            Format => String
+                specifying what basis to use. Default value is {\tt SimplifiedBasis} 
+                which returns the polytope in a basis giving the minimal degree necessary for polytope dimension. 
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
             Text
                 Associated to every acyclic toric quiver is a flow polytope. 
+                For full-dimensional representation of the vertices, use {\tt Format => "FullBasis"}. 
             Example
                 flowPolytope(bipartiteQuiver(2, 3))
+        SeeAlso
+            basisForFlowPolytope
     Node
         Key
             (flowPolytope, ToricQuiver, List)
@@ -2397,12 +2413,21 @@ multidoc ///
         Inputs
             Q: ToricQuiver
             F: List
+                specifying a flow to impose on the quiver.
+            Format => String
+                specifying what basis to use. Default value is {\tt SimplifiedBasis} 
+                which returns the polytope in a basis giving the minimal degree necessary for polytope dimension. 
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
+            Text
+                Associated to every acyclic toric quiver is a flow polytope. 
+                For full-dimensional representation of the vertices, use {\tt Format => "FullBasis"}. 
             Example
                 flowPolytope(bipartiteQuiver(2, 3), {-3,-3,2,2,2})
+        SeeAlso
+            basisForFlowPolytope
     Node
         Key
             wallType
@@ -2666,7 +2691,26 @@ multidoc ///
                 sameChamber({-3,2,-1,2},{-2,1,-2,3}, Q)    
                 --sameChamber(-{2,-1,1,-2},-{3,-1,-1,-1}, Q)  
 
-
+    Node
+        Key
+            basisForFlowPolytope
+        Headline
+            compute the necessary basis vectors for the hyperplane of a flow polytope
+        Usage
+            basisForFlowPolytope Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            B: Matrix
+        Description
+            Text
+                The polytope associated to a toric quiver is defined in terms of the 
+                stable spanning trees for that given quiver, and hence its vertices 
+                are in a lower dimensional subspace of the space with dimension 
+                $|Q_1|$. Thus a lower dimensional basis is useful for viewing 
+                polytopes in the appropriate dimension.
+            Example
+                basisForFlowPolytope bipartiteQuiver(2,3)
      
 ///
 end--
