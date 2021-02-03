@@ -1303,7 +1303,7 @@ mergeOnVertex(Matrix, ZZ, Matrix, ZZ) := (Q1, v1, Q2, v2) -> (
 
     paddingSize := ncol - Q1cs;
     r := 0;
-    matrix(
+    toricQuiver matrix(
         for row in (0..nrow - 1) list(
             if row < (Q1rs - 1) then (
                 Q1_row | asList(paddingSize:0)
@@ -1352,7 +1352,7 @@ mergeOnArrow(Matrix, ZZ, Matrix, ZZ) := (Q1, a1, Q2, a2) -> (
     Q2 = entries(Q2^r2)_c2;
 
     paddingSize := 0;
-    matrix(
+    toricQuiver matrix(
         for row from 0 to nrow - 1 list(
             if row < (Q1nr - 2) then (
                 paddingSize = Q2nc - 1;
