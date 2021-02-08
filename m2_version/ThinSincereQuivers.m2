@@ -32,12 +32,13 @@ export {
     "mergeOnVertex",
     "mergeOnArrow",
     "neighborliness",
+    "primitiveArrows",
+    "potentialWalls",
     "stableTrees",
     "subquivers",
     "sameChamber",
     "theta",
     "threeVertexQuiver",
-    "potentialWalls",
     "wallType",
 -- Options
     "AsSubquiver",
@@ -56,6 +57,9 @@ export {
     "ToricQuiver",
     "toricQuiver"
 }
+-----------------------------------------------------------
+-- PACKAGE GLOBALS: special variable names, types, and constants
+-----------------------------------------------------------
 protect connectivityMatrix
 protect flow
 protect NonSingletons
@@ -68,10 +72,16 @@ protect weights
 
 ToricQuiver = new Type of HashTable
 Wall = new Type of HashTable
-toricQuiver = method(Options=>{Flow=>"Default"})
 
 FlowCeil := 100;
+-----------------------------------------------------------
 
+
+
+-----------------------------------------------------------
+-- PACKAGE METHODS/FUNCTIONS:
+-----------------------------------------------------------
+toricQuiver = method(Options=>{Flow=>"Default"})
 -- construct ToricQuiver from connectivity matrix
 toricQuiver(Matrix) := opts -> Q -> (
     F := 0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col");
@@ -90,8 +100,6 @@ toricQuiver(Matrix) := opts -> Q -> (
         weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
 )
-
-
 -- construct ToricQuiver from connectivity matrix and a flow
 toricQuiver(Matrix, List) := opts -> (Q, F) -> (
     -- set Q to be unit valued to apply flow
@@ -104,15 +112,14 @@ toricQuiver(Matrix, List) := opts -> (Q, F) -> (
         weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
 )
-
+-- construct ToricQuiver from Toric quiver to copy graph
 toricQuiver(ToricQuiver) := opts -> Q -> (
     toricQuiver(Q.connectivityMatrix, Q.flow, Flow=>opts.Flow)
 )
-
+-- construct ToricQuiver from Toric quiver (to copy graph) and list(giving a flow)
 toricQuiver(ToricQuiver, List) := opts -> (Q, F) -> (
     toricQuiver(Q.connectivityMatrix, F)
 )
-
 -- construct ToricQuiver from list of edges
 toricQuiver(List) := opts -> E -> (
     Q := graphFromEdges(E, Oriented=>true);
@@ -128,7 +135,6 @@ toricQuiver(List) := opts -> E -> (
         weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
 )
-
 -- construct ToricQuiver from list of edges and a flow
 toricQuiver(List, List) := opts -> (E, F) -> (
     Q := graphFromEdges(E, Oriented=>true);
@@ -145,12 +151,11 @@ toricQuiver(Graph) := opts -> G -> (
     E := for e in edges(G) list toList(e);
     toricQuiver(E, Flow=>opts.Flow)
 )
-
+-- construct ToricQuiver from a Graph and a flow
 toricQuiver(Graph, List) := opts -> (G, F) -> (
     E := for e in edges(G) list toList(e);
     toricQuiver(E, F)
 )
-
 -- subquiver of a ToricQuiver by taking a subset of the arrows, represented as a "child" of the original quiver
 ToricQuiver ^ List := (TQ, L) -> (
     newFlow := TQ.flow;
@@ -1101,6 +1106,23 @@ sameChamber = (theta1, theta2, Q) -> (
 isIn = (v, l) -> (
     p := positions(l, x -> x == v);
     #p > 0
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+primitiveArrows = Q -> (
+    Es := Q.Q1;
+    PAs := for i from 0 to #Es - 1 list(
+        a := Es#i;
+        (isCycle, cycle) := isPathBetween(a#0, a#1, drop(Es, {i, i}), Oriented=>true, SavePath=>true);
+        if isCycle and (#set(cycle) > 1) then (
+            i
+        ) else (
+            continue;
+        )
+    );
+    return PAs
 )
 ------------------------------------------------------------
 
@@ -2670,6 +2692,24 @@ multidoc ///
                 create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
             Example
                 mergeOnArrow (matrix ({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0, bipartiteQuiver (2, 3), 0)
+    Node
+        Key
+            primitiveArrows
+        Headline
+            list the primitive arrows in a quiver
+        Usage
+            primitiveArrows Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            L: List
+                of arrow indices corresponding to the primitive arrows in {\tt Q}
+        Description
+            Text
+                an arrow {\tt a=(v0,v1)} in {\tt Q.Q1} is primitive if there exists an 
+                oriented path from {\tt v0} to {\tt v1} in {\tt Q.Q1}. 
+            Example
+                primitiveArrows toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
     Node
         Key
             sameChamber
