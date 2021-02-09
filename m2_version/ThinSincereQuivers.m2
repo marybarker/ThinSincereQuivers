@@ -20,6 +20,7 @@ export {
     "basisForFlowPolytope",
     "bipartiteQuiver",
     "chainQuiver",
+    "coneSystem",
     "flowPolytope",
     "incInverse",
     "isAcyclic",
@@ -297,6 +298,22 @@ chainQuiver = {Flow=>"Canonical"} >> opts -> (numEdges) -> (
         return toricQuiver(Es, opts.Flow)
     ) else (
         return toricQuiver(Es, Flow=>opts.Flow)
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+--cone = Q -> (
+--    allArrows := entries transpose Q.connectivityMatrix;
+--    primitiveArrows := primitiveArrows Q;
+--    allArrows_primitiveArrows
+--)
+coneSystem = Q -> (
+    STs := allSpanningTrees(Q);
+    allArrows := entries transpose Q.connectivityMatrix;
+    for T in STs list(
+        allArrows_T
     )
 )
 ------------------------------------------------------------
