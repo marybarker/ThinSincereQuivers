@@ -1,4 +1,5 @@
 needsPackage("ThinSincereQuivers")
+needsPackage("Graphs")
 
 Q = bipartiteQuiver(2, 3)
 assert isTight Q
@@ -31,3 +32,6 @@ Q = chainQuiver {1,2,3}
 assert (mergeOnVertex(P,2,Q,0) == chainQuiver {2,2,1,2,3})
 assert (mergeOnArrow(P,3,Q,0) == chainQuiver {2,2,2,3})
 assert (neighborliness P === 2)
+
+Q = toricQuiver completeGraph 4
+assert (primitiveArrows Q === {1,2,4})
