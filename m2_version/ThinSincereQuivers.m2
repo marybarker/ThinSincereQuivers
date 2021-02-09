@@ -21,22 +21,22 @@ export {
     "bipartiteQuiver",
     "chainQuiver",
     "flowPolytope",
-    "isTight",
     "incInverse",
-    "isSemistable",
-    "isStable",
     "isAcyclic",
     "isClosedUnderArrows",
+    "isSemistable",
+    "isStable",
+    "isTight",
     "makeTight",
     "maximalUnstableSubquivers",
-    "mergeOnVertex",
     "mergeOnArrow",
+    "mergeOnVertex",
     "neighborliness",
-    "primitiveArrows",
     "potentialWalls",
+    "primitiveArrows",
+    "sameChamber",
     "stableTrees",
     "subquivers",
-    "sameChamber",
     "theta",
     "threeVertexQuiver",
     "wallType",
@@ -1070,6 +1070,7 @@ allSpanningTrees = (TQ) -> (
 )
 ------------------------------------------------------------
 
+
 ------------------------------------------------------------
 -- this function lists all of the spanning trees T of TQ
 -- such that T admits a regular flow in the preimage of weight th
@@ -1078,6 +1079,7 @@ stableTrees = (th, TQ) -> (
     for x in allTrees list(if all(incInverse(TQ_x, th), y -> y > 0) then (x) else continue )
 )
 ------------------------------------------------------------
+
 
 ------------------------------------------------------------
 -- this function checks if the weights theta1 and theta2 
