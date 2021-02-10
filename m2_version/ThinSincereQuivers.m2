@@ -35,6 +35,7 @@ export {
     "neighborliness",
     "potentialWalls",
     "primitiveArrows",
+    "referenceThetas",
     "sameChamber",
     "stableTrees",
     "subquivers",
@@ -304,17 +305,55 @@ chainQuiver = {Flow=>"Canonical"} >> opts -> (numEdges) -> (
 
 
 ------------------------------------------------------------
---cone = Q -> (
---    allArrows := entries transpose Q.connectivityMatrix;
---    primitiveArrows := primitiveArrows Q;
---    allArrows_primitiveArrows
---)
 coneSystem = Q -> (
     STs := allSpanningTrees(Q);
     allArrows := entries transpose Q.connectivityMatrix;
-    for T in STs list(
-        allArrows_T
-    )
+    QDim := #Q.Q1 - #Q.Q0 + 1;
+
+    treeChambers := for T in STs list(
+        coneFromVData transpose matrix allArrows_T
+    );
+
+    -- first find all possible intersections of cones associated 
+    -- with distinct pairs of trees. i.e. list the (nontrivial, hence numColumns > 2 below) 
+    -- CT1 intersect CT2 for trees T1 and T2
+    allPossibleSubsets := flatten for i in 0..#treeChambers-1 list(
+        tci := treeChambers#i;
+        for j in i+1..#treeChambers-1 list(
+
+            tcj := treeChambers#j;
+            irs := rays intersection(tci, tcj);
+            if numColumns irs > 2 then (
+               coneFromVData irs
+            ) else (
+                continue;
+            )
+        )
+    );
+
+    -- now take the finest (in terms of containment) subsets to partition the cone system
+    finestSubsets := for i in 0..#allPossibleSubsets-1 list(
+        containsSomething := false;
+        ss := allPossibleSubsets#i;
+        for j in i+1..#allPossibleSubsets-1 do(
+
+            if contains(ss, allPossibleSubsets#j) then (
+                containsSomething = true;
+            );
+        );
+        if not containsSomething then (
+            ss
+        ) else (
+            continue;
+        )
+    );
+    finestSubsets
+)
+
+-- this routine routines an interior point for each 
+-- chamber of the coneSystem QCS associated to a toric quiver Q
+referenceThetas = QCS -> (
+    for c in QCS list(flatten entries interiorVector c)
 )
 ------------------------------------------------------------
 
@@ -759,9 +798,9 @@ primitiveArrows = Q -> (
         a := Es#i;
         (isCycle, cycle) := isPathBetween(a#0, a#1, drop(Es, {i, i}), Oriented=>true, SavePath=>true);
         if isCycle and (#set(cycle) > 1) then (
-            i
-        ) else (
             continue;
+        ) else (
+            i
         )
     );
     return PAs
