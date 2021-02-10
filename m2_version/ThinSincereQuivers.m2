@@ -317,14 +317,14 @@ coneSystem = Q -> (
     -- first find all possible intersections of cones associated 
     -- with distinct pairs of trees. i.e. list the (nontrivial, hence numColumns > 2 below) 
     -- CT1 intersect CT2 for trees T1 and T2
-    allPossibleSubsets := flatten for i in 0..#treeChambers-1 list(
+    allPossibleSubsets := unique flatten for i in 0..#treeChambers-1 list(
         tci := treeChambers#i;
         for j in i+1..#treeChambers-1 list(
 
             tcj := treeChambers#j;
             irs := rays intersection(tci, tcj);
             if numColumns irs > 2 then (
-               coneFromVData irs
+                irs
             ) else (
                 continue;
             )
@@ -333,16 +333,20 @@ coneSystem = Q -> (
 
     -- now take the finest (in terms of containment) subsets to partition the cone system
     finestSubsets := for i in 0..#allPossibleSubsets-1 list(
+        ssi := coneFromVData allPossibleSubsets#i;
         containsSomething := false;
-        ss := allPossibleSubsets#i;
-        for j in i+1..#allPossibleSubsets-1 do(
 
-            if contains(ss, allPossibleSubsets#j) then (
-                containsSomething = true;
+        for j in 0..#allPossibleSubsets-1 do(
+            ssj := coneFromVData allPossibleSubsets#j;
+
+            if not (i == j) then (
+                if contains(ssi, ssj) then (
+                    containsSomething = true;
+                )
             );
         );
         if not containsSomething then (
-            ss
+            ssi
         ) else (
             continue;
         )
