@@ -320,7 +320,6 @@ coneSystem = Q -> (
     allPossibleSubsets := unique flatten for i in 0..#treeChambers-1 list(
         tci := treeChambers#i;
         for j in i+1..#treeChambers-1 list(
-
             tcj := treeChambers#j;
             irs := rays intersection(tci, tcj);
             if numColumns irs > 2 then (
@@ -337,9 +336,8 @@ coneSystem = Q -> (
         containsSomething := false;
 
         for j in 0..#allPossibleSubsets-1 do(
-            ssj := coneFromVData allPossibleSubsets#j;
-
             if not (i == j) then (
+                ssj := coneFromVData allPossibleSubsets#j;
                 if contains(ssi, ssj) then (
                     containsSomething = true;
                 )
@@ -351,7 +349,19 @@ coneSystem = Q -> (
             continue;
         )
     );
-    finestSubsets
+
+    -- finally, combine those subsets that yield the same polytope
+    rts := referenceThetas finestSubsets;
+    fps := for r in rts list(flowPolytope(Q, r));
+    ufps := unique fps;
+    if #ufps < #fps then (
+        for f in unique fps list(
+            cs := flatten for p in positions(fps, x -> x == f) list(entries transpose rays finestSubsets#p);
+            coneFromVData(transpose matrix cs)
+        )
+    ) else (
+        finestSubsets
+    )
 )
 ------------------------------------------------------------
 
@@ -360,7 +370,7 @@ coneSystem = Q -> (
 flowPolytope = method(Options=>{Format=>"SimplifiedBasis"})
 flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
     allTrees := allSpanningTrees(Q);
-    regularFlows := for x in allTrees list(
+    regularFlows := unique for x in allTrees list(
         if all(incInverse(Q^x, th), y -> y >= 0) then (
             incInverse(Q^x, th)
         ) else (
