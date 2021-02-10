@@ -353,12 +353,6 @@ coneSystem = Q -> (
     );
     finestSubsets
 )
-
--- this routine routines an interior point for each 
--- chamber of the coneSystem QCS associated to a toric quiver Q
-referenceThetas = QCS -> (
-    for c in QCS list(flatten entries interiorVector c)
-)
 ------------------------------------------------------------
 
 
@@ -813,6 +807,15 @@ primitiveArrows = Q -> (
 
 
 ------------------------------------------------------------
+-- this routine routines an interior point for each 
+-- chamber of the coneSystem QCS associated to a toric quiver Q
+referenceThetas = QCS -> (
+    for c in QCS list(flatten entries interiorVector c)
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 -- this function checks if the weights theta1 and theta2 
 -- belong to the same chamber in the wall chamber decomposition for Q
 sameChamber = (theta1, theta2, Q) -> (
@@ -939,32 +942,6 @@ wallType(ToricQuiver, List) := (Q, Qp) -> (
     wallType(Q.connectivityMatrix*diagonalMatrix(Q.flow), Qp)
 )
 ------------------------------------------------------------
-
-
-    "allSpanningTrees",
-    "basisForFlowPolytope",
-    "bipartiteQuiver",
-    "chainQuiver",
-    "flowPolytope",
-    "incInverse",
-    "isAcyclic",
-    "isClosedUnderArrows",
-    "isSemistable",
-    "isStable",
-    "isTight",
-    "makeTight",
-    "maximalUnstableSubquivers",
-    "mergeOnArrow",
-    "mergeOnVertex",
-    "neighborliness",
-    "potentialWalls",
-    "primitiveArrows",
-    "sameChamber",
-    "subquivers",
-    "stableTrees",
-    "theta",
-    "threeVertexQuiver",
-    "wallType",
 
 
 
@@ -1893,6 +1870,27 @@ multidoc ///
                 basisForFlowPolytope bipartiteQuiver(2,3)
     Node
         Key
+            coneSystem
+        Headline
+            compute the chamber decomposition of weights in 
+        Usage
+            coneSystem Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            L: List
+                of Cone instances
+        Description
+            Text
+                The set of weights {\tt th} for which the polytope {\tt (Q,th)} is 
+                nonempty lies in a cone {\tt CQ}. This cone is partitioned by the 
+                walls of the toric quiver {\tt Q}, and for each partition there exists 
+                a unique flow polytope. 
+            Example
+                Q = toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}};
+                CS = coneSystem Q
+    Node
+        Key
             flowPolytope
         Headline
             generate the polytope associated to a toric quiver
@@ -1903,7 +1901,8 @@ multidoc ///
             F: List
             Format => String
                 specifying what basis to use. Default value is {\tt SimplifiedBasis} 
-                which returns the polytope in a basis giving the minimal degree necessary for polytope dimension. 
+                which returns the polytope in a basis giving the minimal degree 
+                necessary for polytope dimension. 
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
@@ -2592,6 +2591,24 @@ multidoc ///
                 oriented path from {\tt v0} to {\tt v1} in {\tt Q.Q1}. 
             Example
                 primitiveArrows toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
+    Node
+        Key
+            referenceThetas
+        Headline
+            return a weight for all polytopes associated to a toric quiver
+        Usage
+            referenceThetas QCS
+        Inputs
+            QCS: List
+                of cones comprising the chamber decomposition for weights
+        Outputs
+            L: List
+                of weights
+        Description
+            Example
+                Q = toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}};
+                CS = coneSystem Q;
+                referenceThetas CS
     Node
         Key
             sameChamber
