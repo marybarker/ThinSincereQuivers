@@ -321,9 +321,9 @@ coneSystem = Q -> (
         tci := treeChambers#i;
         for j in i+1..#treeChambers-1 list(
             tcj := treeChambers#j;
-            irs := rays intersection(tci, tcj);
-            if numColumns irs > 2 then (
-                irs
+            irs := intersection(tci, tcj);
+            if (dim irs == #Q.Q0 - 1) then (
+                rays irs
             ) else (
                 continue;
             )
