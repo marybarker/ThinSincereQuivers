@@ -350,18 +350,7 @@ coneSystem = Q -> (
         )
     );
 
-    -- finally, combine those subsets that yield the same polytope
-    rts := referenceThetas finestSubsets;
-    fps := for r in rts list(flowPolytope(Q, r));
-    ufps := unique fps;
-    if #ufps < #fps then (
-        for f in unique fps list(
-            cs := flatten for p in positions(fps, x -> x == f) list(entries transpose rays finestSubsets#p);
-            coneFromVData(transpose matrix cs)
-        )
-    ) else (
-        finestSubsets
-    )
+    finestSubsets
 )
 ------------------------------------------------------------
 
@@ -378,10 +367,10 @@ flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
         )
     );
     if opts.Format == "SimplifiedBasis" then (
-        fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th))) **QQ;
+        fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)));
         kerF := for f in regularFlows list(
             ff := f - regularFlows#0;
-            solve(fpb, matrix(for fff in ff list ({fff})))
+            solve(fpb, matrix(for fff in ff list ({round fff})))
         );
         for k in kerF list flatten entries k
     ) else (
