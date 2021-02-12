@@ -311,26 +311,23 @@ coneSystem = Q -> (
     QDim := #Q.Q1 - #Q.Q0 + 1;
     coneDim := #Q.Q0 - 1;
 
-    treeChambers := for T in STs list(
-        coneFromVData transpose matrix allArrows_T
-    );
+    -- create list of cones CT for each tree T
+    treeChambers := for T in STs list(coneFromVData transpose matrix allArrows_T);
 
-    -- first find all pairs of cones with full-dimensional interesection
+    -- find all pairs of cones with full-dimensional interesection
     aij := for i in 0..#treeChambers-1 list(
         tci := treeChambers#i;
         for j in i+1..#treeChambers-1 list(
 
             tcj := treeChambers#j;
             irs := intersection(tci, tcj);
-            if dim irs >= coneDim then (
-                j
-            ) else (continue;)
+            if dim irs >= coneDim then (j) else (continue;)
         )
     );
 
-    -- now add each subcone associated to a tree to the list of admissable subcones 
+    -- now add each cone CT to the list of admissable subcones 
     -- before adding every possible intersection to the list as well.
-    subsets := for t in treeChambers list(rays t);
+    ssets := for t in treeChambers list(rays t);
     addedTo := unique treeChambers;
     lastList := for tIdx in 0..#treeChambers-1 list(t:=treeChambers#tIdx; {t, tIdx});
     -- generate all possible intersections of cones
@@ -360,17 +357,17 @@ coneSystem = Q -> (
            break;
         ) else (
            lastList = asList(currentList);
-           subsets = subsets | apply(lastList, x -> rays x#0);
+           ssets = ssets | apply(lastList, x -> rays x#0);
         );
     );
     -- now take the finest (in terms of containment) subsets to partition the cone system
-    finestSubsets := for i in 0..#subsets-1 list(
-        ssi := coneFromVData subsets#i;
+    finestSubsets := for i in 0..#ssets-1 list(
+        ssi := coneFromVData ssets#i;
         containsSomething := false;
 
-        for j in 0..#subsets-1 do(
+        for j in 0..#ssets-1 do(
             if not (i == j) then (
-                ssj := coneFromVData subsets#j;
+                ssj := coneFromVData ssets#j;
                 if contains(ssi, ssj) then (
                     containsSomething = true;
                 )
