@@ -309,35 +309,71 @@ coneSystem = Q -> (
     STs := allSpanningTrees(Q);
     allArrows := entries transpose Q.connectivityMatrix;
     QDim := #Q.Q1 - #Q.Q0 + 1;
+    coneDim := #Q.Q0 - 1;
 
     treeChambers := for T in STs list(
         coneFromVData transpose matrix allArrows_T
     );
 
-    -- first find all possible intersections of cones associated 
-    -- with distinct pairs of trees. i.e. list the (nontrivial, hence numColumns > 2 below) 
-    -- CT1 intersect CT2 for trees T1 and T2
-    allPossibleSubsets := unique flatten for i in 0..#treeChambers-1 list(
+    -- first find all pairs of cones with full-dimensional interesection
+    aij := for i in 0..#treeChambers-1 list(
         tci := treeChambers#i;
         for j in i+1..#treeChambers-1 list(
+
             tcj := treeChambers#j;
             irs := intersection(tci, tcj);
-            if (dim irs == #Q.Q0 - 1) then (
-                rays irs
+            if dim irs >= coneDim then (
+                j
             ) else (
                 continue;
             )
         )
     );
 
+    -- now add each subcone associated to a tree to the list of admissable subcones 
+    -- before adding every possible intersection to the list as well.
+    subsets := for t in treeChambers list(rays t);
+    addedTo := unique treeChambers;
+    lastList := for tIdx in 0..#treeChambers-1 list(t:=treeChambers#tIdx; {t, tIdx});
+    -- generate all possible intersections of cones
+    for ctr in 0..#STs-2 do(
+        allEmpty := true;
+        currentList := flatten for LE in lastList list(
+            i := round LE#1;
+            TI := LE#0;
+            if toString aij#i != "null" then (
+                for j in aij#i list(
+                    TJ := treeChambers#j;
+                    TIJ := intersection(TI, TJ);
+                    if (dim TIJ >= coneDim) then (
+                        allEmpty = false;
+                        if not isIn(TIJ, addedTo) then (
+                            addedTo = addedTo | {TIJ};
+                            {TIJ, j}
+                        ) else (continue;)
+                    ) else (
+                        continue;
+                    )
+                )
+            ) else (
+                continue;
+            )
+        );
+        if allEmpty then (
+           break;
+        ) else (
+           lastList = asList(currentList);
+           subsets = subsets | apply(lastList, x -> rays x#0);
+        );
+    );
     -- now take the finest (in terms of containment) subsets to partition the cone system
-    finestSubsets := for i in 0..#allPossibleSubsets-1 list(
-        ssi := coneFromVData allPossibleSubsets#i;
+    finestSubsets := for i in 0..#subsets-1 list(
+        ssi := coneFromVData subsets#i;
         containsSomething := false;
 
-        for j in 0..#allPossibleSubsets-1 do(
+        for j in 0..#subsets-1 do(
             if not (i == j) then (
-                ssj := coneFromVData allPossibleSubsets#j;
+                ssj := coneFromVData subsets#j;
                 if contains(ssi, ssj) then (
                     containsSomething = true;
                 )
@@ -349,7 +385,6 @@ coneSystem = Q -> (
             continue;
         )
     );
-
     finestSubsets
 )
 ------------------------------------------------------------
