@@ -324,9 +324,7 @@ coneSystem = Q -> (
             irs := intersection(tci, tcj);
             if dim irs >= coneDim then (
                 j
-            ) else (
-                continue;
-            )
+            ) else (continue;)
         )
     );
 
@@ -351,13 +349,9 @@ coneSystem = Q -> (
                             addedTo = addedTo | {TIJ};
                             {TIJ, j}
                         ) else (continue;)
-                    ) else (
-                        continue;
-                    )
+                    ) else (continue;)
                 )
-            ) else (
-                continue;
-            )
+            ) else (continue;)
         );
         if allEmpty then (
            break;
@@ -381,9 +375,7 @@ coneSystem = Q -> (
         );
         if not containsSomething then (
             ssi
-        ) else (
-            continue;
-        )
+        ) else (continue;)
     );
     finestSubsets
 )
@@ -397,9 +389,7 @@ flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
     regularFlows := unique for x in allTrees list(
         if all(incInverse(Q^x, th), y -> y >= 0) then (
             incInverse(Q^x, th)
-        ) else (
-            continue;
-        )
+        ) else (continue;)
     );
     if opts.Format == "SimplifiedBasis" then (
         fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)));
@@ -661,9 +651,7 @@ maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
             ) else (
                 Q^subQ1
             )
-        ) else (
-            continue;
-        )
+        ) else (continue;)
     );
     containedSingletons := flatten for subQ1 in unstableList#NonSingletons list (
         for x in Q.Q1_subQ1 list ({x})
@@ -1398,9 +1386,7 @@ subsetsClosedUnderArrows Matrix := (Q) -> (
             if isClosedUnderArrows(c, Q) then (
                 c
             )
-            else(
-                continue;
-            )
+            else(continue;)
         )
     ))
 )
@@ -1440,9 +1426,7 @@ unstableSubquivers(ToricQuiver) := opts -> Q -> (
             ) else (
                 Q^sQ
             )
-        ) else (
-            continue;
-        )
+        ) else (continue;)
     );
     singletonUnstableSqs := for x in positions(Q.weights, x -> x < 0) list ({x});
 
