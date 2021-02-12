@@ -335,11 +335,14 @@ coneSystem = Q -> (
     lastList := for tIdx in 0..#treeChambers-1 list(t:=treeChambers#tIdx; {t, tIdx});
     -- generate all possible intersections of cones
     for ctr in 0..#STs-2 do(
-        allEmpty := true;
+        -- stopping condition: if all intersections tried in the latest round turn up lower-dim
+        allEmpty := true; 
+
+        -- create a list of intersecting pairs from intersecting treeChamber elements with lastList elements
         currentList := flatten for LE in lastList list(
-            i := round LE#1;
-            TI := LE#0;
-            if toString aij#i != "null" then (
+            i := round LE#1; -- make index an int
+            TI := LE#0; -- current cone
+            if toString aij#i != "null" then ( -- loop through all cones that intersect with cone i nontrivially
                 for j in aij#i list(
                     TJ := treeChambers#j;
                     TIJ := intersection(TI, TJ);
