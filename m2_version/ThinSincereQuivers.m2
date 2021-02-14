@@ -328,11 +328,11 @@ coneSystem = Q -> (
     -- now add each cone CT to the list of admissable subcones 
     -- before adding every possible intersection to the list as well.
     ssets := for t in treeChambers list(rays t);
-    addedTo := unique treeChambers;
+    addedTo := unique treeChambers; -- keep track of cones that have already been added
     lastList := for tIdx in 0..#treeChambers-1 list(t:=treeChambers#tIdx; {t, tIdx});
     -- generate all possible intersections of cones
-    for ctr in 0..#STs-2 do(
-        -- stopping condition: if all intersections tried in the latest round turn up lower-dim
+    for ctr in 0..#STs-1 do(
+        -- stopping condition: if all intersections tried in the latest loop iteration are up lower-dim
         allEmpty := true; 
 
         -- create a list of intersecting pairs from intersecting treeChamber elements with lastList elements
@@ -360,6 +360,7 @@ coneSystem = Q -> (
            ssets = ssets | apply(lastList, x -> rays x#0);
         );
     );
+
     -- now take the finest (in terms of containment) subsets to partition the cone system
     finestSubsets := for i in 0..#ssets-1 list(
         ssi := coneFromVData ssets#i;
@@ -385,12 +386,15 @@ coneSystem = Q -> (
 ------------------------------------------------------------
 flowPolytope = method(Options=>{Format=>"SimplifiedBasis"})
 flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
+    -- vertices of flow polytope correspond to regular flows on spanning trees
     allTrees := allSpanningTrees(Q);
     regularFlows := unique for x in allTrees list(
         if all(incInverse(Q^x, th), y -> y >= 0) then (
             incInverse(Q^x, th)
         ) else (continue;)
     );
+
+    -- simplified basis represents the polytope in a lower dimensional subspace of R^Q1
     if opts.Format == "SimplifiedBasis" then (
         fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)));
         kerF := for f in regularFlows list(
@@ -564,7 +568,7 @@ makeTight = (Q, W) -> (
     k := entries generators kernel Q.connectivityMatrix;
     potentialF = potentialF + flatten entries first asList(transpose(matrix({sumList(k, Axis=>"Row")})));
 
-
+    -- this function calls itself recursively until a tight quiver is produced
     if isTight(Q, potentialF) then (
         return toricQuiver(Q.connectivityMatrix, potentialF);
     ) else (
@@ -573,13 +577,16 @@ makeTight = (Q, W) -> (
             return ;
         );
 
+        -- find a maximal unstable subquiver, called R, of codimension 1 (this exists if not tight)
         Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(potentialF);
         maxUnstSubs := maximalUnstableSubquivers(toricQuiver(Q.connectivityMatrix, potentialF));
         R := first(maxUnstSubs#NonSingletons);
         Rvertices := asList set flatten Q.Q1_R;
         S := {};
 
+        -- generate a connected subset of R0 that is closed under arrows and has weight sum <= 0
         if #R < 1 then (
+            -- this is for the case of quivers with 1 arrow or similar
             Rvertices = first(maxUnstSubs#Singletons);
             S = Rvertices;
         ) else (
@@ -599,10 +606,13 @@ makeTight = (Q, W) -> (
                 if success then break;
             );
         );
+
+        -- alpha is an arrow in Q1 with head in R and tail in Q\R
         alpha := first toList (set(0..#Q.Q1-1) - set(R));
         a := sort(Q.Q1_alpha);
         {aMinus, aPlus} := (a_0, a_1);
 
+        -- contract the arrow alpha to create a new quiver
         newRows := entries(Q.connectivityMatrix);
         newCols := drop(asList(0..#Q.Q1 - 1), {alpha, alpha});
         newM := matrix(for e in Q.Q0 list(
@@ -647,8 +657,7 @@ maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
         );
         if IsMaximal then (
             if (opts.Format == "list") then (
-                subQ1
-            ) else (
+                subQ1) else (
                 Q^subQ1
             )
         ) else (continue;)
