@@ -316,73 +316,78 @@ coneSystem = Q -> (
     coneDim := #Q.Q0 - 1;
 
     -- create list of cones CT for each tree T
-    treeChambers := for T in STs list(coneFromVData transpose matrix allArrows_T);
+    treeChambers := unique for T in STs list(transpose matrix allArrows_T);
+    treeChambers = for T in treeChambers list(coneFromVData T);
 
-    -- find all pairs of cones with full-dimensional interesection
-    aij := for i in 0..#treeChambers-1 list(
-        tci := treeChambers#i;
-        for j in i+1..#treeChambers-1 list(
+    if #treeChambers > 1 then (
+        -- find all pairs of cones with full-dimensional interesection
+        aij := for i in 0..#treeChambers-1 list(
+            tci := treeChambers#i;
+            for j in i+1..#treeChambers-1 list(
 
-            tcj := treeChambers#j;
-            irs := intersection(tci, tcj);
-            if dim irs >= coneDim then (j) else (continue;)
-        )
-    );
+                tcj := treeChambers#j;
+                irs := intersection(tci, tcj);
+                if dim irs >= coneDim then (j) else (continue;)
+            )
+        );
 
-    -- now add each cone CT to the list of admissable subcones 
-    -- before adding every possible intersection to the list as well.
-    ssets := for t in treeChambers list(rays t);
-    addedTo := unique treeChambers; -- keep track of cones that have already been added
-    lastList := for tIdx in 0..#treeChambers-1 list(t:=treeChambers#tIdx; {t, tIdx});
-    -- generate all possible intersections of cones
-    for ctr in 0..#STs-1 do(
-        -- stopping condition: if all intersections tried in the latest loop iteration are up lower-dim
-        allEmpty := true; 
+        -- now add each cone CT to the list of admissable subcones 
+        -- before adding every possible intersection to the list as well.
+        ssets := for t in treeChambers list(rays t);
+        addedTo := unique treeChambers; -- keep track of cones that have already been added
+        lastList := for tIdx in 0..#treeChambers-1 list(t:=treeChambers#tIdx; {t, tIdx});
+        -- generate all possible intersections of cones
+        for ctr in 0..#STs-1 do(
+            -- stopping condition: if all intersections tried in the latest loop iteration are up lower-dim
+            allEmpty := true; 
 
-        -- create a list of intersecting pairs from intersecting treeChamber elements with lastList elements
-        currentList := flatten for LE in lastList list(
-            i := round LE#1; -- make index an int
-            TI := LE#0; -- current cone
-            if toString aij#i != "null" then ( -- loop through all cones that intersect with cone i nontrivially
-                for j in aij#i list(
-                    TJ := treeChambers#j;
-                    TIJ := intersection(TI, TJ);
-                    if (dim TIJ >= coneDim) then (
-                        allEmpty = false;
-                        if not isIn(TIJ, addedTo) then (
-                            addedTo = addedTo | {TIJ};
-                            {TIJ, j}
+            -- create a list of intersecting pairs from intersecting treeChamber elements with lastList elements
+            currentList := flatten for LE in lastList list(
+                i := round LE#1; -- make index an int
+                TI := LE#0; -- current cone
+                if toString aij#i != "null" then ( -- loop through all cones that intersect with cone i nontrivially
+                    for j in aij#i list(
+                        TJ := treeChambers#j;
+                        TIJ := intersection(TI, TJ);
+                        if (dim TIJ >= coneDim) then (
+                            allEmpty = false;
+                            if not isIn(TIJ, addedTo) then (
+                                addedTo = addedTo | {TIJ};
+                                {TIJ, j}
+                            ) else (continue;)
                         ) else (continue;)
-                    ) else (continue;)
-                )
-            ) else (continue;)
-        );
-        if allEmpty then (
-           break;
-        ) else (
-           lastList = asList(currentList);
-           ssets = ssets | apply(lastList, x -> rays x#0);
-        );
-    );
-
-    -- now take the finest (in terms of containment) subsets to partition the cone system
-    finestSubsets := for i in 0..#ssets-1 list(
-        ssi := coneFromVData ssets#i;
-        containsSomething := false;
-
-        for j in 0..#ssets-1 do(
-            if not (i == j) then (
-                ssj := coneFromVData ssets#j;
-                if contains(ssi, ssj) then (
-                    containsSomething = true;
-                )
+                    )
+                ) else (continue;)
+            );
+            if allEmpty then (
+               break;
+            ) else (
+               lastList = asList(currentList);
+               ssets = ssets | apply(lastList, x -> rays x#0);
             );
         );
-        if not containsSomething then (
-            ssi
-        ) else (continue;)
-    );
-    finestSubsets
+
+        -- now take the finest (in terms of containment) subsets to partition the cone system
+        finestSubsets := for i in 0..#ssets-1 list(
+            ssi := coneFromVData ssets#i;
+            containsSomething := false;
+
+            for j in 0..#ssets-1 do(
+                if not (i == j) then (
+                    ssj := coneFromVData ssets#j;
+                    if contains(ssi, ssj) then (
+                        containsSomething = true;
+                    )
+                );
+            );
+            if not containsSomething then (
+                ssi
+            ) else (continue;)
+        );
+        finestSubsets
+    ) else (
+        rays first treeChambers
+    )
 )
 ------------------------------------------------------------
 
@@ -863,7 +868,7 @@ sameChamber = (theta1, theta2, Q) -> (
     ) else (
         p1 := flowPolytope(Q, theta1);
         p2 := flowPolytope(Q, theta2);
-        if areIsomorphic(p1, p2) then (
+        if areIsomorphic(convexHull transpose matrix p1, convexHull transpose matrix p2) then (
             return true
         ) else (
             return "cannot be determined"
