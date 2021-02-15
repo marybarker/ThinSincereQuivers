@@ -83,6 +83,10 @@ FlowCeil := 100;
 -----------------------------------------------------------
 -- PACKAGE METHODS/FUNCTIONS:
 -----------------------------------------------------------
+
+-----------------------------------------------------------
+-- Toric Quiver constructor
+-----------------------------------------------------------
 toricQuiver = method(Options=>{Flow=>"Default"})
 -- construct ToricQuiver from connectivity matrix
 toricQuiver(Matrix) := opts -> Q -> (
