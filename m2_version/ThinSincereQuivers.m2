@@ -861,8 +861,14 @@ referenceThetas = QCS -> (
 sameChamber = (theta1, theta2, Q) -> (
     treesTheta1 := stableTrees(theta1, Q);
     treesTheta2 := stableTrees(theta2, Q);
-    if (#treesTheta1 < 1 or #treesTheta2 < 1) then (
-        return "cannot be determined. stableTrees are empty"
+    if (#treesTheta1 < 1) then 
+        if (#treesTheta2 < 1) then (
+            return "cannot be determined. stableTrees are empty"
+        ) else (
+            return false
+        )
+    ) else if (#treesTheta2 < 1) then (
+         return false
     ) else if all(0..#treesTheta1 - 1, x -> treesTheta1#x == treesTheta2#x) then (
         return true
     ) else (
