@@ -35,6 +35,10 @@ export {
     "neighborliness",
     "potentialWalls",
     "primitiveArrows",
+    "quiverConnectivityMatrix",
+    "quiverEdges",
+    "quiverFlow",
+    "quiverWeights",
     "referenceThetas",
     "sameChamber",
     "stableTrees",
@@ -842,6 +846,34 @@ primitiveArrows = Q -> (
         )
     );
     return PAs
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+quiverConnectivityMatrix = Q -> (
+    return Q.connectivityMatrix
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+quiverEdges = Q -> (
+    return Q.Q1
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+quiverFlow = Q -> (
+    return Q.flow
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+quiverWeights = Q -> (
+    return Q.weights
 )
 ------------------------------------------------------------
 
