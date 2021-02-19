@@ -1,7 +1,13 @@
 # Functions exported from `ToricQuiver.m2'
+* `allSpanningTrees(Q)' : returns all of the spanning trees for a quiver
+
+* `basisForFlowPolytope(Q)' : returns a list of vectors that form a basis for the subspace of $R^{Q_0}$ that contains the flow polytope associated to $Q$.
+
 * `bipartiteQuiver(n, m)' : returns the toric quiver on an underlying bipartite graph with $n$ sources and $m$ sinks.o
 
 * `chainQuiver(L)' : returns the quiver on a graph with the form of a chain of length $\#L$, where links between pairs of vertices given by values in the list $L$. 
+
+* `coneSystem(Q)' : returns the cones that partition the space of weights for the quiver $Q$
 
 * `flowPolytope(Q)' : returns the dual polytope associated to Q if Q is stable. 
 
@@ -27,6 +33,16 @@
 
 * `neighborliness (Q)' : returns the neighborliness of quiver Q
 
+* `potentialWalls (Q)' : returns the walls for the weight chamber system associated to a weighted quiver Q
+
+* `primitiveArrows (Q)' : return a list of the indices of edges in Q that are primitive
+
+* `referenceThetas (CS)' : returns a candidate weight in each cone of the list of cones CS
+
+* `sameChamber (TH1, TH2, Q)': answers question: is TH1 in the same chamber as TH2 for the chamber decomposition of weights associated to Q
+
+* `stableTrees (TH, Q)' : returns a list of the spanning trees of Q that are TH-stable
+
 * `subquivers (Q)' : returns a list of the subquivers of Q, given as sets of vertices 
 
 * `theta (Q)' : returns the weights on the vertices for a weighted quiver Q
@@ -37,8 +53,5 @@
 
 * `toricQuivers (d)' : returns a list of all d-dimensinoal quivers
 
-* `walls (Q)' : returns the walls for the weight chamber system associated to a weighted quiver Q
-
 * `wallType (Q, Qplus)' : returns the type of wall(wall index set and type (tplus, tminus)) for the wall specified by the partition of Q0 into Qplus and Q0 \ Qplus
-
 
