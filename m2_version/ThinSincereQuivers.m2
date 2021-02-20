@@ -1946,7 +1946,7 @@ multidoc ///
         Key
             coneSystem
         Headline
-            compute the chamber decomposition of weights in 
+            compute the chamber decomposition of weights
         Usage
             coneSystem Q
         Inputs
