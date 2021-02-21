@@ -407,7 +407,9 @@ flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
         ) else (continue;)
     );
 
-    -- simplified basis represents the polytope in a lower dimensional subspace of R^Q1
+    -- simplified basis option reduces the dimension to what is strictly necessary.
+    -- Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
+    -- since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
     if opts.Format == "SimplifiedBasis" then (
         fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)));
         kerF := for f in regularFlows list(
