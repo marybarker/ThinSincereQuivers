@@ -250,14 +250,15 @@ allSpanningTrees = (TQ) -> (
 ------------------------------------------------------------
 -- creates a basis for the |Q1|-|Q0|+1 dimensional subspace of R^|Q1| 
 -- to write the associated flow polytopes in. 
-basisForFlowPolytope = (Q) -> (
-    (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
-    es := sT | removedEdges;
+basisForFlowPolytope = method()
+basisForFlowPolytope (ToricQuiver, List) := (Q, ST) -> (
+    removedEdges := asList(set(0..#Q.Q1 - 1) - set(ST));
+    es := ST | removedEdges;
 
     f := for i from 0 to #removedEdges - 1 list(
         edge := Q.Q1_removedEdges#i;
-        edgeList := sT | {removedEdges#i};
-        cycle := primalUndirectedCycle(Q.Q1_sT | {edge});
+        edgeList := ST | {removedEdges#i};
+        cycle := primalUndirectedCycle(Q.Q1_ST | {edge});
 
         fi := #es:0;
         for j in cycle do (
@@ -277,6 +278,10 @@ basisForFlowPolytope = (Q) -> (
         )
     );
     matrix output
+)
+basisForFlowPolytope ToricQuiver := Q -> (
+    (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
+    return basisForFlowPolytope(Q, sT)
 )
 ------------------------------------------------------------
 
@@ -413,7 +418,15 @@ flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
     -- simplified basis option reduces the dimension to what is strictly necessary.
     -- Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
     -- since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
-    if opts.Format == "SimplifiedBasis" then (
+    if instance(opts.Format, List) then (
+        T := opts.Format;
+        fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)), T);
+        kerF := for f in regularFlows list(
+            ff := f - regularFlows#0;
+            solve(fpb, matrix(for fff in ff list ({round fff})))
+        );
+        for k in kerF list flatten entries k
+    ) else if opts.Format == "SimplifiedBasis" then (
         fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)));
         kerF := for f in regularFlows list(
             ff := f - regularFlows#0;
