@@ -212,6 +212,7 @@ allSpanningTrees = (TQ) -> (
 
     d := Q1 - Q0 + 1;
     if d > 0 then (
+        -- try removing every combination of d edges and see if result is a tree
         dTuplesToRemove := combinations(d, asList(0..#allEdges-1), Replacement=>false, Order=>false);
         edgesKept := {};
         edgesRemoved := {};
@@ -247,6 +248,8 @@ allSpanningTrees = (TQ) -> (
 
 
 ------------------------------------------------------------
+-- creates a basis for the |Q1|-|Q0|+1 dimensional subspace of R^|Q1| 
+-- to write the associated flow polytopes in. 
 basisForFlowPolytope = (Q) -> (
     (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
     es := sT | removedEdges;
@@ -428,6 +431,8 @@ flowPolytope ToricQuiver := opts -> Q -> (
 
 
 ------------------------------------------------------------
+-- preimage of the weight th under the incidence map. 
+-- NOTE: This function assumes that th is indeed a weight
 incInverse = (tQ, th) -> (
     a := tQ.connectivityMatrix;
     a = a * diagonalMatrix(for t in tQ.flow list floor t);
