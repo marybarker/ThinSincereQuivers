@@ -407,6 +407,10 @@ coneSystem = Q -> (
 ------------------------------------------------------------
 flowPolytope = method(Options=>{Format=>"SimplifiedBasis"})
 flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
+    if #th != numRows Q.connectivityMatrix then (
+        print("error: the provided weight is in incorrect dimension");
+        return {};
+    );
     -- vertices of flow polytope correspond to regular flows on spanning trees
     allTrees := allSpanningTrees(Q);
     regularFlows := unique for x in allTrees list(
@@ -418,23 +422,32 @@ flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
     -- simplified basis option reduces the dimension to what is strictly necessary.
     -- Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
     -- since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
-    if instance(opts.Format, List) then (
-        T := opts.Format;
-        fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)), T);
-        kerF := for f in regularFlows list(
-            ff := f - regularFlows#0;
-            solve(fpb, matrix(for fff in ff list ({round fff})))
-        );
-        for k in kerF list flatten entries k
-    ) else if opts.Format == "SimplifiedBasis" then (
-        fpb := basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)));
-        kerF := for f in regularFlows list(
-            ff := f - regularFlows#0;
-            solve(fpb, matrix(for fff in ff list ({round fff})))
-        );
-        for k in kerF list flatten entries k
+    if instance(opts.Format, String) and (toString(opts.Format) != "SimplifiedBasis") then (
+        regularFlows
     ) else (
-        matrix regularFlows
+
+        -- first generate a basis (ether user-specified or generated from first spanning tree)
+        fpb := {};
+        if instance(opts.Format, List) then ( -- if Format is a spanning tree
+            fpb = basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)), opts.Format);
+        ) else ( -- if Format is the string "SimplifiedBasis" 
+            fpb = basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)));
+        );
+
+        -- translate regularFlows to contain origin by subtracting of first of them from all
+        kerF := flatten for f in regularFlows list(
+            ff := f - regularFlows#0;
+            entries transpose solve(fpb, matrix(for fff in ff list ({round fff})))
+        );
+
+        -- translate interior point to origin(if interior lattice point exists)
+        ip := interiorLatticePoints convexHull transpose matrix kerF;
+        if #ip > 0 then (
+            ip = first entries transpose first ip;
+            for e in kerF list(e - ip)
+        ) else (
+            kerF
+        )
     )
 )
 flowPolytope ToricQuiver := opts -> Q -> (
