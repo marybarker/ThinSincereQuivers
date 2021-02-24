@@ -251,7 +251,7 @@ allSpanningTrees = (TQ) -> (
 -- creates a basis for the |Q1|-|Q0|+1 dimensional subspace of R^|Q1| 
 -- to write the associated flow polytopes in. 
 basisForFlowPolytope = method()
-basisForFlowPolytope (ToricQuiver, List) := (Q, ST) -> (
+basisForFlowPolytope (List, ToricQuiver) := (ST, Q) -> (
     removedEdges := asList(set(0..#Q.Q1 - 1) - set(ST));
     es := ST | removedEdges;
 
@@ -281,7 +281,7 @@ basisForFlowPolytope (ToricQuiver, List) := (Q, ST) -> (
 )
 basisForFlowPolytope ToricQuiver := Q -> (
     (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
-    return basisForFlowPolytope(Q, sT)
+    return basisForFlowPolytope(sT, Q)
 )
 ------------------------------------------------------------
 
@@ -406,7 +406,7 @@ coneSystem = Q -> (
 
 ------------------------------------------------------------
 flowPolytope = method(Options=>{Format=>"SimplifiedBasis"})
-flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
+flowPolytope(List, ToricQuiver) := opts -> (th, Q) -> (
     if #th != numRows Q.connectivityMatrix then (
         print("error: the provided weight is in incorrect dimension");
         return {};
@@ -414,8 +414,8 @@ flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
     -- vertices of flow polytope correspond to regular flows on spanning trees
     allTrees := allSpanningTrees(Q);
     regularFlows := unique for x in allTrees list(
-        if all(incInverse(Q^x, th), y -> y >= 0) then (
-            incInverse(Q^x, th)
+        if all(incInverse(th, Q^x), y -> y >= 0) then (
+            incInverse(th, Q^x)
         ) else (continue;)
     );
 
@@ -429,9 +429,9 @@ flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
         -- first generate a basis (ether user-specified or generated from first spanning tree)
         fpb := {};
         if instance(opts.Format, List) then ( -- if Format is a spanning tree
-            fpb = basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)), opts.Format);
+            fpb = basisForFlowPolytope(opts.Format, toricQuiver(Q, incInverse(th, Q)));
         ) else ( -- if Format is the string "SimplifiedBasis" 
-            fpb = basisForFlowPolytope(toricQuiver(Q, incInverse(Q,th)));
+            fpb = basisForFlowPolytope(toricQuiver(Q, incInverse(th, Q)));
         );
 
         -- translate regularFlows to contain origin by subtracting of first of them from all
@@ -451,7 +451,7 @@ flowPolytope(ToricQuiver, List) := opts -> (Q, th) -> (
     )
 )
 flowPolytope ToricQuiver := opts -> Q -> (
-    flowPolytope(Q, Q.weights, Format=>opts.Format)
+    flowPolytope(Q.weights, Q, Format=>opts.Format)
 )
 ------------------------------------------------------------
 
@@ -459,7 +459,7 @@ flowPolytope ToricQuiver := opts -> Q -> (
 ------------------------------------------------------------
 -- preimage of the weight th under the incidence map. 
 -- NOTE: This function assumes that th is indeed a weight
-incInverse = (tQ, th) -> (
+incInverse = (th, tQ) -> (
     a := tQ.connectivityMatrix;
     a = a * diagonalMatrix(for t in tQ.flow list floor t);
     b := matrix(for t in th list {floor t}) **QQ;
@@ -593,7 +593,7 @@ isTight(ToricQuiver, List) := opts -> (Q, F) -> (
     if opts.Format == "Flow" then (
         isTight(toricQuiver(Q.connectivityMatrix, F))
     ) else (
-        FF := incInverse(Q, F);
+        FF := incInverse(F, Q);
         isTight(toricQuiver(Q.connectivityMatrix, FF))
     )
 )
@@ -601,7 +601,7 @@ isTight(List, ToricQuiver) := opts -> (F, Q) -> (
     if opts.Format == "Flow" then (
         isTight(toricQuiver(Q.connectivityMatrix, F))
     ) else (
-        FF := incInverse(Q, F);
+        FF := incInverse(F, Q);
         isTight(toricQuiver(Q.connectivityMatrix, FF))
     )
 )
@@ -609,8 +609,8 @@ isTight(List, ToricQuiver) := opts -> (F, Q) -> (
 
 
 ------------------------------------------------------------
-makeTight = (Q, W) -> (
-    potentialF := incInverse(Q, W);
+makeTight = (W, Q) -> (
+    potentialF := incInverse(W, Q);
     k := entries generators kernel Q.connectivityMatrix;
     potentialF = potentialF + flatten entries first asList(transpose(matrix({sumList(k, Axis=>"Row")})));
 
@@ -684,7 +684,7 @@ makeTight = (Q, W) -> (
 			i
 		)
 	);
-        return makeTight(newQ_nonEmptyEdges, newW);
+        return makeTight(newW, newQ_nonEmptyEdges);
     );
 )
 ------------------------------------------------------------
@@ -855,7 +855,7 @@ potentialWalls(Matrix) := (Q) -> (
             pSums := sumList(Q^Qp, Axis=>"Col");
             QpEdgeIndices := for s in (0..#pSums - 1) list(if (pSums_s == 0) then (s) else (continue;));
             if (#Qp < 2) or (isGraphConnected(Q^Qp_QpEdgeIndices)) then (
-               new Wall from hashTable ({Qplus=>Qp, WallType=>wallType(Q, Qp)})
+               new Wall from hashTable ({Qplus=>Qp, WallType=>wallType(Qp, Q)})
             )
         )
     )
@@ -937,8 +937,8 @@ sameChamber = (theta1, theta2, Q) -> (
     ) else if all(0..#treesTheta1 - 1, x -> treesTheta1#x == treesTheta2#x) then (
         return true
     ) else (
-        p1 := flowPolytope(Q, theta1);
-        p2 := flowPolytope(Q, theta2);
+        p1 := flowPolytope(theta1, Q);
+        p2 := flowPolytope(theta2, Q);
         if areIsomorphic(convexHull transpose matrix p1, convexHull transpose matrix p2) then (
             return true
         ) else (
@@ -954,7 +954,7 @@ sameChamber = (theta1, theta2, Q) -> (
 -- such that T admits a regular flow in the preimage of weight th
 stableTrees = (th, TQ) -> (
     allTrees := allSpanningTrees(TQ);
-    for x in allTrees list(if all(incInverse(TQ_x, th), y -> y > 0) then (x) else continue )
+    for x in allTrees list(if all(incInverse(th, TQ_x), y -> y > 0) then (x) else continue )
 )
 ------------------------------------------------------------
 
@@ -1044,13 +1044,13 @@ threeVertexQuiver = {Flow=>"Canonical"} >> opts -> (numEdges) -> (
 
 ------------------------------------------------------------
 wallType = method()
-wallType(Matrix, List) := (Q, Qp) -> (
+wallType(List, Matrix) := (Qp, Q) -> (
     tp := sum(for x in sumList(Q^Qp, Axis=>"Col") list(if x < 0 then (1) else (continue;)));
     tm := sum(for x in sumList(Q^Qp, Axis=>"Col") list(if x > 0 then (1) else (continue;)));
     (tp, tm)
 )
-wallType(ToricQuiver, List) := (Q, Qp) -> (
-    wallType(Q.connectivityMatrix*diagonalMatrix(Q.flow), Qp)
+wallType(List, ToricQuiver) := (Qp, Q) -> (
+    wallType(Qp, Q.connectivityMatrix*diagonalMatrix(Q.flow))
 )
 ------------------------------------------------------------
 
@@ -1274,7 +1274,7 @@ isIn = (v, l) -> (
 )
 
 isMaximal = method()
-isMaximal(Matrix, List) := (Q, Qlist) -> (
+isMaximal(List, Matrix) := (Qlist, Q) -> (
     returnVal := true;
     for Q2 in Qlist do (
         if isProperSubset(Q, Q2) then (
@@ -1283,9 +1283,9 @@ isMaximal(Matrix, List) := (Q, Qlist) -> (
     );
     returnVal
 )
-isMaximal(ToricQuiver, List) := (Q, Qlist) -> (
+isMaximal(List, ToricQuiver) := (Qlist, Q) -> (
     Ms := for Qm in Qlist list(Qm.connectivityMatrix);
-    isMaximal(Q.connectivityMatrix, Ms)
+    isMaximal(Ms, Q.connectivityMatrix)
 )
 
 -- check if there exists a path between p and q by appending 
@@ -1580,28 +1580,40 @@ multidoc ///
     Node
         Key
             toricQuiver
+            (toricQuiver, List)
+            (toricQuiver, List, List)
+            (toricQuiver, Matrix)
+            (toricQuiver, Matrix, List)
+            (toricQuiver, Graph)
+            (toricQuiver, Graph, List)
+            (toricQuiver, ToricQuiver)
+            (toricQuiver, ToricQuiver, List)
         Headline
             the toricQuiver constructor
         Usage
-            Q = toricQuiver M
-            Q = toricQuiver T
             Q = toricQuiver E
-            Q = toricQuiver G
-            Q = toricQuiver (M, F)
-            Q = toricQuiver (T, F)
             Q = toricQuiver (E, F)
+            Q = toricQuiver M
+            Q = toricQuiver (M, F)
+            Q = toricQuiver G
             Q = toricQuiver (G, F)
+            Q = toricQuiver T
+            Q = toricQuiver (T, F)
         Inputs
+            E: List
+                of pairs {\tt (V1, V2)} giving the edges of the quiver in terms of the vertices
+            F: List 
+                the flow on the quiver given as a list of integers
+            G: Graph
             M: Matrix 
                 of integers giving the connectivity structure of the quiver
             T: ToricQuiver 
-            F: List 
-                the flow on the quiver given as a list of integers
-            E: List
-                of pairs {\tt (V1, V2)} giving the edges of the quiver in terms of the vertices
-            G: Graph
             Flow => String
-                that specifies the flow for the polytope
+                that specifies the flow for the polytope. 
+                options are 
+                {\tt Default}, which takes the flow from values in the matrix, 
+                {\tt Canonical}, which sets the flow to 1 for each edge, and 
+                {\tt Random}, which assigns a random integer between 0 and 100 to each edge
         Outputs
             Q: ToricQuiver
         Description
@@ -1623,155 +1635,16 @@ multidoc ///
 
             Example
                 Q = toricQuiver matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}})
-                Q = toricQuiver(matrix({{-3,-1,-4,-1},{3,1,0,0},{0,0,4,1}}))
-                Q = toricQuiver(matrix({{-3,-1,-4,-1},{3,1,0,0},{0,0,4,1}}), Flow=>"Canonical")
-                Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), {3, 1, 0, 5})
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
+                Q = toricQuiver ({{0,1},{0,1},{0,2},{0,2}}, {1,2,3,4})
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), Flow=>"Canonical")
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
+                R = toricQuiver(Q)
+                R = toricQuiver(Q, {1,2,3,4})
         SeeAlso
             "bipartiteQuiver"
-    Node
-        Key
-            (toricQuiver, Matrix)
-        Headline
-            make a toric quiver from a connectivity matrix
-        Usage
-            toricQuiver M
-        Inputs
-            M: Matrix
-                of integers; each column corresponds to an arrow and each row
-            Flow => String
-                options are 
-                {\tt Default}, which takes the flow from values in the matrix, 
-                {\tt Canonical}, which sets the flow to 1 for each edge, and 
-                {\tt Random}, which assigns a random integer between 0 and 100 to each edge
-        Outputs
-            Q: ToricQuiver
-        Description
-            Example
-                Q = toricQuiver matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}})
-                Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
-    Node
-        Key
-            (toricQuiver, Matrix, List)
-        Headline
-            make a toric quiver from a connectivity matrix and a flow
-        Usage
-            toricQuiver (M, F)
-        Inputs
-            M: Matrix
-                of integers; each column corresponds to an arrow and each row
-            F: List
-                of integers specifying the flow for each arrow
-        Outputs
-            Q: ToricQuiver
-        Description
-            Example
-                Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), {3, 1, 0, 5})
-    Node
-        Key
-            (toricQuiver, List)
-        Headline
-            make a toric quiver from a list of edges
-        Usage
-            toricQuiver (E)
-        Inputs
-            E: List
-                of pairs of the form {\tt (v_1, v_2)}, one for each edge between vertices {\tt v_1} and {\tt v_2}
-            Flow => String
-                options are {\tt Canonical}, which sets the flow to 1 for each edge, or 
-                {\tt Random}, which assigns a random integer between 0 and 100 to each edge
-        Outputs
-            Q: ToricQuiver
-        Description
-            Example
-                Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
-    Node
-        Key
-            (toricQuiver, List, List)
-        Headline
-            make a toric quiver from a list of edges
-        Usage
-            toricQuiver (E, F)
-        Inputs
-            E: List
-                of pairs of the form {\tt (v_1, v_2)}, one for each edge between vertices {\tt v_1} and {\tt v_2}
-            F: List
-                of integers specifying the flow for each arrow
-        Outputs
-            Q: ToricQuiver
-        Description
-            Example
-                Q = toricQuiver ({{0,1},{0,1},{0,2},{0,2}}, {1,2,3,4})
-    Node
-        Key
-            (toricQuiver, ToricQuiver)
-        Headline
-            make a toric quiver by copying
-        Usage
-            toricQuiver (Q)
-        Inputs
-            Q: ToricQuiver
-        Outputs
-            R: ToricQuiver
-        Description
-            Example
-                Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
-                R = toricQuiver(Q)
-    Node
-        Key
-            (toricQuiver, ToricQuiver, List)
-        Headline
-            make a toric quiver by copying
-        Usage
-            toricQuiver (Q, F)
-        Inputs
-            Q: ToricQuiver
-            F: List
-                of integers specifying the flow for each arrow
-        Outputs
-            R: ToricQuiver
-        Description
-            Example
-                Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
-                R = toricQuiver(Q, {1,2,3,4})
-    Node
-        Key
-            (toricQuiver, Graph)
-        Headline
-            make an (acyclic) toric quiver from a graph object
-        Usage
-            toricQuiver (G)
-        Inputs
-            G: Graph
-        Outputs
-            Q: ToricQuiver
-        Description
-            Text
-                This algorithm creates an acyclic quiver based on the 
-                undirected graph object {\tt G} by preserving the edges 
-                of {\tt G} that respect the total 
-                order induced by the integer-valued vertex labels
-            -- Example
-            --     G = completeMultipartiteGraph {1,2,3}
-    Node
-        Key
-            (toricQuiver, Graph, List)
-        Headline
-            make an (acyclic) toric quiver from a graph object
-        Usage
-            toricQuiver (G, F)
-        Inputs
-            G: Graph
-            F: List
-                of integers specifying the flow for each edge
-        Outputs
-            Q: ToricQuiver
-        Description
-            Text
-                This algorithm creates an acyclic quiver based on the 
-                undirected graph object {\tt G} by preserving the edges 
-                of {\tt G} that respect the total 
-                order induced by the integer-valued vertex labels
+
     Node
         Key
             "toric quiver representation"
@@ -1885,7 +1758,8 @@ multidoc ///
             M: ZZ
                 number of vertices that are sinks
             Flow => 
-                specify flow to use. Either a string with values {\tt Canonical} or {\tt Random}, 
+                specify what form of flow to use. This input can be 
+                either a string with values {\tt Canonical} or {\tt Random}, 
                 or else a list of integer values. 
         Outputs
             Q: ToricQuiver
@@ -1909,7 +1783,8 @@ multidoc ///
             E: List
                 number of edges linking each vertex to the next
             Flow => 
-                specify flow to use. Either a string with values {\tt Canonical} or {\tt Random}, 
+                specify what form of flow to use. This input can be 
+                either a string with values {\tt Canonical} or {\tt Random}, 
                 or else a list of integer values. 
         Outputs
             Q: ToricQuiver
@@ -1929,7 +1804,8 @@ multidoc ///
             E: List
                 number of edges between each pair of vertices
             Flow => 
-                specify flow to use. Either a string with values {\tt Canonical} or {\tt Random}, 
+                specify what form of flow to use. This input can be 
+                either a string with values {\tt Canonical} or {\tt Random}, 
                 or else a list of integer values. 
         Outputs
             Q: ToricQuiver
@@ -1958,12 +1834,17 @@ multidoc ///
     Node
         Key
             basisForFlowPolytope
+            (basisForFlowPolytope, ToricQuiver)
+            (basisForFlowPolytope, List, ToricQuiver)
         Headline
             compute the necessary basis vectors for the hyperplane of a flow polytope
         Usage
             basisForFlowPolytope Q
+            basisForFlowPolytope (T, Q)
         Inputs
             Q: ToricQuiver
+            T: List
+                of edges comprising the spanning tree to use to generate the basis. 
         Outputs
             B: Matrix
         Description
@@ -1975,6 +1856,8 @@ multidoc ///
                 polytopes in the appropriate dimension.
             Example
                 basisForFlowPolytope bipartiteQuiver(2,3)
+            Example
+                basisForFlowPolytope ({0,1,4,5},  bipartiteQuiver(2,3))
     Node
         Key
             coneSystem
@@ -1990,7 +1873,7 @@ multidoc ///
         Description
             Text
                 The set of weights {\tt th} for which the polytope {\tt (Q,th)} is 
-                nonempty lies in a cone {\tt CQ}. This cone is partitioned by the 
+                nonempty lies in a fan {\tt CQ}. This fan is partitioned into cones by the 
                 walls of the toric quiver {\tt Q}, and for each partition there exists 
                 a unique flow polytope. 
             Example
@@ -1999,66 +1882,31 @@ multidoc ///
     Node
         Key
             flowPolytope
-        Headline
-            generate the polytope associated to a toric quiver
-        Usage
-            flowPolytope(Q, F)
-        Inputs
-            Q: ToricQuiver
-            F: List
-            Format => String
-                specifying what basis to use. Default value is {\tt SimplifiedBasis} 
-                which returns the polytope in a basis giving the minimal degree 
-                necessary for polytope dimension. 
-        Outputs
-            : Matrix
-                giving the coordinates of the vertices defining the flow polytope
-    Node
-        Key
             (flowPolytope, ToricQuiver)
+            (flowPolytope, List, ToricQuiver)
         Headline
             generate the polytope associated to a toric quiver
         Usage
             flowPolytope Q
+            flowPolytope(W, Q)
         Inputs
             Q: ToricQuiver
+            W: List
+                of integer values specifying a weight on the vertices
             Format => String
-                specifying what basis to use. Default value is {\tt SimplifiedBasis} 
-                which returns the polytope in a basis giving the minimal degree necessary for polytope dimension. 
+                specifying what basis to use. The default value {\tt SimplifiedBasis} 
+                returns the polytope in a basis giving the minimal degree 
+                necessary for polytope dimension. 
         Outputs
             : Matrix
                 giving the coordinates of the vertices defining the flow polytope
         Description
             Text
-                Associated to every acyclic toric quiver is a flow polytope. 
+                Associated to every acyclic toric quiver and weight pair is a flow polytope. 
                 For full-dimensional representation of the vertices, use {\tt Format => "FullBasis"}. 
             Example
                 flowPolytope(bipartiteQuiver(2, 3))
-        SeeAlso
-            basisForFlowPolytope
-    Node
-        Key
-            (flowPolytope, ToricQuiver, List)
-        Headline
-            generate the polytope associated to a toric quiver
-        Usage
-            flowPolytope(Q, F)
-        Inputs
-            Q: ToricQuiver
-            F: List
-                specifying a flow to impose on the quiver.
-            Format => String
-                specifying what basis to use. Default value is {\tt SimplifiedBasis} 
-                which returns the polytope in a basis giving the minimal degree necessary for polytope dimension. 
-        Outputs
-            : Matrix
-                giving the coordinates of the vertices defining the flow polytope
-        Description
-            Text
-                Associated to every acyclic toric quiver is a flow polytope. 
-                For full-dimensional representation of the vertices, use {\tt Format => "FullBasis"}. 
-            Example
-                flowPolytope(bipartiteQuiver(2, 3), {-3,-3,2,2,2})
+                flowPolytope({-3,-3,2,2,2}, bipartiteQuiver(2, 3))
         SeeAlso
             basisForFlowPolytope
     Node
@@ -2067,35 +1915,19 @@ multidoc ///
         Headline
             compute a flow in the preimage for a given weight
         Usage
-            incInverse(Q, W)
+            incInverse(W, Q)
         Inputs
-            Q: ToricQuiver
             W: List
                 of integers, specifying the weight on each vertex
+            Q: ToricQuiver
         Description
             Example
                 Q = toricQuiver(bipartiteQuiver(2,3));
                 th = {-5,-1,2,2,2};
-                incInverse(Q,th)
+                incInverse(th, Q)
     Node
         Key
             isAcyclic
-        Headline
-            check that a quiver has no cycles
-        Usage
-            isAcyclic Q
-        Inputs
-            Q: ToricQuiver
-        Outputs
-            :Boolean
-        Description
-            Text
-                This method determines whether a quiver is free from oriented cycles.
-            Example
-                Q = bipartiteQuiver(2, 3);
-                isAcyclic Q
-    Node
-        Key
             (isAcyclic, ToricQuiver)
         Headline
             check that a quiver has no cycles
@@ -2109,37 +1941,29 @@ multidoc ///
             Text
                 This method determines whether a quiver is free from oriented cycles.
             Example
-                isAcyclic bipartiteQuiver(2, 3)
+                isAcyclic bipartiteQuiver(2, 3);
+            Example
                 isAcyclic toricQuiver matrix({{-1, 1, -1, -1}, {1, -1, 0, 0}, {0, 0, 1, 1}})
     Node
         Key
             isClosedUnderArrows
-        Headline
-            is a subquiver closed under arrows?
-        Usage
-            isClosedUnderArrows (V, Q)
-        Inputs
-            Q: ToricQuiver
-            V: List
-                set of vertices 
-        Outputs
-            : Boolean
-        Description
-            Text
-                checks that a set of vertices is closed under arrows with respect to the toricQuiver {\tt Q}. 
-                That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. 
-                Note that this does not require that $V\subset Q_0$.
-    Node
-        Key
             (isClosedUnderArrows, List, ToricQuiver)
+            (isClosedUnderArrows, Matrix, ToricQuiver)
+            (isClosedUnderArrows, ToricQuiver, ToricQuiver)
         Headline
             is a subquiver closed under arrows?
         Usage
             isClosedUnderArrows (V, Q)
+            isClosedUnderArrows (M, Q)
+            isClosedUnderArrows (SQ, Q)
         Inputs
+            M: Matrix
+                connectivity matrix of subquiver to check
+            Q: ToricQuiver
+            SQ: ToricQuiver
+                subquiver of Q to check 
             V: List
                 set of vertices 
-            Q: ToricQuiver
         Outputs
             : Boolean
         Description
@@ -2150,46 +1974,10 @@ multidoc ///
             Example
                 isClosedUnderArrows ({0, 2, 3}, bipartiteQuiver(2, 3))
                 isClosedUnderArrows ({2, 3, 4}, bipartiteQuiver(2, 3))
-    Node
-        Key
-            (isClosedUnderArrows, Matrix, ToricQuiver)
-        Headline
-            is a subquiver closed under arrows?
-        Usage
-            isClosedUnderArrows (M, Q)
-        Inputs
-            M: Matrix
-                connectivity matrix of subquiver to check
-            Q: ToricQuiver
-        Outputs
-            : Boolean
-        Description
-            Text
-                checks that a set of vertices is closed under arrows with respect to the toricQuiver {\tt Q}. 
-                That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. 
-                Note that this does not require that $V\subset Q_0$.
             Example
                 Q = threeVertexQuiver {1, 2, 3}
                 SQ = Q_{0,1}
                 isClosedUnderArrows (SQ, Q)
-    Node
-        Key
-            (isClosedUnderArrows, ToricQuiver, ToricQuiver)
-        Headline
-            is a subquiver closed under arrows?
-        Usage
-            isClosedUnderArrows (SQ, Q)
-        Inputs
-            SQ: ToricQuiver
-                subquiver of Q to check 
-            Q: ToricQuiver
-        Outputs
-            : Boolean
-        Description
-            Text
-                checks that a set of vertices is closed under arrows with respect to the toricQuiver {\tt Q}. 
-                That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. 
-                Note that this does not require that $V\subset Q_0$.
             Example
                 Q = threeVertexQuiver {1, 2, 3}
                 SQ = Q^{0,1}
@@ -2197,17 +1985,19 @@ multidoc ///
     Node
         Key
             isSemistable
+            (isSemistable, ToricQuiver, List)
+            (isSemistable, ToricQuiver, ToricQuiver)
         Headline
             determines if a subquiver is semistable with respect to a given weight
         Usage
             isSemistable (Q, L)
             isSemistable (Q, SQ)
         Inputs
+            L: List
+                of the indices of arrows in {\tt Q} that make up the subquiver in question
             Q: ToricQuiver
             SQ: ToricQuiver
                 A subquiver of the quiver {\tt Q}
-            L: List
-                of the indices of arrows in {\tt Q} that make up the subquiver in question
         Outputs
             :Boolean
         Description
@@ -2217,48 +2007,8 @@ multidoc ///
                 A subquiver {\tt SQ} of the quiver {\tt Q} is semistable if for every subset 
 		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
 		the sum of the weights associated to {\tt V} is nonnegative. 
-    Node
-        Key
-            (isSemistable, ToricQuiver, List)
-        Headline
-            determines if a subquiver is semistable
-        Usage
-            isSemistable (Q, L)
-        Inputs
-            Q: ToricQuiver
-            L: List
-                of the indices of arrows in {\tt Q} that make up the subquiver in question
-        Outputs
-            :Boolean
-        Description
-            Text 
-                This function determines if a given subquiver 
-                is semi-stable with respect to the weight saved on {\tt Q}. 
-                A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
-		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
-		the sum of the weights associated to {\tt V} is nonnegative. 
             Example
                 isSemistable (bipartiteQuiver(2, 3), {0, 1})
-    Node
-        Key
-            (isSemistable, ToricQuiver, ToricQuiver)
-        Headline
-            determines if a subquiver is semistable
-        Usage
-            isSemistable (Q, SQ)
-        Inputs
-            Q: ToricQuiver
-            SQ: ToricQuiver
-                A subquiver of the quiver $Q$
-        Outputs
-            :Boolean
-        Description
-            Text 
-                This function determines if a given subquiver 
-                is semi-stable with respect to the weight saved on {\tt Q}. 
-                A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
-		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
-		the sum of the weights associated to {\tt V} is nonnegative. 
             Example
                 Q = bipartiteQuiver(2, 3);
                 S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
@@ -2266,17 +2016,19 @@ multidoc ///
     Node
         Key
             isStable
+            (isStable, ToricQuiver, List)
+            (isStable, ToricQuiver, ToricQuiver)
         Headline
             determines if a subquiver is semistable with respect to a given weight
         Usage
             isStable (Q, L)
             isStable (Q, SQ)
         Inputs
+            L: List
+                of the indices of arrows in {\tt Q} that make up the subquiver in question
             Q: ToricQuiver
             SQ: ToricQuiver
                 A subquiver of the quiver {\tt Q}
-            L: List
-                of the indices of arrows in {\tt Q} that make up the subquiver in question
         Outputs
             :Boolean
         Description
@@ -2290,48 +2042,8 @@ multidoc ///
                 Q = bipartiteQuiver(2, 3);
                 P = Q^{0,1,4,5};
                 isStable(Q, P)
-    Node
-        Key
-            (isStable, ToricQuiver, List)
-        Headline
-            determines if a subquiver is stable
-        Usage
-            isStable (Q, L)
-        Inputs
-            Q: ToricQuiver
-            L: List
-                of the indices of arrows in {\tt Q} that make up the subquiver in question
-        Outputs
-            :Boolean
-        Description
-            Text 
-                This function determines if a given subquiver 
-                is stable with respect to the weight saved on {\tt Q}. 
-                A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
-		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
-		the sum of the weights associated to {\tt V} is positive. 
             Example
                 isStable (bipartiteQuiver(2, 3), {0, 1})
-    Node
-        Key
-            (isStable, ToricQuiver, ToricQuiver)
-        Headline
-            determines if a subquiver is stable
-        Usage
-            isStable (Q, SQ)
-        Inputs
-            Q: ToricQuiver
-            SQ: ToricQuiver
-                A subquiver of the quiver $Q$
-        Outputs
-            :Boolean
-        Description
-            Text 
-                This function determines if a given subquiver 
-                is stable with respect to the weight saved on {\tt Q}. 
-                A subquiver {\tt SQ} of the quiver {\tt Q} is stable if for every subset 
-		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
-		the sum of the weights associated to {\tt V} is positive. 
             Example
                 Q = bipartiteQuiver(2, 3)
                 S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
@@ -2339,71 +2051,18 @@ multidoc ///
     Node
         Key
             isTight
-        Headline
-            determine if toric quiver is tight
-        Usage
-            isTight Q
-        Inputs
-            Q: ToricQuiver
-        Outputs
-            : Boolean
-        Description
-            Text
-                Determines if a toric quiver {\tt Q} is tight with respect to the vertex weights induced by its flow
-            Example
-                isTight bipartiteQuiver(2, 3)
-    Node
-        Key
             (isTight, ToricQuiver)
-        Headline
-            determine if toric quiver is tight
-        Usage
-            isTight Q
-        Inputs
-            Q: ToricQuiver
-        Outputs
-            : Boolean
-        Description
-            Text
-                A toric quiver $Q$ is tight with respect to a given flow if there is no maximal 
-                unstable subquiver of codimension 1. That is, every unstable subquiver of $Q$ 
-                has at most $|Q_1|-2$ arrows. This method determines if a toric quiver $Q$ is 
-                tight with respect to the vertex weights induced by its flow. 
-            Example
-                isTight bipartiteQuiver(2, 3, Flow=>"Random")
-    Node
-        Key
             (isTight, ToricQuiver, List)
-        Headline
-            determine if toric quiver is tight
-        Usage
-            isTight(Q, W)
-        Inputs
-            Q: ToricQuiver
-            W: List
-            Format => 
-                specify whether input W is a flow (integer values associated to each arrow) 
-                or the image of the flow under the map {\tt theta} (integer values associated to each vertex). 
-        Outputs
-            : Boolean
-        Description
-            Text
-                A toric quiver $Q$ is tight with respect to a given flow if there is no maximal 
-                unstable subquiver of codimension 1. That is, every unstable subquiver of $Q$ 
-                has at most $|Q_1|-2$ arrows. This method determines if a toric quiver $Q$ is 
-                tight with respect to the vertex weights induced by its flow. 
-            Example
-                isTight (bipartiteQuiver(2, 3), {2,1,2,3,2,3})
-    Node
-        Key
             (isTight, List, ToricQuiver)
         Headline
             determine if toric quiver is tight
         Usage
+            isTight Q
+            isTight(Q, W)
             isTight(W, Q)
         Inputs
-            W: List
             Q: ToricQuiver
+            W: List
             Format => 
                 specify whether input W is a flow (integer values associated to each arrow) 
                 or the image of the flow under the map {\tt theta} (integer values associated to each vertex). 
@@ -2415,6 +2074,12 @@ multidoc ///
                 unstable subquiver of codimension 1. That is, every unstable subquiver of $Q$ 
                 has at most $|Q_1|-2$ arrows. This method determines if a toric quiver $Q$ is 
                 tight with respect to the vertex weights induced by its flow. 
+            Example
+                isTight bipartiteQuiver(2, 3)
+            Example
+                isTight bipartiteQuiver(2, 3, Flow=>"Random")
+            Example
+                isTight (bipartiteQuiver(2, 3), {2,1,2,3,2,3})
             Example
                 isTight ({2,1,2,3,2,3}, bipartiteQuiver(2, 3))
     Node
@@ -2423,11 +2088,11 @@ multidoc ///
         Headline
             return a tight quiver with the same flow polytope
         Usage
-            makeTight(Q, W)
+            makeTight(W, Q)
         Inputs
-            Q: ToricQuiver
             W: List
                of values corresponding to a weight on each arrow of {\tt Q}
+            Q: ToricQuiver
         Outputs
             Q: ToricQuiver
                that is tight with respect to the flow on the input, and which has the same flow polytope as the input.
@@ -2435,7 +2100,7 @@ multidoc ///
             Example
                 Q = bipartiteQuiver(2,3)
                 w = {-5,-1,2,2,2}
-                makeTight(Q,w)
+                makeTight(w, Q)
     Node
         Key
             maximalUnstableSubquivers
@@ -2461,19 +2126,6 @@ multidoc ///
     Node
         Key
             neighborliness
-        Headline
-            compute the neighborliness of a quiver
-        Usage
-            neighborliness Q
-        Inputs
-            Q: ToricQuiver
-        Outputs
-            : ZZ
-        Description
-            Text
-                computes the neighborliness of a given quiver {\tt Q}
-    Node
-        Key
             (neighborliness, ToricQuiver)
         Headline
             compute the neighborliness of a quiver
@@ -2491,90 +2143,52 @@ multidoc ///
     Node
         Key
             mergeOnArrow
-        Headline
-            join two quivers together by identifying an arrow from each
-        Usage
-            mergeOnArrow (Q1, A1, Q2, A2)
-        Inputs
-            Q1: ToricQuiver
-            A1: ZZ
-            Q2: ToricQuiver
-            A2: ZZ
-        Outputs
-            : ToricQuiver
-        Description
-            Text
-                create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
-            Example
-                mergeOnArrow (bipartiteQuiver (2, 3), 0, bipartiteQuiver (2, 3), 0)
-    Node
-        Key
             (mergeOnArrow, ToricQuiver, ZZ, ToricQuiver, ZZ)
-        Headline
-            join two quivers together by identifying an arrow from each
-        Usage
-            mergeOnArrow (Q1, A1, Q2, A2)
-        Inputs
-            Q1: ToricQuiver
-            A1: ZZ
-            Q2: ToricQuiver
-            A2: ZZ
-        Outputs
-            : ToricQuiver
-        Description
-            Text
-                create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
-            Example
-                mergeOnArrow (bipartiteQuiver (2, 3), 0, bipartiteQuiver (2, 3), 0)
-    Node
-        Key
             (mergeOnArrow, ToricQuiver, ZZ, Matrix, ZZ)
-        Headline
-            join two quivers together by identifying an arrow from each
-        Usage
-            mergeOnArrow (Q1, A1, Q2, A2)
-        Inputs
-            Q1: ToricQuiver
-            A1: ZZ
-            Q2: Matrix
-            A2: ZZ
-        Outputs
-            : ToricQuiver
-        Description
-            Text
-                create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
-            Example
-                mergeOnArrow (bipartiteQuiver (2, 3), 0, matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0)
-    Node
-        Key
             (mergeOnArrow, Matrix, ZZ, ToricQuiver, ZZ)
         Headline
             join two quivers together by identifying an arrow from each
         Usage
             mergeOnArrow (Q1, A1, Q2, A2)
+            mergeOnArrow (Q1, A1, M2, A2)
+            mergeOnArrow (M1, A1, Q2, A2)
         Inputs
-            Q1: Matrix
             A1: ZZ
-            Q2: ToricQuiver
             A2: ZZ
+            M1: Matrix
+            M2: Matrix
+            Q1: ToricQuiver
+            Q2: ToricQuiver
         Outputs
             : ToricQuiver
         Description
             Text
                 create a new quiver from joining two toricQuivers together by identifying arrow $A1$ in $Q1$ with arrow $A2$ in $Q2$. 
             Example
+                mergeOnArrow (bipartiteQuiver (2, 3), 0, bipartiteQuiver (2, 3), 0)
+            Example
+                mergeOnArrow (bipartiteQuiver (2, 3), 0, matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0)
+            Example
                 mergeOnArrow (matrix ({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0, bipartiteQuiver (2, 3), 0)
+
     Node
         Key
             mergeOnVertex
+            (mergeOnVertex, ToricQuiver, ZZ, ToricQuiver, ZZ)
+            (mergeOnVertex, ToricQuiver, ZZ, Matrix, ZZ)
+            (mergeOnVertex, Matrix, ZZ, ToricQuiver, ZZ)
         Headline
             join two quivers together by identifying a vertex from each
         Usage
             mergeOnVertex (Q1, V1, Q2, V2)
+            mergeOnVertex (Q1, V1, M2, V2)
+            mergeOnVertex (M1, V1, Q2, V2)
         Inputs
+            M1: Matrix
+            M2: Matrix
             Q1: ToricQuiver
-            V1: ZZ
             Q2: ToricQuiver
+            V1: ZZ
             V2: ZZ
         Outputs
             : ToricQuiver
@@ -2584,66 +2198,14 @@ multidoc ///
                 vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
             Example
                 mergeOnVertex (bipartiteQuiver (2, 3), 1, bipartiteQuiver (2, 3), 0)
-    Node
-        Key
-            (mergeOnVertex, ToricQuiver, ZZ, ToricQuiver, ZZ)
-        Headline
-            join two quivers together by identifying a vertex from each
-        Usage
-            mergeOnVertex (Q1, V1, Q2, V2)
-        Inputs
-            Q1: ToricQuiver
-            V1: ZZ
-            Q2: ToricQuiver
-            V2: ZZ
-        Outputs
-            : ToricQuiver
-        Description
-            Text
-                create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
-            Example
-                mergeOnVertex (bipartiteQuiver (2, 3), 1, bipartiteQuiver (2, 3), 0)
-    Node
-        Key
-            (mergeOnVertex, ToricQuiver, ZZ, Matrix, ZZ)
-        Headline
-            join two quivers together by identifying a vertex from each
-        Usage
-            mergeOnVertex (Q1, V1, Q2, V2)
-        Inputs
-            Q1: ToricQuiver
-            V1: ZZ
-            Q2: Matrix
-            V2: ZZ
-        Outputs
-            : ToricQuiver
-        Description
-            Text
-                create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
             Example
                 mergeOnVertex (bipartiteQuiver (2, 3), 1, matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 0)
-    Node
-        Key
-            (mergeOnVertex, Matrix, ZZ, ToricQuiver, ZZ)
-        Headline
-            join two quivers together by identifying a vertex from each
-        Usage
-            mergeOnVertex (Q1, V1, Q2, V2)
-        Inputs
-            Q1: Matrix
-            V1: ZZ
-            Q2: ToricQuiver
-            V2: ZZ
-        Outputs
-            : ToricQuiver
-        Description
-            Text
-                create a new quiver from joining two toricQuivers together by identifying vertex $V1$ in $Q1$ with vertex $V2$ in $Q2$. 
-            Example
                 mergeOnVertex (matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), 1, bipartiteQuiver (2, 3), 0)
+
     Node
         Key
             potentialWalls
+            (potentialWalls, ToricQuiver)
         Headline
             return the potential walls in the weight chamber decomposition for a given quiver
         Usage
@@ -2660,26 +2222,7 @@ multidoc ///
                 and {\tt Qminus} is used in every case. 
                 Thus we denote the wall {\tt W} by the subset of vertices {\tt Qplus} used for defining it. 
             Example
-                Q = toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
-                potentialWalls Q
-    Node
-        Key
-            (potentialWalls, ToricQuiver)
-        Headline
-            return the potential walls in the weight chamber decomposition for a given quiver
-        Usage
-            potentialWalls Q
-        Inputs
-            Q: ToricQuiver
-        Outputs
-            : List
-        Description
-            Text
-                each wall is given in the form $(t^+,t^-), Q^+$, where $(t^+,t^-)$ is 
-                the wall type associated to the wall with vertex-partition $Q_0=Q^+\cup (Q_0\setminus Q^+)$
-            Example
-                Q = toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
-                potentialWalls Q
+                potentialWalls toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
     Node
         Key
             primitiveArrows
@@ -2757,6 +2300,7 @@ multidoc ///
     Node
         Key
             subquivers
+            (subquivers, ToricQuiver)
         Headline
             return all possible subquivers of a given quiver
         Usage
@@ -2788,37 +2332,6 @@ multidoc ///
                 Q = chainQuiver {2}
                 subquivers Q
                 subquivers(Q, Format=>"list")
-    Node
-        Key
-            (subquivers, ToricQuiver)
-        Headline
-            return all possible subquivers of a given quiver
-        Usage
-            subquivers Q
-        Inputs
-            Q: ToricQuiver
-            Format => String
-                options include {\tt quiver}, which returns a list of quivers, and {\tt list}, 
-                which returns a list of arrows for each subquiver
-            AsSubquiver => Boolean
-                if Format is specified as {\tt quiver}, then applying 
-                {\tt AsSubquiver = true} insures that the matrix representation 
-                of the subquiver is the same size as the matrix original quiver
-        Outputs
-            L: List
-                of either quiver objects, or arrow indices
-        Description
-            Text 
-                this returns the subquivers of a given quiver. 
-                There are 3 main ways to represent a subquiver: 
-            Text
-                @UL{
-                    {"as a list of arrow indices,"}, 
-                    {"as a subset of rows and columns of the original connectivity matrix, and"},
-                    {"as a copy of the original connectivity matrix with certain rows and columns zeroed out. "}
-                }@
-            Text
-                These options are expanded in the Examples below. 
             Example
                 subquivers bipartiteQuiver(2, 2)
                 subquivers(bipartiteQuiver(2, 2), Format=>"list")
@@ -2826,23 +2339,6 @@ multidoc ///
     Node
         Key
             theta
-        Headline
-            image of the flow on the vertices
-        Usage
-            theta Q
-        Inputs
-            Q: ToricQuiver
-        Outputs
-            L: List
-                of integers
-        Description
-            Text
-                this is the image of the $Inc$ map 
-            Example
-                Q = bipartiteQuiver(2, 3, Flow=>"Random")
-                theta Q
-    Node
-        Key
             (theta, ToricQuiver)
         Headline
             image of the flow on the vertices
@@ -2862,10 +2358,11 @@ multidoc ///
     Node
         Key
             wallType
+            (wallType, List, ToricQuiver)
         Headline
             get the type of a wall for a given quiver
         Usage
-            wallType (Q, Qplus)
+            wallType (Qplus, Q)
         Inputs
             Q: ToricQuiver
             Qplus: List
@@ -2883,31 +2380,6 @@ multidoc ///
                 {\tt Qminus}, and {\tt t-} is the number of arrows starting {\tt Qminus} 
                 and ending in {\tt Qplus}. 
             Example
-                wallType(bipartiteQuiver(2, 3), {0,2,3})
-    Node
-        Key
-            (wallType, ToricQuiver, List)
-        Headline
-            get the type of a wall for a given quiver
-        Usage
-            wallType (Q, Qplus)
-        Inputs
-            Q: ToricQuiver
-            Qplus: List
-        Outputs
-            : 
-                wall type is given by (ZZ, ZZ)
-        Description
-            Text
-                every wall can be represented uniquely by a partition of the vertices 
-                {\tt Q0} of {\tt Q} into two sets {\tt Qplus} and {\tt Qminus}. 
-                We denote the wall {\tt W} by the subset of vertices {\tt Qplus} used for defining it. 
-            Text
-                The type of the wall is defined as {\tt (t+,t-)} where {\tt t^+} 
-                is the number of arrows starting {\tt Qplus} and ending in 
-                {\tt Qminus}, and {\tt t-} is the number of arrows starting {\tt Qminus} 
-                and ending in {\tt Qplus}. 
-            Example
-                wallType(bipartiteQuiver(2, 3), {0,2,3})
+                wallType({0,2,3}, bipartiteQuiver(2, 3))
 ///
 end--
