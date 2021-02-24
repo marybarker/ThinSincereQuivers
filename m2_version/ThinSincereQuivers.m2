@@ -508,7 +508,7 @@ isClosedUnderArrows (ToricQuiver, ToricQuiver) := (SQ, Q) -> (
 
 ------------------------------------------------------------
 isSemistable = method()
-isSemistable(ToricQuiver, List) := (Q, subQ) -> (
+isSemistable(List, ToricQuiver) := (subQ, Q) -> (
     Qcm := Q.connectivityMatrix;
 
     -- get the vertices in the subquiver
@@ -535,16 +535,16 @@ isSemistable(ToricQuiver, List) := (Q, subQ) -> (
     );
     all(sums, x -> x + minWeight >= 0)
 )
-isSemistable(ToricQuiver, ToricQuiver) := (Q, subQ) -> (
+isSemistable(ToricQuiver, ToricQuiver) := (subQ, Q) -> (
     nonZeroEntries := positions(subQ.flow, x -> (x > 0) or (x < 0));
-    isSemistable(Q, nonZeroEntries)
+    isSemistable(nonZeroEntries, Q)
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
 isStable = method()
-isStable(ToricQuiver, List) := (Q, subQ) -> (
+isStable(List, ToricQuiver) := (subQ, Q) -> (
     Qcm := Q.connectivityMatrix;
 
     -- get the vertices in the subquiver
@@ -571,9 +571,9 @@ isStable(ToricQuiver, List) := (Q, subQ) -> (
     );
     all(sums, x -> x + minWeight > 0)
 )
-isStable(ToricQuiver, ToricQuiver) := (Q, subQ) -> (
+isStable(ToricQuiver, ToricQuiver) := (subQ, Q) -> (
     nonZeroEntries := positions(subQ.flow, x -> (x > 0) or (x < 0));
-    isStable(Q, nonZeroEntries)
+    isStable(nonZeroEntries, Q)
 )
 ------------------------------------------------------------
 
@@ -1509,7 +1509,7 @@ unstableSubquivers(ToricQuiver) := opts -> Q -> (
     ));
 
     sqsWithArrows := for sQ in L list(
-        if not isStable(Q, asList(sQ)) then (
+        if not isStable(asList(sQ), Q) then (
             if (opts.Format == "list") then (
                 sQ
             ) else (
@@ -1985,13 +1985,13 @@ multidoc ///
     Node
         Key
             isSemistable
-            (isSemistable, ToricQuiver, List)
+            (isSemistable, List, ToricQuiver)
             (isSemistable, ToricQuiver, ToricQuiver)
         Headline
             determines if a subquiver is semistable with respect to a given weight
         Usage
-            isSemistable (Q, L)
-            isSemistable (Q, SQ)
+            isSemistable (L, Q)
+            isSemistable (sQ, Q)
         Inputs
             L: List
                 of the indices of arrows in {\tt Q} that make up the subquiver in question
@@ -2008,21 +2008,21 @@ multidoc ///
 		{\tt V} of the vertices of {\tt Q} that is also {\tt SQ}-successor closed, 
 		the sum of the weights associated to {\tt V} is nonnegative. 
             Example
-                isSemistable (bipartiteQuiver(2, 3), {0, 1})
+                isSemistable ({0, 1}, bipartiteQuiver(2, 3))
             Example
                 Q = bipartiteQuiver(2, 3);
                 S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
-                isSemistable (Q, S)
+                isSemistable (S, Q)
     Node
         Key
             isStable
-            (isStable, ToricQuiver, List)
+            (isStable, List, ToricQuiver)
             (isStable, ToricQuiver, ToricQuiver)
         Headline
             determines if a subquiver is semistable with respect to a given weight
         Usage
-            isStable (Q, L)
-            isStable (Q, SQ)
+            isStable (L, Q)
+            isStable (SQ, Q)
         Inputs
             L: List
                 of the indices of arrows in {\tt Q} that make up the subquiver in question
@@ -2041,13 +2041,13 @@ multidoc ///
             Example
                 Q = bipartiteQuiver(2, 3);
                 P = Q^{0,1,4,5};
-                isStable(Q, P)
+                isStable(P, Q)
             Example
-                isStable (bipartiteQuiver(2, 3), {0, 1})
+                isStable ({0, 1}, bipartiteQuiver(2, 3))
             Example
                 Q = bipartiteQuiver(2, 3)
                 S = first(subquivers(Q, Format=>"quiver", AsSubquiver=>true))
-                isStable (Q, S)
+                isStable (S, Q)
     Node
         Key
             isTight
