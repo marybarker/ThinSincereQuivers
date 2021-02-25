@@ -12,7 +12,7 @@ newPackage(
          HomePage => "http://patriciogallardo.com/"
         }
     },
-    PackageImports => {"Graphs", "Polyhedra","LatticePolytopes"}
+    PackageImports => {"Graphs", "Polyhedra", "LatticePolytopes"}
 )
 export {
 -- Methods/Functions
@@ -1519,7 +1519,7 @@ unstableSubquivers(ToricQuiver) := opts -> Q -> (
     );
     singletonUnstableSqs := for x in positions(Q.weights, x -> x < 0) list ({x});
 
-    hashTable({NonSingletons => sqsWithArrows, Singletons => singletonUnstableSqs})
+    hashTable({NonSingletons=>sqsWithArrows, Singletons=>singletonUnstableSqs})
 )
 
 
@@ -1903,7 +1903,7 @@ multidoc ///
         Description
             Text
                 Associated to every acyclic toric quiver and weight pair is a flow polytope. 
-                For full-dimensional representation of the vertices, use {\tt Format => "FullBasis"}. 
+                For full-dimensional representation of the vertices, use {\tt Format=>"FullBasis"}. 
             Example
                 flowPolytope(bipartiteQuiver(2, 3))
                 flowPolytope({-3,-3,2,2,2}, bipartiteQuiver(2, 3))
@@ -2241,6 +2241,50 @@ multidoc ///
                 oriented path from {\tt v0} to {\tt v1} in {\tt Q.Q1}. 
             Example
                 primitiveArrows toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
+    Node
+        Key
+            quiverConnectivityMatrix
+        Headline
+            return the graph connectivity matrix attribute associated to the toric quiver
+        Usage
+            quiverConnectivityMatrix Q
+        Inputs
+            Q: ToricQuiver
+        SeeAlso
+            ToricQuiver
+    Node
+        Key
+            quiverEdges
+        Headline
+            return the graph edges associated to the toric quiver
+        Usage
+            quiverEdges Q
+        Inputs
+            Q: ToricQuiver
+        SeeAlso
+            ToricQuiver
+    Node
+        Key
+            quiverFlow
+        Headline
+            return the flow attribute associated to the toric quiver
+        Usage
+            quiverFlow Q
+        Inputs
+            Q: ToricQuiver
+        SeeAlso
+            ToricQuiver
+    Node
+        Key
+            quiverWeights
+        Headline
+            return the weight attribute associated to the toric quiver
+        Usage
+            quiverWeights Q
+        Inputs
+            Q: ToricQuiver
+        SeeAlso
+            ToricQuiver
     Node
         Key
             referenceThetas
