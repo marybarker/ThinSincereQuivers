@@ -4,16 +4,16 @@ needsPackage("Graphs")
 Q = bipartiteQuiver(2, 3)
 assert isTight Q
 assert (theta Q === {-3,-3,2,2,2})
-assert (flowPolytope Q == {{0, 0}, {0, -1}, {2, -2}, {1, -2}, {2, -1}, {1, 0}})
+assert (flowPolytope Q == {{-1, 1}, {-1, 0}, {1, -1}, {0, -1}, {1, 0}, {0, 1}})
 assert (entries basisForFlowPolytope Q === {{-1, 0}, {0, -1}, {1, 1}, {1, 0}, {0, 1}, {-1, -1}})
 
 th = {-5,-1,2,2,2}
-F = incInverse(Q, th)
-assert not isTight(Q, F)
-assert isAcyclic makeTight(Q, th)
-assert (makeTight(Q, th) == toricQuiver({{1,0},{1,0},{1,0}}, {-1,1,1}))
-assert not isSemistable(Q, {1,2})
-assert isStable(Q, {1,2,3,4})
+F = incInverse(th, Q)
+assert not isTight(F, Q)
+assert isAcyclic makeTight(th, Q)
+assert (makeTight(th, Q) == toricQuiver({{1,0},{1,0},{1,0}}, {-1,1,1}))
+assert not isSemistable({1,2}, Q)
+assert isStable({1,2,3,4}, Q)
 assert (stableTrees(th,Q) === {{0, 1, 2, 5}, {0, 1, 2, 4}, {0, 1, 2, 3}})
 
 
@@ -34,4 +34,4 @@ assert (mergeOnArrow(P,3,Q,0) == chainQuiver {2,2,2,3})
 assert (neighborliness P === 2)
 
 Q = toricQuiver completeGraph 4
-assert (primitiveArrows Q === {1,2,4})
+assert (primitiveArrows Q === {0,3,5})
