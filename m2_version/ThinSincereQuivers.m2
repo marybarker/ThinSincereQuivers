@@ -460,8 +460,9 @@ flowPolytope ToricQuiver := opts -> Q -> (
 -- preimage of the weight th under the incidence map. 
 -- NOTE: This function assumes that th is indeed a weight
 incInverse = (th, tQ) -> (
+    nonzeroFlows := for t in tQ.flow list(if t != 0 then 1 else 0);
     a := tQ.connectivityMatrix;
-    a = a * diagonalMatrix(for t in tQ.flow list floor t);
+    a = a * diagonalMatrix(nonzeroFlows);
     b := matrix(for t in th list {floor t}) **QQ;
     F := solve(a **QQ, b);
     flatten entries first asList F
