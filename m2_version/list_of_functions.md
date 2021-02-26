@@ -11,19 +11,19 @@
 
 * `flowPolytope(Q)' : returns the dual polytope associated to Q if Q is stable. 
 
-* `incInverse(Q, th)' : returns a preimage of the weights th under the inc map associated to Q.
+* `incInverse(th, Q)' : returns a preimage of the weights th under the inc map associated to Q.
 
 * `isAcyclic(Q)' : answers the question: is Q acyclic? 
 
-* `isClosedUnderArrows (Q, V)': answers question: for V a subset of the vertices of Q, is V closed under arrows? 
+* `isClosedUnderArrows (V, Q)': answers question: for V a subset of the vertices of Q, is V closed under arrows? 
 
-* `isSemistable (Q, sQ)' : answers the question: is sQ a semi-stable subquiver of Q? 
+* `isSemistable (sQ, Q)' : answers the question: is sQ a semi-stable subquiver of Q? 
 
-* `isStable (Q, sQ)' : answers the question: is sQ a stable subquiver of Q? 
+* `isStable (sQ, Q)' : answers the question: is sQ a stable subquiver of Q? 
 
 * `isTight (Q)' : answers question: is the quiver Q tight? (Q given in matrix form)
 
-* `makeTight(Q, W) : make the quiver Q tight with respect to the weight W.
+* `makeTight(W, Q) : make the quiver Q tight with respect to the weight W.
 
 * `maximalUnstableSubquivers (Q)' : returns the maximal Unstable subqivers of Q
 
@@ -51,7 +51,5 @@
 
 * `toricQuiver' : construct a Toric Quiver for a range of inputs (connectivity matrix, list of edges, etc.)
 
-* `toricQuivers (d)' : returns a list of all d-dimensinoal quivers
-
-* `wallType (Q, Qplus)' : returns the type of wall(wall index set and type (tplus, tminus)) for the wall specified by the partition of Q0 into Qplus and Q0 \ Qplus
+* `wallType (Qplus, Q)' : returns the type of wall(wall index set and type (tplus, tminus)) for the wall specified by the partition of Q0 into Qplus and Q0 \ Qplus
 
