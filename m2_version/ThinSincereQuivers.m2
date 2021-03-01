@@ -29,10 +29,10 @@ export {
     "isStable",
     "isTight",
     "makeTight",
+    "maxCodimensionUnstable",
     "maximalUnstableSubquivers",
     "mergeOnArrow",
     "mergeOnVertex",
-    "neighborliness",
     "potentialWalls",
     "primitiveArrows",
     "quiverConnectivityMatrix",
@@ -692,6 +692,26 @@ makeTight = (W, Q) -> (
 
 
 ------------------------------------------------------------
+maxCodimensionUnstable = method()
+maxCodimensionUnstable ToricQuiver := (Q) -> (
+    numArrows := #Q.Q1;
+    maxUnstables := maximalUnstableSubquivers(Q);
+    if #(maxUnstables#Singletons) > 0 then (
+        #Q.Q1
+    ) else (
+        maxUnstables = maxUnstables#NonSingletons;
+        k := max(
+            for sQ in maxUnstables list(
+                numArrows - #sQ
+            )
+        );
+        k
+    )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
 maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
     unstableList := unstableSubquivers(Q, Format=>"list");
 
@@ -809,23 +829,6 @@ mergeOnVertex(Matrix, ZZ, ToricQuiver, ZZ) := (Q1, v1, Q2, v2) -> (
 )
 mergeOnVertex(ToricQuiver, ZZ, ToricQuiver, ZZ) := (Q1, v1, Q2, v2) -> (
     mergeOnVertex(Q1.connectivityMatrix, v1, Q2.connectivityMatrix, v2)
-)
-------------------------------------------------------------
-
-
-------------------------------------------------------------
-neighborliness = method()
-neighborliness ToricQuiver := (Q) -> (
-    numArrows := #Q.Q1;
-    maxUnstables := maximalUnstableSubquivers(Q);
-    maxUnstables = maxUnstables#NonSingletons;
-
-    k := max(
-        for sQ in maxUnstables list(
-            numArrows - #sQ
-        )
-    );
-    k
 )
 ------------------------------------------------------------
 
@@ -2126,21 +2129,21 @@ multidoc ///
                 maximalUnstableSubquivers bipartiteQuiver (2, 3)
     Node
         Key
-            neighborliness
-            (neighborliness, ToricQuiver)
+            maxCodimensionUnstable
+            (maxCodimensionUnstable, ToricQuiver)
         Headline
-            compute the neighborliness of a quiver
+            compute the maximal codimension of the unstable loci of a quiver
         Usage
-            neighborliness Q
+            maxCodimensionUnstable Q
         Inputs
             Q: ToricQuiver
         Outputs
             : ZZ
         Description
             Text
-                computes the neighborliness of a given quiver {\tt Q}
+                computes the maximal codimension of the unstable loci a given quiver {\tt Q}
             Example
-                neighborliness bipartiteQuiver(2, 3)
+                maxCodimensionUnstable bipartiteQuiver(2, 3)
     Node
         Key
             mergeOnArrow
