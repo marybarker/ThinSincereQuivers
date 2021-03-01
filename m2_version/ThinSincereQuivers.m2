@@ -2107,6 +2107,23 @@ multidoc ///
                 makeTight(w, Q)
     Node
         Key
+            maxCodimensionUnstable
+            (maxCodimensionUnstable, ToricQuiver)
+        Headline
+            compute the maximal codimension of the unstable loci of a quiver
+        Usage
+            maxCodimensionUnstable Q
+        Inputs
+            Q: ToricQuiver
+        Outputs
+            : ZZ
+        Description
+            Text
+                computes the maximal codimension of the unstable loci a given quiver {\tt Q}
+            Example
+                maxCodimensionUnstable bipartiteQuiver(2, 3)
+    Node
+        Key
             maximalUnstableSubquivers
         Headline
             return the maximal subquivers that are unstable
@@ -2127,23 +2144,6 @@ multidoc ///
                 Subquivers are represented by lists of arrows, except in the case of subquivers that consist of singleton vertices. 
             Example
                 maximalUnstableSubquivers bipartiteQuiver (2, 3)
-    Node
-        Key
-            maxCodimensionUnstable
-            (maxCodimensionUnstable, ToricQuiver)
-        Headline
-            compute the maximal codimension of the unstable loci of a quiver
-        Usage
-            maxCodimensionUnstable Q
-        Inputs
-            Q: ToricQuiver
-        Outputs
-            : ZZ
-        Description
-            Text
-                computes the maximal codimension of the unstable loci a given quiver {\tt Q}
-            Example
-                maxCodimensionUnstable bipartiteQuiver(2, 3)
     Node
         Key
             mergeOnArrow
