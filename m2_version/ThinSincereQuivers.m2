@@ -840,7 +840,8 @@ potentialWalls(Matrix) := (Q) -> (
     nvSet := set(0..nv - 1);
     subs := (1..ceiling(nv/2));
 
-    Qms := flatten(for i from 1 to ceiling(nv/2) list (
+    -- create list of possible Qminus
+    Qms := flatten(for i from 1 to floor(nv/2) list (
         combinations(i, asList(nvSet), Replacement=>false, Order=>false)
     ));
 
@@ -848,19 +849,26 @@ potentialWalls(Matrix) := (Q) -> (
     Qedges := graphEdges(Q, Oriented=>true);
 
     for Qm in Qms list(
-        mSums := sumList(Q^Qm, Axis=>"Col");
-        QmEdgeIndices := for s in (0..#mSums - 1) list(if (mSums_s == 0) then (s) else (continue;));
-        Qp := asList(nvSet - set(Qm));
-
         if member(Qm, alreadyMet) then ( 
             continue;
-        ) else if isGraphConnected(Q^Qm_QmEdgeIndices) then (
+        ) else (
+            -- restrict to only vertices/edgesin Qm
+            mSums := sumList(Q^Qm, Axis=>"Col");
+            connectsToQm := positions(entries transpose Q^Qm, x->any(#x, y->x#y!=0));
+            -- find the edges that have head and tail in Qm
+            QmEdgeIndices := for s in connectsToQm list(if (mSums_s == 0) then (s) else (continue;));
+            Qp := asList(nvSet - set(Qm));
             alreadyMet = alreadyMet + set ({Qp}) + set ({Qm});
-            pSums := sumList(Q^Qp, Axis=>"Col");
-            QpEdgeIndices := for s in (0..#pSums - 1) list(if (pSums_s == 0) then (s) else (continue;));
-            if (#Qp < 2) or (isGraphConnected(Q^Qp_QpEdgeIndices)) then (
-               new Wall from hashTable ({Qplus=>Qp, WallType=>wallType(Qp, Q)})
-            )
+
+            if isGraphConnected(Q^Qm_QmEdgeIndices) then (
+                pSums := sumList(Q^Qp, Axis=>"Col");
+                connectsToQp := positions(entries transpose Q^Qp, x->any(#x, y->x#y!=0));
+
+                QpEdgeIndices := for s in connectsToQp list(if (pSums_s == 0) then (s) else (continue;));
+                if (#Qp < 2) or (isGraphConnected(Q^Qp_QpEdgeIndices)) then (
+                   new Wall from hashTable ({Qplus=>Qp, WallType=>wallType(Qp, Q)})
+                ) else (continue;)
+            ) else (continue;)
         )
     )
 )
@@ -1216,6 +1224,14 @@ graphEdges ToricQuiver := opts -> (G) -> (
     graphEdges(G.connectivityMatrix, Oriented=>opts.Oriented, RavelLoops=>opts.RavelLoops)
 )
 
+graphVertices = method();
+graphVertices Matrix := M -> (
+    asList(0..numRows(M) - 1)
+)
+graphVertices ToricQuiver := Q -> (
+    Q.Q0
+)
+
 -- yield the matrix rep of graph, given a list of edges as ordered 
 -- pairs (this is the opposite of graphEdges() function. 
 graphFromEdges = {Oriented=>false} >> opts -> E -> (
@@ -1256,17 +1272,20 @@ isEdgeInCycle = (i, E) -> (
 -- check if graph is connected
 isGraphConnected = G -> (
     gEdges := graphEdges(G, Oriented=>false);
-    lens := sortedIndices(for e in gEdges list(-#e));
-    gEdges = gEdges_lens;
+    gPoints := graphVertices(G);
 
-    if max(for e in gEdges list(#e)) > 1 then (
-        isConnected(graph(gEdges))
-    )
-    else (
-        if max(flatten(gEdges)) < 1 then (
-            true
-        )
-        else (
+    if (#gPoints < 2) then (
+        true
+    ) else (
+        -- reorder the edges to list loops first
+        lens := sortedIndices(for e in gEdges list(-#e));
+        gEdges = gEdges_lens;
+
+        -- check if there is a non-loop edge first
+        if max(for e in gEdges list(#e)) > 1 then (
+            isConnected(graph(gEdges))
+        -- if there are only loops/empty edges
+        ) else (
             false
         )
     )
