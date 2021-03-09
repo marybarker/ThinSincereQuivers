@@ -1994,6 +1994,10 @@ multidoc ///
                 checks that a set of vertices is closed under arrows with respect to the toricQuiver {\tt Q}. 
                 That is, for any $v\in V$, then any arrow in $Q_1$ with tail $v$ must have head in $V$ as well. 
                 Note that this does not require that $V\subset Q_0$.
+            Text
+                Note also that the attribute closed under arrows relates to the underlying graph. 
+                Arrows with flow of 0 (which occur in cases where using the quiver subset form: {\tt Q^S} 
+                rather than {\tt Q_S}) are considered as valid arrows. 
             Example
                 isClosedUnderArrows ({0, 2, 3}, bipartiteQuiver(2, 3))
                 isClosedUnderArrows ({2, 3, 4}, bipartiteQuiver(2, 3))
