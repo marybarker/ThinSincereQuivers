@@ -30,6 +30,7 @@ export {
     "isTight",
     "makeTight",
     "maxCodimensionUnstable",
+    "maximalSemistableSubquivers",
     "maximalUnstableSubquivers",
     "mergeOnArrow",
     "mergeOnVertex",
@@ -707,6 +708,34 @@ maxCodimensionUnstable ToricQuiver := (Q) -> (
         );
         k
     )
+)
+------------------------------------------------------------
+
+
+------------------------------------------------------------
+maximalSemistableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
+    SemistableList := semiStableSubquivers(Q, Format=>"list");
+
+    withArrows := for subQ1 in SemistableList.NonSingletons list (
+        IsMaximal := true;
+        for subQ2 in SemistableList#NonSingletons do (
+            if isProperSubset(subQ1, subQ2) then (
+                IsMaximal = false;
+            );
+        );
+        if IsMaximal then (
+            if (opts.Format == "list") then (
+                subQ1) else (
+                Q^subQ1
+            )
+        ) else (continue;)
+    );
+    containedSingletons := flatten for subQ1 in SemistableList#NonSingletons list (
+        for x in Q.Q1_subQ1 list ({x})
+    );
+    withoutArrows := asList(set(SemistableList#Singletons) - set(containedSingletons));
+
+    hashTable {NonSingletons=>withArrows, Singletons=>withoutArrows}
 )
 ------------------------------------------------------------
 
@@ -1416,6 +1445,29 @@ primalUndirectedCycle = (G) -> (
 replaceInList = (i, v, l) -> (
     insert(i, v, drop(l, {i,i}))
 )
+semiStableSubquivers = method(Options=>{Format=>"list"})
+semiStableSubquivers(ToricQuiver) := opts -> Q -> (
+    numArrows := #Q.Q1;
+    arrows := asList(0..numArrows - 1);
+
+    L := flatten(for i from 1 to numArrows - 1 list (
+        combinations(numArrows - i, arrows, Replacement=>false, Order=>false) 
+    ));
+
+    sqsWithArrows := for sQ in L list(
+        if isSemistable(asList(sQ), Q) then (
+            if (opts.Format == "list") then (
+                sQ
+            ) else (
+                Q^sQ
+            )
+        ) else (continue;)
+    );
+    singletonUnstableSqs := for x in positions(Q.weights, x -> x <= 0) list ({x});
+
+    hashTable({NonSingletons=>sqsWithArrows, Singletons=>singletonUnstableSqs})
+)
+
 
 -- return the indices of the list l in order the values occur 
 -- in the sorted list sort(l)
@@ -2145,6 +2197,28 @@ multidoc ///
                 computes the maximal codimension of the unstable loci a given quiver {\tt Q}
             Example
                 maxCodimensionUnstable bipartiteQuiver(2, 3)
+    Node
+        Key
+            maximalSemistableSubquivers
+        Headline
+            return the maximal subquivers that are semistable
+        Usage
+            maximalSemistableSubquivers Q
+        Inputs
+            Q: ToricQuiver
+            Format => String
+                format for representing the subquivers
+        Outputs
+            L: HashTable
+                consisting of two keys: {\tt Nonsingletons} and {\tt Singletons}
+        Description
+            Text
+                this routine takes all of the possible subquivers of a given quiver {\tt Q} 
+                and returns those that are both semistable and maximal with respect to the weight on the quiver {\tt Q}
+            Text
+                Subquivers are represented by lists of arrows, except in the case of subquivers that consist of singleton vertices. 
+            Example
+                maximalSemistableSubquivers bipartiteQuiver (2, 3)
     Node
         Key
             maximalUnstableSubquivers
