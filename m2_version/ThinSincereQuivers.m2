@@ -59,6 +59,7 @@ export {
     "Output",
     "RavelLoops",
     "Replacement",
+    "ReturnSingletons",
     "SavePath",
 -- Quiver objects 
     "ToricQuiver",
@@ -584,7 +585,7 @@ isStable(ToricQuiver, ToricQuiver) := (subQ, Q) -> (
 isTight = method(Options=>{Format=>"Flow"})
 isTight(ToricQuiver) := opts -> Q -> (
     numArrows := #Q#Q1;
-    maxUnstSubs := maximalUnstableSubquivers(Q);
+    maxUnstSubs := maximalUnstableSubquivers(Q, ReturnSingletons=>true);
     if numArrows > 1 then (
         all(maxUnstSubs#NonSingletons, x -> #x != (numArrows - 1))
     ) else (
@@ -627,7 +628,7 @@ makeTight = (W, Q) -> (
 
         -- find a maximal unstable subquiver, called R, of codimension 1 (this exists if not tight)
         Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(potentialF);
-        maxUnstSubs := maximalUnstableSubquivers(toricQuiver(Q.connectivityMatrix, potentialF));
+        maxUnstSubs := maximalUnstableSubquivers(toricQuiver(Q.connectivityMatrix, potentialF), ReturnSingletons=>true);
         R := first(maxUnstSubs#NonSingletons);
         Rvertices := asList set flatten Q.Q1_R;
         S := {};
@@ -696,7 +697,7 @@ makeTight = (W, Q) -> (
 maxCodimensionUnstable = method()
 maxCodimensionUnstable ToricQuiver := (Q) -> (
     numArrows := #Q.Q1;
-    maxUnstables := maximalUnstableSubquivers(Q);
+    maxUnstables := maximalUnstableSubquivers(Q, ReturnSingletons=>true);
     if #(maxUnstables#Singletons) > 0 then (
         #Q.Q1
     ) else (
@@ -713,7 +714,7 @@ maxCodimensionUnstable ToricQuiver := (Q) -> (
 
 
 ------------------------------------------------------------
-maximalSemistableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
+maximalSemistableSubquivers = {Format=>"list", ReturnSingletons=>false} >> opts -> (Q) -> (
     SemistableList := semiStableSubquivers(Q, Format=>"list");
 
     withArrows := for subQ1 in SemistableList.NonSingletons list (
@@ -730,18 +731,22 @@ maximalSemistableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
             )
         ) else (continue;)
     );
-    containedSingletons := flatten for subQ1 in SemistableList#NonSingletons list (
-        for x in Q.Q1_subQ1 list ({x})
-    );
-    withoutArrows := asList(set(SemistableList#Singletons) - set(containedSingletons));
+    if opts.ReturnSingletons then (
+        containedSingletons := flatten for subQ1 in SemistableList#NonSingletons list (
+            for x in Q.Q1_subQ1 list ({x})
+        );
+        withoutArrows := asList(set(SemistableList#Singletons) - set(containedSingletons));
 
-    hashTable {NonSingletons=>withArrows, Singletons=>withoutArrows}
+        hashTable {NonSingletons=>withArrows, Singletons=>withoutArrows}
+    ) else (
+        hashTable {NonSingletons=>withArrows}
+    )
 )
 ------------------------------------------------------------
 
 
 ------------------------------------------------------------
-maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
+maximalUnstableSubquivers = {Format=>"list", ReturnSingletons=>false} >> opts -> (Q) -> (
     unstableList := unstableSubquivers(Q, Format=>"list");
 
     withArrows := for subQ1 in unstableList.NonSingletons list (
@@ -758,12 +763,16 @@ maximalUnstableSubquivers = {Format=>"list"} >> opts -> (Q) -> (
             )
         ) else (continue;)
     );
-    containedSingletons := flatten for subQ1 in unstableList#NonSingletons list (
-        for x in Q.Q1_subQ1 list ({x})
-    );
-    withoutArrows := asList(set(unstableList#Singletons) - set(containedSingletons));
-
-    hashTable {NonSingletons=>withArrows, Singletons=>withoutArrows}
+    if opts.ReturnSingletons then (
+        containedSingletons := flatten for subQ1 in unstableList#NonSingletons list (
+            for x in Q.Q1_subQ1 list ({x})
+        );
+        withoutArrows := asList(set(unstableList#Singletons) - set(containedSingletons));
+    
+        hashTable {NonSingletons=>withArrows, Singletons=>withoutArrows}
+    ) else (
+        hashTable {NonSingletons=>withArrows}
+    )
 )
 ------------------------------------------------------------
 
@@ -2206,6 +2215,8 @@ multidoc ///
             maximalSemistableSubquivers Q
         Inputs
             Q: ToricQuiver
+            ReturnSingletons => Boolean
+                Whether or not to return singleton vertices subquivers
             Format => String
                 format for representing the subquivers
         Outputs

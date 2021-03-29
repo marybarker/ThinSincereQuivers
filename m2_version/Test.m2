@@ -22,7 +22,7 @@ assert (subquivers(Q, Format=>"list") === {{0}, {1}, {2}, {3}, {0, 1}, {0, 2}, {
 assert (allSpanningTrees Q == {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}})
 assert not isClosedUnderArrows({1, 2}, Q)
 
-munsbs = maximalUnstableSubquivers Q
+munsbs = maximalUnstableSubquivers(Q, ReturnSingletons=>true);
 vals = flatten for key in keys(munsbs) list(munsbs#key)
 assert (vals ===  {{0}, {1}, {0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}})
 
@@ -31,7 +31,6 @@ Q = chainQuiver {1,2,3}
 
 assert (mergeOnVertex(P,2,Q,0) == chainQuiver {2,2,1,2,3})
 assert (mergeOnArrow(P,3,Q,0) == chainQuiver {2,2,2,3})
-assert (neighborliness P === 2)
 
 Q = toricQuiver completeGraph 4
 assert (primitiveArrows Q === {0,3,5})
