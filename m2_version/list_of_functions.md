@@ -27,11 +27,11 @@
 
 * `maximalUnstableSubquivers (Q)' : returns the maximal Unstable subqivers of Q
 
+* `maximalNonstableSubquivers (Q)' : returns the maximal not-stable subqivers of Q
+
 * `mergeOnArrow(Q1, a1, Q2, a2)' : Creates a new quiver by identifying arrow a1 from quiver Q1 with arrow a2 of quiver Q2. 
 
 * `mergeOnVertex(Q1, v1, Q2, v2)' : Creates a new quiver by identifying vertex v1 from quiver Q1 with vertex v2 of quiver Q2. 
-
-* `neighborliness (Q)' : returns the neighborliness of quiver Q
 
 * `potentialWalls (Q)' : returns the walls for the weight chamber system associated to a weighted quiver Q
 
