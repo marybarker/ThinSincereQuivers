@@ -2239,6 +2239,8 @@ multidoc ///
             maximalUnstableSubquivers Q
         Inputs
             Q: ToricQuiver
+            ReturnSingletons => Boolean
+                Whether or not to return singleton vertices subquivers
             Format => String
                 format for representing the subquivers
         Outputs
