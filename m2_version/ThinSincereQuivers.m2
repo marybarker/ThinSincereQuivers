@@ -30,7 +30,7 @@ export {
     "isTight",
     "makeTight",
     "maxCodimensionUnstable",
-    "maximalSemistableSubquivers",
+    "maximalNonstableSubquivers",
     "maximalUnstableSubquivers",
     "mergeOnArrow",
     "mergeOnVertex",
@@ -714,12 +714,12 @@ maxCodimensionUnstable ToricQuiver := (Q) -> (
 
 
 ------------------------------------------------------------
-maximalSemistableSubquivers = {Format=>"list", ReturnSingletons=>false} >> opts -> (Q) -> (
-    SemistableList := semiStableSubquivers(Q, Format=>"list");
+maximalNonstableSubquivers = {Format=>"list", ReturnSingletons=>false} >> opts -> (Q) -> (
+    NonstableList := nonStableSubquivers(Q, Format=>"list");
 
-    withArrows := for subQ1 in SemistableList.NonSingletons list (
+    withArrows := for subQ1 in NonstableList.NonSingletons list (
         IsMaximal := true;
-        for subQ2 in SemistableList#NonSingletons do (
+        for subQ2 in NonstableList#NonSingletons do (
             if isProperSubset(subQ1, subQ2) then (
                 IsMaximal = false;
             );
@@ -732,10 +732,10 @@ maximalSemistableSubquivers = {Format=>"list", ReturnSingletons=>false} >> opts 
         ) else (continue;)
     );
     if opts.ReturnSingletons then (
-        containedSingletons := flatten for subQ1 in SemistableList#NonSingletons list (
+        containedSingletons := flatten for subQ1 in NonstableList#NonSingletons list (
             for x in Q.Q1_subQ1 list ({x})
         );
-        withoutArrows := asList(set(SemistableList#Singletons) - set(containedSingletons));
+        withoutArrows := asList(set(NonstableList#Singletons) - set(containedSingletons));
 
         hashTable {NonSingletons=>withArrows, Singletons=>withoutArrows}
     ) else (
@@ -1454,8 +1454,8 @@ primalUndirectedCycle = (G) -> (
 replaceInList = (i, v, l) -> (
     insert(i, v, drop(l, {i,i}))
 )
-semiStableSubquivers = method(Options=>{Format=>"list"})
-semiStableSubquivers(ToricQuiver) := opts -> Q -> (
+nonStableSubquivers = method(Options=>{Format=>"list"})
+nonStableSubquivers(ToricQuiver) := opts -> Q -> (
     numArrows := #Q.Q1;
     arrows := asList(0..numArrows - 1);
 
@@ -1464,7 +1464,7 @@ semiStableSubquivers(ToricQuiver) := opts -> Q -> (
     ));
 
     sqsWithArrows := for sQ in L list(
-        if isSemistable(asList(sQ), Q) then (
+        if not isStable(asList(sQ), Q) then (
             if (opts.Format == "list") then (
                 sQ
             ) else (
@@ -2208,11 +2208,11 @@ multidoc ///
                 maxCodimensionUnstable bipartiteQuiver(2, 3)
     Node
         Key
-            maximalSemistableSubquivers
+            maximalNonstableSubquivers
         Headline
             return the maximal subquivers that are semistable
         Usage
-            maximalSemistableSubquivers Q
+            maximalNonstableSubquivers Q
         Inputs
             Q: ToricQuiver
             ReturnSingletons => Boolean
@@ -2229,7 +2229,7 @@ multidoc ///
             Text
                 Subquivers are represented by lists of arrows, except in the case of subquivers that consist of singleton vertices. 
             Example
-                maximalSemistableSubquivers bipartiteQuiver (2, 3)
+                maximalNonstableSubquivers bipartiteQuiver (2, 3)
     Node
         Key
             maximalUnstableSubquivers
