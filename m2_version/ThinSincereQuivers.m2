@@ -2225,7 +2225,7 @@ multidoc ///
         Description
             Text
                 this routine takes all of the possible subquivers of a given quiver {\tt Q} 
-                and returns those that are both semistable and maximal with respect to the weight on the quiver {\tt Q}
+                and returns those that are not stable, and which are maximal with respect to the weight on the quiver {\tt Q}
             Text
                 Subquivers are represented by lists of arrows, except in the case of subquivers that consist of singleton vertices. 
             Example
