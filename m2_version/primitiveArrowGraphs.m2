@@ -69,6 +69,8 @@ ThreePrimitiveArrowQuivers := {
     {{0,1},{2,0},{3,0},{3,1},{2,1}}
 };
 
+
+
 fname = "threePrimitiveArrows";
 for Q in ThreePrimitiveArrowQuivers do(
     TQ := toricQuiver(Q);
@@ -86,3 +88,68 @@ for Q in ThreePrimitiveArrowQuivers do(
     fname << endl;
 );
 fname << close;
+
+
+
+fname = "lookAtAddingArrows";
+Q = first ThreePrimitiveArrowQuivers;
+
+for iq in (0..#Q - 1) do(
+    i = Q#iq;
+
+    TQ := toricQuiver(Q | {i});
+    CG := chamberGraph(TQ);
+    fname << quiverEdges TQ << endl;
+
+    print(i, iq, TQ);
+
+    for v in CG#0 do(
+        fname << v << endl;
+        print(v);
+    );
+    for e in CG#1 do(
+        fname << e << endl;
+        print(e);
+    );
+    fname << CG#2 << endl;
+    fname << endl;
+
+    for jq from iq to #Q - 1 do(
+        j = Q#jq;
+
+        TQ := toricQuiver(Q | {i} | {j});
+        CG := chamberGraph(TQ);
+        fname << quiverEdges TQ << endl;
+        for v in CG#0 do(
+            fname << v << endl;
+            print(v);
+        );
+        for e in CG#1 do(
+            fname << e << endl;
+            print(e);
+        );
+        fname << CG#2 << endl;
+	fname << endl;
+
+        for kq from jq to #Q - 1 do(
+            k = Q#kq;
+            TQ := toricQuiver(Q | {i} | {j} | {k});
+            CG := chamberGraph(TQ);
+            fname << quiverEdges TQ << endl;
+            for v in CG#0 do(
+                fname << v << endl;
+                print(v);
+            );
+            for e in CG#1 do(
+                fname << e << endl;
+                print(e);
+            );
+            fname << CG#2 << endl;
+            fname << endl;
+        );
+    );
+    fname << "next round" << endl << endl;
+);
+fname << close;
+
+
