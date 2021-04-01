@@ -20,6 +20,22 @@ chamberGraph = Q -> (
     CQ := coneSystem Q;
     ths := referenceThetas CQ;
     fps := apply(ths, x-> transpose matrix flowPolytope(x, Q));
+    for i in (0..#CQ - 1) do (
+        print("index ", i, rays CQ#i, fps#i);
+    );
+
+    -- smallerFps := unique fps;
+    -- combinedIs := apply(smallerFps, x -> positions(fps, y -> y == x));
+    -- CQ = for cl in combinedIs list(
+    --     coneFromVData(transpose matrix(
+    --         print("combining: ", for c in cl list rays CQ#c);
+    --         flatten for c in cl list entries transpose rays CQ#c 
+    --     ))
+    -- );
+    -- ths := referenceThetas CQ;
+    -- fps := apply(ths, x-> transpose matrix flowPolytope(x, Q));
+
+
     nts := apply(fps, x-> normalToricVariety x);
     tif := apply(nts, x-> isFano x);
     nvs := apply(fps, x-> #latticePoints convexHull x);
@@ -37,7 +53,7 @@ chamberGraph = Q -> (
             );
         );
     );
-    verts := apply(0..#ths - 1, x-> {x, nvs#x, tif#x, fps#x, nvs#x, pgs#x});
+    verts := apply(0..#ths - 1, x-> {x, rays CQ#x, nvs#x, tif#x, fps#x, nvs#x, pgs#x});
     return {verts, edges, max(nvs) - min(nvs)};
 )
 
@@ -45,7 +61,7 @@ ThreePrimitiveArrowQuivers := {
     --{{0,1},{0,2},{0,3}},
     --{{1,0},{2,0},{3,0}},
     --{{0,1},{1,2},{2,3}},
-    --{{0,1},{1,2},{2,3},{0,2}},
+    {{0,1},{1,2},{2,3},{0,2}},
     {{0,1},{1,2},{2,3},{0,3}},
     {{0,1},{1,2},{2,3},{1,3}},
     {{0,1},{1,2},{2,3},{0,2},{0,3}},
@@ -53,19 +69,16 @@ ThreePrimitiveArrowQuivers := {
     {{0,1},{1,2},{2,3},{0,3},{1,3}},
     {{0,1},{1,2},{2,3},{0,2},{0,3},{1,3}},
     --{{0,1},{1,2},{3,2}},
-    --{{0,1},{1,2},{3,2},{0,2}},
-    {{0,1},{1,2},{3,2},{0,3}},
-    {{0,1},{1,2},{3,2},{0,2},{0,3}},
+    {{0,1},{1,2},{3,2},{0,2}},
     --{{1,0},{1,2},{2,3}},
-    --{{1,0},{1,2},{2,3},{1,3}},
-    --{{1,0},{1,2},{2,3},{2,0}},
-    {{1,0},{1,2},{2,3},{1,3},{2,0}},
+    {{1,0},{1,2},{2,3},{1,3}},
+    --{{0,1},{2,1},{2,3}},
     --{{0,1},{0,2},{3,0}},
-    --{{0,1},{0,2},{3,0},{3,1}},
-    --{{0,1},{0,2},{3,0},{3,2}},
+    {{0,1},{0,2},{3,0},{3,1}},
+    {{0,1},{0,2},{3,0},{3,2}},
     {{0,1},{0,2},{3,0},{3,1},{3,2}},
-    --{{0,1},{2,0},{3,0},{3,1}},
-    --{{0,1},{2,0},{3,0},{2,1}},
+    {{0,1},{2,0},{3,0},{3,1}},
+    {{0,1},{2,0},{3,0},{2,1}},
     {{0,1},{2,0},{3,0},{3,1},{2,1}}
 };
 
@@ -151,5 +164,4 @@ for iq in (0..#Q - 1) do(
     fname << "next round" << endl << endl;
 );
 fname << close;
-
 
