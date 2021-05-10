@@ -36,7 +36,7 @@ export {
     "mergeOnVertex",
     "potentialWalls",
     "primitiveArrows",
-    "quiverConnectivityMatrix",
+    "quiverIncidenceMatrix",
     "quiverEdges",
     "quiverFlow",
     "quiverWeights",
@@ -68,7 +68,7 @@ export {
 -----------------------------------------------------------
 -- PACKAGE GLOBALS: special variable names, types, and constants
 -----------------------------------------------------------
-protect connectivityMatrix
+protect IncidenceMatrix
 protect flow
 protect NonSingletons
 protect Q0
@@ -94,7 +94,7 @@ FlowCeil := 100;
 -- Toric Quiver constructor
 -----------------------------------------------------------
 toricQuiver = method(Options=>{Flow=>"Default"})
--- construct ToricQuiver from connectivity matrix
+-- construct ToricQuiver from incidence matrix
 toricQuiver(Matrix) := opts -> Q -> (
     F := 0.5*sumList(for x in entries(Q) list(for y in x list(abs(y))), Axis=>"Col");
     if opts.Flow == "Canonical" then (
@@ -105,19 +105,19 @@ toricQuiver(Matrix) := opts -> Q -> (
     -- set Q to be unit valued to apply flow
     Q = matrix(for e in entries(Q) list(for x in e list(if abs(x) > 0 then x/abs(x) else 0)));
     new ToricQuiver from hashTable{
-        connectivityMatrix=>Q,
+        IncidenceMatrix=>Q,
         Q0=>toList(0..numRows(Q) - 1),
         Q1=>graphEdges(Q, Oriented=>true),
         flow=>F,
         weights=>sumList(entries(Q*diagonalMatrix(F)), Axis=>"Row")
     }
 )
--- construct ToricQuiver from connectivity matrix and a flow
+-- construct ToricQuiver from incidence matrix and a flow
 toricQuiver(Matrix, List) := opts -> (Q, F) -> (
     -- set Q to be unit valued to apply flow
     Q = matrix(for e in entries(Q) list(for x in e list(if abs(x) > 0 then x/abs(x) else 0)));
     new ToricQuiver from hashTable{
-        connectivityMatrix=>Q,
+        IncidenceMatrix=>Q,
         Q0=>toList(0..numRows(Q) - 1),
         Q1=>graphEdges(Q, Oriented=>true),
         flow=>asList(F),
@@ -126,11 +126,11 @@ toricQuiver(Matrix, List) := opts -> (Q, F) -> (
 )
 -- construct ToricQuiver from Toric quiver to copy graph
 toricQuiver(ToricQuiver) := opts -> Q -> (
-    toricQuiver(Q.connectivityMatrix, Q.flow, Flow=>opts.Flow)
+    toricQuiver(Q.IncidenceMatrix, Q.flow, Flow=>opts.Flow)
 )
 -- construct ToricQuiver from Toric quiver (to copy graph) and list(giving a flow)
 toricQuiver(ToricQuiver, List) := opts -> (Q, F) -> (
-    toricQuiver(Q.connectivityMatrix, F)
+    toricQuiver(Q.IncidenceMatrix, F)
 )
 -- construct ToricQuiver from list of edges
 toricQuiver(List) := opts -> E -> (
@@ -140,7 +140,7 @@ toricQuiver(List) := opts -> E -> (
         F = for i in (0..#E - 1) list(random(FlowCeil));
     );
     new ToricQuiver from hashTable{
-        connectivityMatrix=>Q,
+        IncidenceMatrix=>Q,
         Q0=>asList(0..numRows(Q) - 1),
         Q1=>E,
         flow=>F,
@@ -151,7 +151,7 @@ toricQuiver(List) := opts -> E -> (
 toricQuiver(List, List) := opts -> (E, F) -> (
     Q := graphFromEdges(E, Oriented=>true);
     new ToricQuiver from hashTable{
-        connectivityMatrix=>Q,
+        IncidenceMatrix=>Q,
         Q0=>toList(0..numRows(Q) - 1),
         Q1=>E,
         flow=>F,
@@ -173,11 +173,11 @@ ToricQuiver ^ List := (TQ, L) -> (
     newFlow := TQ.flow;
     Lc := asList(set(0..#TQ.flow - 1) - set(L));
     for i in Lc do(newFlow = replaceInList(i, 0, newFlow));
-    toricQuiver(TQ.connectivityMatrix, newFlow)
+    toricQuiver(TQ.IncidenceMatrix, newFlow)
 )
 -- subquiver of a ToricQuiver by removing all vertices/arrows not in the subquiver
 ToricQuiver _ List := (TQ, L) -> (
-    M := matrix(for x in entries(TQ.connectivityMatrix_L) list(if any(x, y-> y != 0) then (x) else (continue;)));
+    M := matrix(for x in entries(TQ.IncidenceMatrix_L) list(if any(x, y-> y != 0) then (x) else (continue;)));
     toricQuiver(M)
 )
 -- equality of two quivers:
@@ -198,7 +198,7 @@ ToricQuiver == ToricQuiver := (TQ1, TQ2) -> (
 
 ------------------------------------------------------------
 allSpanningTrees = (TQ) -> (
-    Q := TQ.connectivityMatrix;
+    Q := TQ.IncidenceMatrix;
     Q0 := numRows(Q);
     Q1 := numColumns(Q);
 
@@ -282,7 +282,7 @@ basisForFlowPolytope (List, ToricQuiver) := (ST, Q) -> (
     matrix output
 )
 basisForFlowPolytope ToricQuiver := Q -> (
-    (sT, removedEdges) := spanningTree(Q.connectivityMatrix);
+    (sT, removedEdges) := spanningTree(Q.IncidenceMatrix);
     return basisForFlowPolytope(sT, Q)
 )
 ------------------------------------------------------------
@@ -325,7 +325,7 @@ chainQuiver = {Flow=>"Canonical"} >> opts -> (numEdges) -> (
 ------------------------------------------------------------
 coneSystem = Q -> (
     STs := allSpanningTrees(Q);
-    allArrows := entries transpose Q.connectivityMatrix;
+    allArrows := entries transpose Q.IncidenceMatrix;
     QDim := #Q.Q1 - #Q.Q0 + 1;
     coneDim := #Q.Q0 - 1;
 
@@ -409,7 +409,7 @@ coneSystem = Q -> (
 ------------------------------------------------------------
 flowPolytope = method(Options=>{Format=>"SimplifiedBasis"})
 flowPolytope(List, ToricQuiver) := opts -> (th, Q) -> (
-    if #th != numRows Q.connectivityMatrix then (
+    if #th != numRows Q.IncidenceMatrix then (
         print("error: the provided weight is in incorrect dimension");
         return {};
     );
@@ -463,7 +463,7 @@ flowPolytope ToricQuiver := opts -> Q -> (
 -- NOTE: This function assumes that th is indeed a weight
 incInverse = (th, tQ) -> (
     nonzeroFlows := for t in tQ.flow list(if t != 0 then 1 else 0);
-    a := tQ.connectivityMatrix;
+    a := tQ.IncidenceMatrix;
     a = a * diagonalMatrix(nonzeroFlows);
     b := matrix(for t in th list {floor t}) **QQ;
     F := solve(a **QQ, b);
@@ -478,7 +478,7 @@ isAcyclic(Matrix) := Q -> (
     not existsOrientedCycle(Q)
 )
 isAcyclic(ToricQuiver) := Q -> (
-    not existsOrientedCycle(Q.connectivityMatrix)
+    not existsOrientedCycle(Q.IncidenceMatrix)
 )
 ------------------------------------------------------------
 
@@ -494,17 +494,17 @@ isClosedUnderArrows (List, Matrix) := (V, Q) -> (
     isClosedUnderArrows(Q, V)
 )
 isClosedUnderArrows (List, ToricQuiver) := (V, Q) -> (
-    isClosedUnderArrows(Q.connectivityMatrix, V)
+    isClosedUnderArrows(Q.IncidenceMatrix, V)
 )
 isClosedUnderArrows (Matrix, ToricQuiver) := (SQ, Q) -> (
     SQM := entries transpose SQ;
     V := positions(SQM, x -> all(x, y-> y != 0));
-    isClosedUnderArrows(Q.connectivityMatrix, V)
+    isClosedUnderArrows(Q.IncidenceMatrix, V)
 )
 isClosedUnderArrows (ToricQuiver, ToricQuiver) := (SQ, Q) -> (
-    SQM := entries (SQ.connectivityMatrix*diagonalMatrix(SQ.flow));
+    SQM := entries (SQ.IncidenceMatrix*diagonalMatrix(SQ.flow));
     V := positions(SQM, x -> any(x, y -> y != 0));
-    isClosedUnderArrows(Q.connectivityMatrix, V)
+    isClosedUnderArrows(Q.IncidenceMatrix, V)
 )
 ------------------------------------------------------------
 
@@ -512,7 +512,7 @@ isClosedUnderArrows (ToricQuiver, ToricQuiver) := (SQ, Q) -> (
 ------------------------------------------------------------
 isSemistable = method()
 isSemistable(List, ToricQuiver) := (subQ, Q) -> (
-    Qcm := Q.connectivityMatrix;
+    Qcm := Q.IncidenceMatrix;
 
     -- get the vertices in the subquiver
     subQVertices := positions(entries(Qcm_subQ), x -> any(x, y -> y != 0));
@@ -548,7 +548,7 @@ isSemistable(ToricQuiver, ToricQuiver) := (subQ, Q) -> (
 ------------------------------------------------------------
 isStable = method()
 isStable(List, ToricQuiver) := (subQ, Q) -> (
-    Qcm := Q.connectivityMatrix;
+    Qcm := Q.IncidenceMatrix;
 
     -- get the vertices in the subquiver
     subQVertices := positions(entries(Qcm_subQ), x -> any(x, y -> y != 0));
@@ -594,18 +594,18 @@ isTight(ToricQuiver) := opts -> Q -> (
 )
 isTight(ToricQuiver, List) := opts -> (Q, F) -> (
     if opts.Format == "Flow" then (
-        isTight(toricQuiver(Q.connectivityMatrix, F))
+        isTight(toricQuiver(Q.IncidenceMatrix, F))
     ) else (
         FF := incInverse(F, Q);
-        isTight(toricQuiver(Q.connectivityMatrix, FF))
+        isTight(toricQuiver(Q.IncidenceMatrix, FF))
     )
 )
 isTight(List, ToricQuiver) := opts -> (F, Q) -> (
     if opts.Format == "Flow" then (
-        isTight(toricQuiver(Q.connectivityMatrix, F))
+        isTight(toricQuiver(Q.IncidenceMatrix, F))
     ) else (
         FF := incInverse(F, Q);
-        isTight(toricQuiver(Q.connectivityMatrix, FF))
+        isTight(toricQuiver(Q.IncidenceMatrix, FF))
     )
 )
 ------------------------------------------------------------
@@ -614,12 +614,12 @@ isTight(List, ToricQuiver) := opts -> (F, Q) -> (
 ------------------------------------------------------------
 makeTight = (W, Q) -> (
     potentialF := incInverse(W, Q);
-    k := entries generators kernel Q.connectivityMatrix;
+    k := entries generators kernel Q.IncidenceMatrix;
     potentialF = potentialF + flatten entries first asList(transpose(matrix({sumList(k, Axis=>"Row")})));
 
     -- this function calls itself recursively until a tight quiver is produced
     if isTight(Q, potentialF) then (
-        return toricQuiver(Q.connectivityMatrix, potentialF);
+        return toricQuiver(Q.IncidenceMatrix, potentialF);
     ) else (
         if (#stableTrees(W, Q) < 1) then (
             print("Error: provided weight theta is not in C(Q) and so does not admit a tight toric quiver");
@@ -628,7 +628,7 @@ makeTight = (W, Q) -> (
 
         -- find a maximal unstable subquiver, called R, of codimension 1 (this exists if not tight)
         Qcm := graphFromEdges(Q.Q1, Oriented=>true)*diagonalMatrix(potentialF);
-        maxUnstSubs := maximalUnstableSubquivers(toricQuiver(Q.connectivityMatrix, potentialF), ReturnSingletons=>true);
+        maxUnstSubs := maximalUnstableSubquivers(toricQuiver(Q.IncidenceMatrix, potentialF), ReturnSingletons=>true);
         R := first(maxUnstSubs#NonSingletons);
         Rvertices := asList set flatten Q.Q1_R;
         S := {};
@@ -662,11 +662,11 @@ makeTight = (W, Q) -> (
         {aMinus, aPlus} := (a_0, a_1);
 
         -- contract the arrow alpha to create a new quiver
-        newRows := entries(Q.connectivityMatrix);
+        newRows := entries(Q.IncidenceMatrix);
         newCols := drop(asList(0..#Q.Q1 - 1), {alpha, alpha});
         newM := matrix(for e in Q.Q0 list(
             if e == aMinus then (
-                nRs := sumList(Q.connectivityMatrix^{aPlus, aMinus}, Axis=>"Col");
+                nRs := sumList(Q.IncidenceMatrix^{aPlus, aMinus}, Axis=>"Col");
                 nRs_newCols
             ) else if e == aPlus then (
                 continue;
@@ -677,7 +677,7 @@ makeTight = (W, Q) -> (
         ));
         newFlow := drop(potentialF, {alpha, alpha});
         newQ := toricQuiver(newM);
-        newW := theta(newQ.connectivityMatrix*diagonalMatrix(newFlow));
+        newW := theta(newQ.IncidenceMatrix*diagonalMatrix(newFlow));
 
 	nonEmptyEdges := for i in 0..#newQ.Q1 - 1 list (
 		e := newQ.Q1#i;
@@ -817,13 +817,13 @@ mergeOnArrow(Matrix, ZZ, Matrix, ZZ) := (Q1, a1, Q2, a2) -> (
     )
 )
 mergeOnArrow(ToricQuiver, ZZ, Matrix, ZZ) := (Q1, a1, Q2, a2) -> (
-    mergeOnArrow(Q1.connectivityMatrix, a1, Q2, a2)
+    mergeOnArrow(Q1.IncidenceMatrix, a1, Q2, a2)
 )
 mergeOnArrow(Matrix, ZZ, ToricQuiver, ZZ) := (Q1, a1, Q2, a2) -> (
-    mergeOnArrow(Q1, a1, Q2.connectivityMatrix, a2)
+    mergeOnArrow(Q1, a1, Q2.IncidenceMatrix, a2)
 )
 mergeOnArrow(ToricQuiver, ZZ, ToricQuiver, ZZ) := (Q1, a1, Q2, a2) -> (
-    mergeOnArrow(Q1.connectivityMatrix, a1, Q2.connectivityMatrix, a2)
+    mergeOnArrow(Q1.IncidenceMatrix, a1, Q2.IncidenceMatrix, a2)
 )
 ------------------------------------------------------------
 
@@ -860,13 +860,13 @@ mergeOnVertex(Matrix, ZZ, Matrix, ZZ) := (Q1, v1, Q2, v2) -> (
     )
 )
 mergeOnVertex(ToricQuiver, ZZ, Matrix, ZZ) := (Q1, v1, Q2, v2) -> (
-    mergeOnVertex(Q1.connectivityMatrix, v1, Q2, v2)
+    mergeOnVertex(Q1.IncidenceMatrix, v1, Q2, v2)
 )
 mergeOnVertex(Matrix, ZZ, ToricQuiver, ZZ) := (Q1, v1, Q2, v2) -> (
-    mergeOnVertex(Q1, v1, Q2.connectivityMatrix, v2)
+    mergeOnVertex(Q1, v1, Q2.IncidenceMatrix, v2)
 )
 mergeOnVertex(ToricQuiver, ZZ, ToricQuiver, ZZ) := (Q1, v1, Q2, v2) -> (
-    mergeOnVertex(Q1.connectivityMatrix, v1, Q2.connectivityMatrix, v2)
+    mergeOnVertex(Q1.IncidenceMatrix, v1, Q2.IncidenceMatrix, v2)
 )
 ------------------------------------------------------------
 
@@ -911,7 +911,7 @@ potentialWalls(Matrix) := (Q) -> (
     )
 )
 potentialWalls(ToricQuiver) := (Q) -> (
-    potentialWalls(Q.connectivityMatrix*diagonalMatrix(Q.flow))
+    potentialWalls(Q.IncidenceMatrix*diagonalMatrix(Q.flow))
 )
 ------------------------------------------------------------
 
@@ -934,8 +934,8 @@ primitiveArrows = Q -> (
 
 
 ------------------------------------------------------------
-quiverConnectivityMatrix = Q -> (
-    return Q.connectivityMatrix
+quiverIncidenceMatrix = Q -> (
+    return Q.IncidenceMatrix
 )
 ------------------------------------------------------------
 
@@ -1100,7 +1100,7 @@ wallType(List, Matrix) := (Qp, Q) -> (
     (tp, tm)
 )
 wallType(List, ToricQuiver) := (Qp, Q) -> (
-    wallType(Qp, Q.connectivityMatrix*diagonalMatrix(Q.flow))
+    wallType(Qp, Q.IncidenceMatrix*diagonalMatrix(Q.flow))
 )
 ------------------------------------------------------------
 
@@ -1113,7 +1113,7 @@ wallType(List, ToricQuiver) := (Qp, Q) -> (
 
 
 ------------------------------------------------------------
-adjacencyToConnectivity = (A) -> (
+adjacencyToIncidence = (A) -> (
     E := for i in (0..numRows(A) - 1) list(for j in (0..numColumns(A) - 1) list(if A_{j}^{i} != 0 then (i, j)));
     matrix(graphFromEdges(E), Oriented=>true)
 
@@ -1259,7 +1259,7 @@ graphEdges Matrix := opts -> (G) -> (
     return E
 )
 graphEdges ToricQuiver := opts -> (G) -> (
-    graphEdges(G.connectivityMatrix, Oriented=>opts.Oriented, RavelLoops=>opts.RavelLoops)
+    graphEdges(G.IncidenceMatrix, Oriented=>opts.Oriented, RavelLoops=>opts.RavelLoops)
 )
 
 graphVertices = method();
@@ -1345,8 +1345,8 @@ isMaximal(List, Matrix) := (Qlist, Q) -> (
     returnVal
 )
 isMaximal(List, ToricQuiver) := (Qlist, Q) -> (
-    Ms := for Qm in Qlist list(Qm.connectivityMatrix);
-    isMaximal(Ms, Q.connectivityMatrix)
+    Ms := for Qm in Qlist list(Qm.IncidenceMatrix);
+    isMaximal(Ms, Q.IncidenceMatrix)
 )
 
 -- check if there exists a path between p and q by appending 
@@ -1564,7 +1564,7 @@ subsetsClosedUnderArrows Matrix := (Q) -> (
     ))
 )
 subsetsClosedUnderArrows ToricQuiver := (Q) -> (
-    subsetsClosedUnderArrows(Q.connectivityMatrix)
+    subsetsClosedUnderArrows(Q.IncidenceMatrix)
 )
 
 -- add all elements of a list x together, and specify Axis (row/col) if x is actually a matrix or list of lists -- 
@@ -1649,7 +1649,7 @@ multidoc ///
                 The ToricQuiver data type is a type of Hash Table with the following keys: 
             Text
                 @UL {
-                    {TT "connectivityMatrix:", "matrix representation of the connected graph underlying the quiver"},
+                    {TT "IncidenceMatrix:", "matrix representation of the connected graph underlying the quiver"},
                     {TT "flow:              ", "list of integers representing the flow associated to each edge of the quiver"},
                     {TT "Q0:                ", "the list of vertices"},
                     {TT "Q1:                ", "the list of edges "},
@@ -1710,7 +1710,7 @@ multidoc ///
                 the ToricQuiver data type is stored as a hash table with the following keys: 
             Text
                 @UL {
-                    {TT "connectivityMatrix:", "matrix representation of the connected graph underlying the quiver"},
+                    {TT "IncidenceMatrix:", "matrix representation of the connected graph underlying the quiver"},
                     {TT "flow:              ", "list of integers representing the flow associated to each edge of the quiver"},
                     {TT "Q0:                ", "the list of vertices"},
                     {TT "Q1:                ", "the list of edges "},
@@ -1737,7 +1737,7 @@ multidoc ///
                 toric quivers are represented as a type of HashTable with the following keys:
             Text
                 @UL{  
-                    {TT "connectivityMatrix: ","weighted connectivity matrix giving the vertex-edge connectivity structure of $Q$"},
+                    {TT "IncidenceMatrix: ","weighted incidence matrix giving the vertex-edge connectivity structure of $Q$"},
                     {TT "Q0: ","list of vertices"},
                     {TT "Q1: ","list of edges"},
                     {TT "flow: ","list of integers giving the flow on each edge"},
@@ -2042,7 +2042,7 @@ multidoc ///
             isClosedUnderArrows (SQ, Q)
         Inputs
             M: Matrix
-                connectivity matrix of subquiver to check
+                incidence matrix of subquiver to check
             Q: ToricQuiver
             SQ: ToricQuiver
                 subquiver of Q to check 
@@ -2357,11 +2357,11 @@ multidoc ///
                 primitiveArrows toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
     Node
         Key
-            quiverConnectivityMatrix
+            quiverIncidenceMatrix
         Headline
-            return the graph connectivity matrix attribute associated to the toric quiver
+            return the graph incidence matrix attribute associated to the toric quiver
         Usage
-            quiverConnectivityMatrix Q
+            quiverIncidenceMatrix Q
         Inputs
             Q: ToricQuiver
         SeeAlso
@@ -2482,8 +2482,8 @@ multidoc ///
             Text
                 @UL{
                     {"as a list of arrow indices,"}, 
-                    {"as a subset of rows and columns of the original connectivity matrix, and"},
-                    {"as a copy of the original connectivity matrix with certain rows and columns zeroed out. "}
+                    {"as a subset of rows and columns of the original incidence matrix, and"},
+                    {"as a copy of the original incidence matrix with certain rows and columns zeroed out. "}
                 }@
 
             Example
