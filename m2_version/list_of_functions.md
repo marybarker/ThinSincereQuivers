@@ -37,6 +37,14 @@
 
 * `primitiveArrows (Q)' : return a list of the indices of edges in Q that are primitive
 
+* `quiverIncidenceMatrix (Q)' : extracts the incidence matrix from the quiver Q
+
+* `quiverEdges (Q)' : extracts the quiver edges from the quiver Q
+
+* `quiverFlow (Q)' : extracts the flow from the quiver Q
+
+* `quiverWeights (Q)' : extracts the weights from the quiver Q
+
 * `referenceThetas (CS)' : returns a candidate weight in each cone of the list of cones CS
 
 * `sameChamber (TH1, TH2, Q)': answers question: is TH1 in the same chamber as TH2 for the chamber decomposition of weights associated to Q
