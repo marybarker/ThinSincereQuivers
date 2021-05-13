@@ -1,44 +1,6 @@
 import graph_tools as gt
 import numpy as np
-from itertools import product, combinations, permutations, combinations_with_replacement
-
-'''
--- Methods/Functions
-    "allSpanningTrees",
-    "basisForFlowPolytope",
-    "bipartiteQuiver",
-    "chainQuiver",
-    "coneSystem",
-    "flowPolytope",
-    "incInverse",
-    "isAcyclic",
-    "isClosedUnderArrows",
-    "isSemistable",
-    "isStable",
-    "isTight",
-    "makeTight",
-    "maxCodimensionUnstable",
-    "maximalNonstableSubquivers",
-    "maximalUnstableSubquivers",
-    "mergeOnArrow",
-    "mergeOnVertex",
-    "potentialWalls",
-    "primitiveArrows",
-    "quiverConnectivityMatrix",
-    "quiverEdges",
-    "quiverFlow",
-    "quiverWeights",
-    "referenceThetas",
-    "sameChamber",
-    "stableTrees",
-    "subquivers",
-    "theta",
-    "threeVertexQuiver",
-    "wallType",
-
-    "toricQuiver"
-}
-'''
+from itertools import combinations
 
 matrixFromEdges = gt.matrixFromEdges
 edgesFromMatrix = gt.edgesFromMatrix
@@ -67,7 +29,7 @@ class ToricQuiver():
         elif isinstance(flow, list) and len(flow) == len(self.Q1):
             self.flow = flow
         else:
-            return "Error in ToricQuiver init: provided flow is not compatible with edges"
+            return "Error in init: provided flow is not compatible with edges"
         self.weight = theta(self.connectivity_matrix, self.flow)
 
     def __repr__(self):
@@ -201,7 +163,6 @@ def flowPolytope(Q, weight=None, format="simplified_basis"):
 flowPolytope ToricQuiver := opts -> Q -> (
     flowPolytope(Q.weights, Q, Format=>opts.Format)
 )
-'''
 #def incInverse(Q, theta):
 #def isClosedUnderArrows(V, Q):
 #def isSemistable(SQ, Q):
@@ -253,12 +214,7 @@ def spanningTree(Q, tree_format="edge"):
         return range(Q0),[]
 
 
-'''
-def stableTrees(Q, weight):
-
-def subquivers(Q):
-
-def threeVertexQuiver(a,b,c):
-
-def wallType(W):
-'''
+#def stableTrees(Q, weight):
+#def subquivers(Q):
+#def threeVertexQuiver(a,b,c):
+#def wallType(W):
