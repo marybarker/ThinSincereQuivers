@@ -50,6 +50,7 @@ def theta(M, F=None):
 
 
 class ToricQuiver():
+
     def __init__(self, edges=None, connectivity_matrix=None, flow="default"):
         if edges is not None:
             self.Q1 = edges
@@ -68,8 +69,15 @@ class ToricQuiver():
         else:
             return "Error in ToricQuiver init: provided flow is not compatible with edges"
         self.weight = theta(self.connectivity_matrix, self.flow)
+
     def __repr__(self):
-        return("toric quiver:\nincidence matrix: "+repr(self.connectivity_matrix)+"\nedges: "+repr(self.Q1)+"\nflow: "+repr(self.flow)+"\nweight: "+repr(self.weight))
+        return "toric quiver:\nincidence matrix: " \
+               +repr(self.connectivity_matrix)+"\nedges: " \
+               +repr(self.Q1)+"\nflow: "+repr(self.flow) \
+               +"\nweight: "+repr(self.weight)
+
+    def __getitem__(self, i):
+        return self.connectivity_matrix[:,i]
 
 
 def allSpanningTrees(Q, tree_format="edge"):
@@ -135,6 +143,81 @@ def basisForFlowPolytope(Q, spanning_tree=None):
     return np.matrix([[f[i][j] for i in range(len(removed_edges))] for j in range(Q1)])
 
 
+def bipartiteQuiver(n, m, flow="default"):
+    return ToricQuiver([[i, j+n] for j in range(m) for i in range(n)], flow=flow)
+
+
+def chainQuiver(l, flow="default"):
+    return ToricQuiver([[i, i+1] for i, li in enumerate(l) for j in range(li)], flow=flow)
+
+
+#def coneSystem(Q):
+'''
+def flowPolytope(Q, weight=None, format="simplified_basis"):
+    if len(weight) != len(Q.weight):
+        print("error: the provided weight is in incorrect dimension")
+        return 
+
+    # vertices of flow polytope correspond to regular flows on spanning trees
+    all_trees = allSpanningTrees(Q)
+    regular_flows = [for t in all_trees]
+
+:= unique for x in allTrees list(
+        if all(incInverse(th, Q^x), y -> y >= 0) then (
+            incInverse(th, Q^x)
+        ) else (continue;)
+
+    -- simplified basis option reduces the dimension to what is strictly necessary.
+    -- Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
+    -- since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
+    if instance(opts.Format, String) and (toString(opts.Format) != "SimplifiedBasis") then (
+        regularFlows
+    ) else (
+
+        -- first generate a basis (ether user-specified or generated from first spanning tree)
+        fpb := {};
+        if instance(opts.Format, List) then ( -- if Format is a spanning tree
+            fpb = basisForFlowPolytope(opts.Format, toricQuiver(Q, incInverse(th, Q)));
+        ) else ( -- if Format is the string "SimplifiedBasis" 
+            fpb = basisForFlowPolytope(toricQuiver(Q, incInverse(th, Q)));
+        );
+
+        -- translate regularFlows to contain origin by subtracting of first of them from all
+        kerF := flatten for f in regularFlows list(
+            ff := f - regularFlows#0;
+            entries transpose solve(fpb, matrix(for fff in ff list ({round fff})))
+        );
+
+        -- translate interior point to origin(if interior lattice point exists)
+        ip := interiorLatticePoints convexHull transpose matrix kerF;
+        if #ip > 0 then (
+            ip = first entries transpose first ip;
+            for e in kerF list(e - ip)
+        ) else (
+            kerF
+        )
+    )
+)
+flowPolytope ToricQuiver := opts -> Q -> (
+    flowPolytope(Q.weights, Q, Format=>opts.Format)
+)
+'''
+#def incInverse(Q, theta):
+#def isClosedUnderArrows(V, Q):
+#def isSemistable(SQ, Q):
+#def isStable(SQ, Q):
+#def isTight(Q):
+#def makeTight(Q, theta):
+#def maxCodimensionUnstable(Q):
+#def maximalNonstableSubquivers(Q):
+#def maximalUnstableSubquivers(Q):
+#def mergeOnArrow(Q1,a1,Q2,a2):
+#def mergeOnVertex(Q1,v1,Q2,v2):
+#def potentialWalls(Q, theta)
+#def primitiveArrows(Q):
+#def referenceThetas(CQ):
+#def sameChamber(theta1, theta2, CQ):
+
 def spanningTree(Q, tree_format="edge"):
     """ returns the first spanning tree for the ToricQuiver object Q that is found
     """
@@ -170,48 +253,7 @@ def spanningTree(Q, tree_format="edge"):
         return range(Q0),[]
 
 
-def bipartiteQuiver(n, m, flow="default"):
-    return ToricQuiver([[i, j+n] for j in range(m) for i in range(n)], flow=flow)
-
-
-def chainQuiver(l, flow="default"):
-    return ToricQuiver([[i, i+1] for i, li in enumerate(l) for j in range(li)], flow=flow)
-
 '''
-def coneSystem(Q):
-
-def flowPolytope(Q, weight=None):
-
-def incInverse(Q, theta):
-
-def isClosedUnderArrows(V, Q):
-
-def isSemistable(SQ, Q):
-
-def isStable(SQ, Q):
-
-def isTight(Q):
-
-def makeTight(Q, theta):
-
-def maxCodimensionUnstable(Q):
-
-def maximalNonstableSubquivers(Q):
-
-def maximalUnstableSubquivers(Q):
-
-def mergeOnArrow(Q1,a1,Q2,a2):
-
-def mergeOnVertex(Q1,v1,Q2,v2):
-
-def potentialWalls(Q, theta)
-
-def primitiveArrows(Q):
-
-def referenceThetas(CQ):
-
-def sameChamber(theta1, theta2, CQ):
-
 def stableTrees(Q, weight):
 
 def subquivers(Q):
