@@ -68,6 +68,8 @@ class ToricQuiver():
         else:
             return "Error in ToricQuiver init: provided flow is not compatible with edges"
         self.weight = theta(self.connectivity_matrix, self.flow)
+    def __repr__(self):
+        return("toric quiver:\nincidence matrix: "+repr(self.connectivity_matrix)+"\nedges: "+repr(self.Q1)+"\nflow: "+repr(self.flow)+"\nweight: "+repr(self.weight))
 
 
 def allSpanningTrees(Q, tree_format="edge"):
@@ -106,11 +108,13 @@ def allSpanningTrees(Q, tree_format="edge"):
 
 
 def basisForFlowPolytope(Q, spanning_tree=None):
-    if spanning_tree is None:
+    Q1 = len(Q.Q1)
+    if spanning_tree is not None:
+         spanning_tree = [spanning_tree, [x for x in range(Q1) if x not in spanning_tree]]
+    else:
         spanning_tree = spanningTree(Q, tree_format="vertex")
 
     removed_edges = spanning_tree[1]
-    Q1 = len(Q.Q1)
 
     f = []
     for i in removed_edges:
@@ -171,7 +175,7 @@ def bipartiteQuiver(n, m, flow="default"):
 
 
 def chainQuiver(l, flow="default"):
-    return ToricQuiver([[i, i+1] for j in range(li) for i, li in enumerate(l)], flow=flow)
+    return ToricQuiver([[i, i+1] for i, li in enumerate(l) for j in range(li)], flow=flow)
 
 '''
 def coneSystem(Q):
@@ -179,8 +183,6 @@ def coneSystem(Q):
 def flowPolytope(Q, weight=None):
 
 def incInverse(Q, theta):
-
-def isAcyclic(Q):
 
 def isClosedUnderArrows(V, Q):
 
@@ -213,8 +215,6 @@ def sameChamber(theta1, theta2, CQ):
 def stableTrees(Q, weight):
 
 def subquivers(Q):
-
-def theta(Q):
 
 def threeVertexQuiver(a,b,c):
 
