@@ -117,9 +117,10 @@ def chainQuiver(l, flow="default"):
 
 
 def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
-    if weight is not None and len(weight) != len(Q.weight):
-        print("error: the provided weight is in incorrect dimension")
-        return 
+    if weight is not None:
+        if len(weight) != len(Q.weight):
+            print("error: the provided weight is in incorrect dimension")
+            return 
     else:
         weight=Q.weight
 
@@ -135,19 +136,18 @@ def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
     # Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
     # since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
     if isinstance(polytope_format, str) and (str(polytope_format) != "SimplifiedBasis"):
-        print("here")
         return np.array(regular_flows)
     else:
         # first generate a basis (ether user-specified or generated from first spanning tree)
         fpb = []
         if isinstance(polytope_format, list): # if Format is a spanning tree
-            fpb = basisForFlowPolytope(ToricQuiver(Q, flow=list(incInverse(Q, weight))), polytope_format)
+            fpb = np.linalg.pinv(basisForFlowPolytope(ToricQuiver(Q, flow=list(incInverse(Q, weight))), polytope_format))
         else: # if Format is the string "SimplifiedBasis" 
-            fpb = basisForFlowPolytope(ToricQuiver(Q, flow=list(incInverse(Q, theta))))
+            fpb = np.linalg.pinv(basisForFlowPolytope(ToricQuiver(Q, flow=list(incInverse(Q, theta)))))
 
         # translate regularFlows to contain origin by subtracting of first of them from all
         kerF = np.matrix([x - regular_flows[0] for x in regular_flows]).transpose()
-        return np.linalg.pinv(fpb)*kerF
+        return fpb*kerF
 
 
 def incInverse(Q, theta):
