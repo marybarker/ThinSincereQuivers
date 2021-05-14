@@ -5,32 +5,28 @@ from itertools import combinations
 matrixFromEdges = gt.matrixFromEdges
 edgesFromMatrix = gt.edgesFromMatrix
 
-def theta(M, F=None):
-    if F is None:
-        F = np.ones(M.shape[1])
-    return np.matmul(M, np.matrix(F).transpose()).transpose().astype("int32").tolist()
-
-
 class ToricQuiver():
 
-    def __init__(self, edges=None, connectivity_matrix=None, flow="default"):
-        if edges is not None:
-            self.Q1 = edges
-            self.connectivity_matrix = matrixFromEdges(edges)
-        elif connectivity_matrix is not None:
-            self.connectivity_matrix = connectivity_matrix
-            self.Q1 = edgesFromMatrix(connectivity_matrix)
-        else:
-            return "Error in init: must provide either edges or connectivity matrix"
+    def __init__(self, graph_obj, flow="default"):
+        if isinstance(graph_obj, list): # if graph input is a list of edges
+            self.Q1 = graph_obj
+            self.connectivity_matrix = matrixFromEdges(graph_obj)
+        elif isinstance(graph_obj, np.matrix):
+            self.connectivity_matrix = graph_obj
+            self.Q1 = edgesFromMatrix(graph_obj)
+        else:#isinstance(graph_obj, ToricQuiver):
+            self.connectivity_matrix = graph_obj.connectivity_matrix
+            self.Q1 = graph_obj.Q1
             
         self.Q0 = range(self.connectivity_matrix.shape[0])
         if flow == "default":
-            self.flow = list(np.ones(len(edges), dtype="int32"))
+            self.flow = list(np.ones(len(self.Q1), dtype="int32"))
         elif isinstance(flow, list) and len(flow) == len(self.Q1):
             self.flow = flow
         else:
             return "Error in init: provided flow is not compatible with edges"
         self.weight = theta(self.connectivity_matrix, self.flow)
+        
 
     def __repr__(self):
         return "toric quiver:\nincidence matrix: " \
@@ -40,6 +36,10 @@ class ToricQuiver():
 
     def __getitem__(self, i):
         return self.connectivity_matrix[:,i]
+
+    def subquiver(self, arrows):
+        f = [f if i in arrows else 0 for i, f in enumerate(self.flow)]
+        return ToricQuiver(self.connectivity_matrix, flow=f)
 
 
 def allSpanningTrees(Q, tree_format="edge"):
@@ -114,56 +114,49 @@ def chainQuiver(l, flow="default"):
 
 
 #def coneSystem(Q):
-'''
-def flowPolytope(Q, weight=None, format="simplified_basis"):
-    if len(weight) != len(Q.weight):
+
+
+def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
+    if weight is not None and len(weight) != len(Q.weight):
         print("error: the provided weight is in incorrect dimension")
         return 
+    else:
+        weight=Q.weight
 
     # vertices of flow polytope correspond to regular flows on spanning trees
-    all_trees = allSpanningTrees(Q)
-    regular_flows = [for t in all_trees]
+    all_trees = allSpanningTrees(Q, tree_format="vertex")
+    regular_flows = []
+    for t in all_trees:
+        f = np.array(incInverse(Q.subquiver(t[0]), weight))
+        if all(f >= 0):
+            regular_flows.append(f)
 
-:= unique for x in allTrees list(
-        if all(incInverse(th, Q^x), y -> y >= 0) then (
-            incInverse(th, Q^x)
-        ) else (continue;)
+    # simplified basis option reduces the dimension to what is strictly necessary.
+    # Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
+    # since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
+    if isinstance(polytope_format, str) and (str(polytope_format) != "SimplifiedBasis"):
+        print("here")
+        return np.array(regular_flows)
+    else:
+        # first generate a basis (ether user-specified or generated from first spanning tree)
+        fpb = []
+        if isinstance(polytope_format, list): # if Format is a spanning tree
+            fpb = basisForFlowPolytope(ToricQuiver(Q, flow=list(incInverse(Q, weight))), polytope_format)
+        else: # if Format is the string "SimplifiedBasis" 
+            fpb = basisForFlowPolytope(ToricQuiver(Q, flow=list(incInverse(Q, theta))))
 
-    -- simplified basis option reduces the dimension to what is strictly necessary.
-    -- Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
-    -- since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
-    if instance(opts.Format, String) and (toString(opts.Format) != "SimplifiedBasis") then (
-        regularFlows
-    ) else (
+        # translate regularFlows to contain origin by subtracting of first of them from all
+        kerF = np.matrix([x - regular_flows[0] for x in regular_flows]).transpose()
+        return np.linalg.pinv(fpb)*kerF
 
-        -- first generate a basis (ether user-specified or generated from first spanning tree)
-        fpb := {};
-        if instance(opts.Format, List) then ( -- if Format is a spanning tree
-            fpb = basisForFlowPolytope(opts.Format, toricQuiver(Q, incInverse(th, Q)));
-        ) else ( -- if Format is the string "SimplifiedBasis" 
-            fpb = basisForFlowPolytope(toricQuiver(Q, incInverse(th, Q)));
-        );
 
-        -- translate regularFlows to contain origin by subtracting of first of them from all
-        kerF := flatten for f in regularFlows list(
-            ff := f - regularFlows#0;
-            entries transpose solve(fpb, matrix(for fff in ff list ({round fff})))
-        );
+def incInverse(Q, theta):
+    nc = Q.connectivity_matrix.shape[1]
+    nonzero_flows = [1 if x != 0 else 0 for x in Q.flow]
+    a = np.zeros((nc,nc))
+    np.fill_diagonal(a, nonzero_flows)
+    return np.array((np.linalg.pinv(Q.connectivity_matrix*a)*(np.matrix(theta).transpose())), dtype='int32').ravel()
 
-        -- translate interior point to origin(if interior lattice point exists)
-        ip := interiorLatticePoints convexHull transpose matrix kerF;
-        if #ip > 0 then (
-            ip = first entries transpose first ip;
-            for e in kerF list(e - ip)
-        ) else (
-            kerF
-        )
-    )
-)
-flowPolytope ToricQuiver := opts -> Q -> (
-    flowPolytope(Q.weights, Q, Format=>opts.Format)
-)
-#def incInverse(Q, theta):
 #def isClosedUnderArrows(V, Q):
 #def isSemistable(SQ, Q):
 #def isStable(SQ, Q):
@@ -216,5 +209,12 @@ def spanningTree(Q, tree_format="edge"):
 
 #def stableTrees(Q, weight):
 #def subquivers(Q):
+
+def theta(M, F=None):
+    if F is None:
+        F = np.ones(M.shape[1])
+    return np.matmul(M, np.matrix(F).transpose()).transpose().astype("int32").tolist()
+
+
 #def threeVertexQuiver(a,b,c):
 #def wallType(W):
