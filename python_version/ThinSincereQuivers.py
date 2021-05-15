@@ -2,8 +2,8 @@ import graph_tools as gt
 import numpy as np
 from itertools import combinations
 
-matrixFromEdges = gt.matrixFromEdges
 edgesFromMatrix = gt.edgesFromMatrix
+matrixFromEdges = gt.matrixFromEdges
 
 class ToricQuiver():
 
@@ -43,38 +43,7 @@ class ToricQuiver():
 
 
 def allSpanningTrees(Q, tree_format="edge"):
-    M = Q.connectivity_matrix
-    Q0,Q1 = M.shape
-
-    all_edges = edgesFromMatrix(M)
-    all_nodes = range(Q0)
-
-    trees = []
-    edge_indices = []
-    
-    d = Q1 - Q0 + 1
-    if d > 0:
-        # try removing every combination of d edges and see if result is a tree
-        d_tuples_to_remove = list(combinations(range(Q1), d))
-        edges_kept = []
-        edges_removed = []
-
-        for d_tuple in d_tuples_to_remove:
-
-            edges_kept = [e for i, e in enumerate(all_edges) if i not in d_tuple]
-            edges_removed = [all_edges[d] for d in d_tuple]
-
-            if gt.isConnected(all_nodes, edges_kept) and gt.isAcyclic(matrixFromEdges(edges_kept)):
-                if tree_format != "edge":
-                    edges_kept = [i for i in range(Q1) if i not in d_tuple]
-                    edges_removed = d_tuple
-                trees.append([edges_kept, edges_removed])
-        return trees
-    else:
-        if tree_format == "edge":
-            return [Q.Q1, []]
-        else:
-            return [range(Q0),[]]
+    return gt.allSpanningTrees(Q.connectivity_matrix, tree_format=tree_format)
 
 
 def basisForFlowPolytope(Q, spanning_tree=None):
@@ -158,9 +127,10 @@ def incInverse(Q, theta):
 
 
 def isClosedUnderArrows(V, Q):
-    if not isinstance(Q, np.matrix):
-        Q = Q.connectivity_matrix
-    return np.all(Q[V,:].sum(axis=0) >= 0)
+    if isinstance(Q, np.matrix):
+        return gt.isClosedUnderArrows(V, Q)
+    else:
+        return gt.isClosedUnderArrows(V, Q.connectivity_matrix)
 
 
 def isSemistable(SQ, Q):
@@ -176,7 +146,7 @@ def isSemistable(SQ, Q):
 
     subquiver_matrix = (Q[SQ])[subquiver_vertices,:]
 
-    for ss in subsetsClosedUnderArrows(subquiver_matrix):
+    for ss in gt.subsetsClosedUnderArrows(subquiver_matrix):
         if sum(weights[ss]) + minimum_weight < 0:
             return False
     return True
@@ -195,10 +165,11 @@ def isStable(SQ, Q):
 
     subquiver_matrix = (Q[SQ])[subquiver_vertices,:]
 
-    for ss in subsetsClosedUnderArrows(subquiver_matrix):
+    for ss in gt.subsetsClosedUnderArrows(subquiver_matrix):
         if sum(weights[ss]) + minimum_weight <= 0:
             return False
     return True
+
 
 #def isTight(Q):
 #def makeTight(Q, theta):
@@ -212,50 +183,23 @@ def isStable(SQ, Q):
 #def referenceThetas(CQ):
 #def sameChamber(theta1, theta2, CQ):
 
+
 def spanningTree(Q, tree_format="edge"):
-    """ returns the first spanning tree for the ToricQuiver object Q that is found
-    """
-    M = Q.connectivity_matrix
-    Q0,Q1 = M.shape
-
-    all_edges = edgesFromMatrix(M)
-    all_nodes = range(Q0)
-
-    edge_indices = []
-    
-    d = Q1 - Q0 + 1
-    if d > 0:
-        # try removing every combination of d edges and see if result is a tree
-        d_tuples_to_remove = list(combinations(range(Q1), d))
-        edges_kept = []
-        edges_removed = []
-
-        for d_tuple in d_tuples_to_remove:
-
-            edges_kept = [e for i, e in enumerate(all_edges) if i not in d_tuple]
-            edges_removed = [all_edges[d] for d in d_tuple]
+    return gt.spanningTree(Q.connectivity_matrix, tree_format=tree_format)
 
 
-            if gt.isConnected(all_nodes, edges_kept) and gt.isAcyclic(matrixFromEdges(edges_kept)):
-                if tree_format != "edge":
-                    edges_kept = [i for i in range(Q1) if i not in d_tuple]
-                    edges_removed = list(d_tuple)
-                return edges_kept, edges_removed
-    if tree_format == "edge":
-        return Q.Q1, []
+def stableTrees(Q, weight):
+    Qalt = ToricQuiver(Q, flow=incInverse(Q, weight))
+    for s in allSpanningTrees(Q):
+        if isStable(s[0], Qalt):
+            yield s
+
+
+def subsetsClosedUnderArrows(Q):
+    if isinstance(Q, np.matrix):
+        return gt.subsetsClosedUnderArrows(Q)
     else:
-        return range(Q0),[]
-
-
-#def stableTrees(Q, weight):
-
-def subsetsClosedUnderArrows(mat):
-    current_vertices = range(mat.shape[0])
-    for i in current_vertices[1:]:
-        for c in combinations(current_vertices, i):
-            if isClosedUnderArrows(c, mat):
-                yield c
-    #return [c for i in current_vertices[1:] for c in combinations(current_vertices, i) if isClosedUnderArrows(c, mat)]
+        return gt.subsetsClosedUnderArrows(Q.connectivity_matrix)
 
 
 def subquivers(Q):
