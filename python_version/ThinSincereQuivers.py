@@ -11,7 +11,7 @@ class ToricQuiver():
         if isinstance(graph_obj, list): # if graph input is a list of edges
             self.Q1 = graph_obj
             self.connectivity_matrix = matrixFromEdges(graph_obj)
-        elif isinstance(graph_obj, np.matrix):
+        elif isinstance(graph_obj, np.matrix): # if graph input is an incidence matrix
             self.connectivity_matrix = graph_obj
             self.Q1 = edgesFromMatrix(graph_obj)
         else:#isinstance(graph_obj, ToricQuiver):
@@ -128,26 +128,26 @@ def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
     all_trees = allSpanningTrees(Q, tree_format="vertex")
     regular_flows = []
     for t in all_trees:
-        f = np.array(incInverse(Q.subquiver(t[0]), weight))
-        if all(f >= 0):
+        f = np.round(np.array(incInverse(Q.subquiver(t[0]), weight)))
+        if all(f >= -0):
             regular_flows.append(f)
 
     # simplified basis option reduces the dimension to what is strictly necessary.
     # Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
     # since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
-    if isinstance(polytope_format, str) and (str(polytope_format) != "SimplifiedBasis"):
-        return np.array(regular_flows)
+    if isinstance(polytope_format, str) and (str(polytope_format) != "simplified_basis"):
+        return np.array(regular_flows, dtype='int32')
     else:
         # first generate a basis (ether user-specified or generated from first spanning tree)
         fpb = []
         if isinstance(polytope_format, list): # if Format is a spanning tree
             fpb = np.linalg.pinv(basisForFlowPolytope(ToricQuiver(Q, flow=list(incInverse(Q, weight))), polytope_format))
         else: # if Format is the string "SimplifiedBasis" 
-            fpb = np.linalg.pinv(basisForFlowPolytope(ToricQuiver(Q, flow=list(incInverse(Q, theta)))))
+            fpb = np.linalg.pinv(basisForFlowPolytope(ToricQuiver(Q, flow=list(incInverse(Q, weight)))))
 
         # translate regularFlows to contain origin by subtracting of first of them from all
         kerF = np.matrix([x - regular_flows[0] for x in regular_flows]).transpose()
-        return fpb*kerF
+        return np.array(np.round(fpb*kerF), dtype='int32')
 
 
 def incInverse(Q, theta):
@@ -155,10 +155,35 @@ def incInverse(Q, theta):
     nonzero_flows = [1 if x != 0 else 0 for x in Q.flow]
     a = np.zeros((nc,nc))
     np.fill_diagonal(a, nonzero_flows)
-    return np.array((np.linalg.pinv(Q.connectivity_matrix*a)*(np.matrix(theta).transpose())), dtype='int32').ravel()
+    return np.array((np.linalg.pinv(Q.connectivity_matrix*a)*(np.matrix(theta).transpose()))).ravel()
 
-#def isClosedUnderArrows(V, Q):
-#def isSemistable(SQ, Q):
+
+def isClosedUnderArrows(V, Q):
+    Qs = Q.connectivity_matrix[V,:].sum(axis=0)
+    return np.all(Qs >= 0)
+
+
+def isSemistable(SQ, Q):
+    # get the vertices in the subquiver
+    subquiver_vertices = list(set([x for y in SQ for x in Q.Q1[y]]))
+    other_vertices = [x for x in Q.Q0 if x not in subquiver_vertices]
+
+    # inherited weights on the subquiver
+    weights = [0] + Q.weights[other_vertices]
+
+    # negative weights in Q_0 \ subQ_0
+    minimum_weight = sum(apply(lambda x: x if x <=0 else 0, weights))
+
+    """
+    subMat = (Q.connectivity_matrix[SQ])[subquiver_vertices,:]
+
+    sums = asList(
+        for subset in subsetsClosedUnderArrows(subMat) list(
+            sumList(weights_subset)
+    all(sums, x -> x + minWeight >= 0)
+    """
+
+
 #def isStable(SQ, Q):
 #def isTight(Q):
 #def makeTight(Q, theta):
