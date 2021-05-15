@@ -14,7 +14,7 @@ def allSpanningTrees(M, tree_format="edge"):
     d = Q1 - Q0 + 1
     if d > 0:
         # try removing every combination of d edges and see if result is a tree
-        d_tuples_to_remove = list(combinations(range(Q1), d))
+        d_tuples_to_remove = combinations(range(Q1), d)
         edges_kept = []
         edges_removed = []
 
@@ -217,7 +217,7 @@ def spanningTree(M, tree_format="edge"):
     d = Q1 - Q0 + 1
     if d > 0:
         # try removing every combination of d edges and see if result is a tree
-        d_tuples_to_remove = list(combinations(range(Q1), d))
+        d_tuples_to_remove = combinations(range(Q1), d)
         edges_kept = []
         edges_removed = []
 
@@ -226,12 +226,12 @@ def spanningTree(M, tree_format="edge"):
             edges_kept = [e for i, e in enumerate(all_edges) if i not in d_tuple]
             edges_removed = [all_edges[d] for d in d_tuple]
 
-
             if isConnected(all_nodes, edges_kept) and isAcyclic(matrixFromEdges(edges_kept)):
                 if tree_format != "edge":
                     edges_kept = [i for i in range(Q1) if i not in d_tuple]
                     edges_removed = list(d_tuple)
                 return edges_kept, edges_removed
+
     if tree_format == "edge":
         return all_edges, []
     else:

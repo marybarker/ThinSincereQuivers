@@ -1,6 +1,6 @@
 import graph_tools as gt
 import numpy as np
-from itertools import combinations
+from itertools import combinations, chain
 
 edgesFromMatrix = gt.edgesFromMatrix
 matrixFromEdges = gt.matrixFromEdges
@@ -133,21 +133,26 @@ def isClosedUnderArrows(V, Q):
         return gt.isClosedUnderArrows(V, Q.connectivity_matrix)
 
 
+def isProperSubset(A, B):
+    return set(A) < set(B)
+
+
 def isSemistable(SQ, Q):
     # get the vertices in the subquiver
     subquiver_vertices = list(set([x for y in SQ for x in Q.Q1[y]]))
     other_vertices = [x for x in Q.Q0 if x not in subquiver_vertices]
 
     # inherited weights on the subquiver
-    weights = Q.weights[other_vertices]
+    #weights = Q.weight[other_vertices]
+    weights = np.array([Q.weight[x] for x in subquiver_vertices])
 
     # negative weights in Q_0 \ subQ_0
-    minimum_weight = sum(apply(lambda x: x if x <=0 else 0, [0] + weights))
+    minimum_weight = sum(map(lambda x: x if x <=0 else 0, [0] + weights))
 
     subquiver_matrix = (Q[SQ])[subquiver_vertices,:]
 
     for ss in gt.subsetsClosedUnderArrows(subquiver_matrix):
-        if sum(weights[ss]) + minimum_weight < 0:
+        if sum(weights[list(ss)]) + minimum_weight < 0:
             return False
     return True
 
@@ -158,26 +163,77 @@ def isStable(SQ, Q):
     other_vertices = [x for x in Q.Q0 if x not in subquiver_vertices]
 
     # inherited weights on the subquiver
-    weights = Q.weights[other_vertices]
+    weights = np.array([Q.weight[x] for x in subquiver_vertices])
 
     # negative weights in Q_0 \ subQ_0
-    minimum_weight = sum(apply(lambda x: x if x <=0 else 0, [0] + weights))
+    minimum_weight = sum(map(lambda x: x if x <=0 else 0, [0] + weights))
 
     subquiver_matrix = (Q[SQ])[subquiver_vertices,:]
 
     for ss in gt.subsetsClosedUnderArrows(subquiver_matrix):
-        if sum(weights[ss]) + minimum_weight <= 0:
+        if sum(weights[list(ss)]) + minimum_weight <= 0:
             return False
     return True
 
 
-#def isTight(Q):
+def isTight(Q):
+    maximal_unstable_subs = maximalUnstableSubquivers(Q, return_singletons=True)
+
+    num_arrows = Q.connectivity_matrix.shape[1]
+    if num_arrows > 1:
+        return all(apply(lambda x: len(x) != (num_arrows - 1), maximal_unstable_subs["nonsingletons"]))
+    else:
+        return len(maxUnstSubs["singletons"]) < 1
+
 #def makeTight(Q, theta):
 #def maxCodimensionUnstable(Q):
+
 #def maximalNonstableSubquivers(Q):
-#def maximalUnstableSubquivers(Q):
+
+def maximalUnstableSubquivers(Q, return_singletons=False):
+    unstable_nonsingletons = list(unstableSubquivers(Q, "list"))
+
+    with_arrows = []
+    checked = [False for s in unstable_nonsingletons]
+
+    for i, subquiver1 in enumerate(unstable_nonsingletons):
+        is_maximal = True
+        for j, subquiver2 in enumerate(unstable_nonsingletons):
+            if not checked[j] and not checked[i]:
+                if isProperSubset(subquiver1, subquiver2):
+                    is_maximal = False
+                    checked[i] = True
+                    break
+        if is_maximal:
+            with_arrows.append(subquiver1)
+    to_return = {"nonsingletons": with_arrows}
+
+    if return_singletons:
+        if len(with_arrows) < 1:
+            with_arrows = [[]]
+
+        contained_singletons = [x for y in set(chain(*with_arrows)) for x in Q.Q1[y]]
+        unstable_singletons = set([i for i, x in enumerate(Q.weight) if x < 0])
+
+        to_return["singletons"] = list(unstable_singletons.difference(contained_singletons))
+    return to_return
+
+
 #def mergeOnArrow(Q1,a1,Q2,a2):
 #def mergeOnVertex(Q1,v1,Q2,v2):
+
+
+def nonStableSubquivers(Q, output_format="subquiver"):
+    if output_format=="subquiver":
+        for x in subquivers(Q):
+            if not isStable(x, Q):
+                yield Q.subquiver(x)
+    else:
+        for x in subquivers(Q):
+            if not isStable(x, Q):
+                yield x
+
+
 #def potentialWalls(Q, theta)
 #def primitiveArrows(Q):
 #def referenceThetas(CQ):
@@ -212,7 +268,7 @@ def subquivers(Q):
 def theta(M, F=None):
     if F is None:
         F = np.ones(M.shape[1])
-    return np.matmul(M, np.matrix(F).transpose()).transpose().astype("int32").tolist()
+    return np.array(np.matmul(M, np.matrix(F).transpose()).transpose().astype("int32")).ravel()
 
 
 def threeVertexQuiver(a,b,c, flow="default"):
@@ -222,5 +278,15 @@ def threeVertexQuiver(a,b,c, flow="default"):
 
     return ToricQuiver(Es, flow=flow)
 
+
+def unstableSubquivers(Q, output_format="subquiver"):
+    if output_format=="subquiver":
+        for x in subquivers(Q):
+            if not isSemistable(x, Q):
+                yield Q.subquiver(x)
+    else:
+        for x in subquivers(Q):
+            if not isSemistable(x, Q):
+                yield x
 
 #def wallType(W):
