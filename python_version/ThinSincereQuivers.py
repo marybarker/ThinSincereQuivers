@@ -185,10 +185,50 @@ def isTight(Q):
     else:
         return len(maxUnstSubs["singletons"]) < 1
 
-#def makeTight(Q, theta):
-#def maxCodimensionUnstable(Q):
 
-#def maximalNonstableSubquivers(Q):
+#def makeTight(Q, theta):
+
+
+def maxCodimensionUnstable(Q):
+    num_arrows = len(Q.Q1)
+    maximal_unstables = maximalUnstableSubquivers(Q, True)
+    print("looking at ", maximal_unstables)
+
+    if len(maximal_unstables["singletons"]) > 0:
+        return num_arrows
+    else:
+        max_unst_lens = min(map(lambda x: len(x), maximal_unstables["nonsingletons"]))
+        return num_arrows - max_unst_lens
+
+
+def maximalNonstableSubquivers(Q):
+    nonstable_nonsingletons = list(nonstableSubquivers(Q, "list"))
+
+    with_arrows = []
+    checked = [False for s in nonstable_nonsingletons]
+
+    for i, subquiver1 in enumerate(nonstable_nonsingletons):
+        is_maximal = True
+        for j, subquiver2 in enumerate(nonstable_nonsingletons):
+            if not checked[j] and not checked[i]:
+                if isProperSubset(subquiver1, subquiver2):
+                    is_maximal = False
+                    checked[i] = True
+                    break
+        if is_maximal:
+            with_arrows.append(subquiver1)
+    to_return = {"nonsingletons": with_arrows}
+
+    if return_singletons:
+        if len(with_arrows) < 1:
+            with_arrows = [[]]
+
+        contained_singletons = [x for y in set(chain(*with_arrows)) for x in Q.Q1[y]]
+        nonstable_singletons = set([i for i, x in enumerate(Q.weight) if x <= 0])
+
+        to_return["singletons"] = list(nonstable_singletons.difference(contained_singletons))
+    return to_return
+
 
 def maximalUnstableSubquivers(Q, return_singletons=False):
     unstable_nonsingletons = list(unstableSubquivers(Q, "list"))
@@ -223,7 +263,7 @@ def maximalUnstableSubquivers(Q, return_singletons=False):
 #def mergeOnVertex(Q1,v1,Q2,v2):
 
 
-def nonStableSubquivers(Q, output_format="subquiver"):
+def nonstableSubquivers(Q, output_format="subquiver"):
     if output_format=="subquiver":
         for x in subquivers(Q):
             if not isStable(x, Q):
@@ -288,5 +328,6 @@ def unstableSubquivers(Q, output_format="subquiver"):
         for x in subquivers(Q):
             if not isSemistable(x, Q):
                 yield x
+
 
 #def wallType(W):
