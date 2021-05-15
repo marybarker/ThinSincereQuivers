@@ -260,6 +260,8 @@ def maximalUnstableSubquivers(Q, return_singletons=False):
 
 
 #def mergeOnArrow(Q1,a1,Q2,a2):
+
+
 #def mergeOnVertex(Q1,v1,Q2,v2):
 
 
@@ -275,8 +277,19 @@ def nonstableSubquivers(Q, output_format="subquiver"):
 
 
 #def potentialWalls(Q, theta)
-#def primitiveArrows(Q):
+
+
+def primitiveArrows(Q):
+    for i, e in enumerate(Q.Q1):
+        other_edges = [Q.Q1[x] for x in range(len(Q.Q1)) if x != i]
+        (isCycle, cycle) = gt.existsPathTo(e[0], e[1], other_edges, True, True)
+        if not isCycle or len(set(cycle)) < 2:
+            yield e
+
+
 #def referenceThetas(CQ):
+
+
 #def sameChamber(theta1, theta2, CQ):
 
 
