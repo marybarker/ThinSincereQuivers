@@ -158,7 +158,9 @@ def incInverse(Q, theta):
 
 
 def isClosedUnderArrows(V, Q):
-    return np.all(Q.connectivity_matrix[V,:].sum(axis=0) >= 0)
+    if not isinstance(Q, np.matrix):
+        Q = Q.connectivity_matrix
+    return np.all(Q[V,:].sum(axis=0) >= 0)
 
 
 def isSemistable(SQ, Q):
@@ -246,7 +248,22 @@ def spanningTree(Q, tree_format="edge"):
 
 
 #def stableTrees(Q, weight):
-#def subquivers(Q):
+
+def subsetsClosedUnderArrows(mat):
+    current_vertices = range(mat.shape[0])
+    for i in current_vertices[1:]:
+        for c in combinations(current_vertices, i):
+            if isClosedUnderArrows(c, mat):
+                yield c
+    #return [c for i in current_vertices[1:] for c in combinations(current_vertices, i) if isClosedUnderArrows(c, mat)]
+
+
+def subquivers(Q):
+    Q1 = len(Q.Q1)
+    for i in range(1, Q1):
+        for c in combinations(range(Q1), i):
+            yield c
+
 
 def theta(M, F=None):
     if F is None:
@@ -254,5 +271,12 @@ def theta(M, F=None):
     return np.matmul(M, np.matrix(F).transpose()).transpose().astype("int32").tolist()
 
 
-#def threeVertexQuiver(a,b,c):
+def threeVertexQuiver(a,b,c, flow="default"):
+    edges = [[0,1] for i in range(a)] \
+          + [[1,2] for i in range(b)] \
+          + [[0,2] for i in range(c)]
+
+    return ToricQuiver(Es, flow=flow)
+
+
 #def wallType(W):
