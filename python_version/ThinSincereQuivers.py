@@ -101,7 +101,6 @@ def basisForFlowPolytope(Q, spanning_tree=None):
                 k = -(1 + j)
                 fi[edge_list[k]] = -1
         f.append(fi)
-
     return np.matrix([[f[i][j] for i in range(len(removed_edges))] for j in range(Q1)])
 
 
@@ -151,16 +150,15 @@ def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
 
 
 def incInverse(Q, theta):
-    nc = Q.connectivity_matrix.shape[1]
     nonzero_flows = [1 if x != 0 else 0 for x in Q.flow]
+    nc = Q.connectivity_matrix.shape[1]
     a = np.zeros((nc,nc))
     np.fill_diagonal(a, nonzero_flows)
     return np.array((np.linalg.pinv(Q.connectivity_matrix*a)*(np.matrix(theta).transpose()))).ravel()
 
 
 def isClosedUnderArrows(V, Q):
-    Qs = Q.connectivity_matrix[V,:].sum(axis=0)
-    return np.all(Qs >= 0)
+    return np.all(Q.connectivity_matrix[V,:].sum(axis=0) >= 0)
 
 
 def isSemistable(SQ, Q):
@@ -169,22 +167,37 @@ def isSemistable(SQ, Q):
     other_vertices = [x for x in Q.Q0 if x not in subquiver_vertices]
 
     # inherited weights on the subquiver
-    weights = [0] + Q.weights[other_vertices]
+    weights = Q.weights[other_vertices]
 
     # negative weights in Q_0 \ subQ_0
-    minimum_weight = sum(apply(lambda x: x if x <=0 else 0, weights))
+    minimum_weight = sum(apply(lambda x: x if x <=0 else 0, [0] + weights))
 
-    """
-    subMat = (Q.connectivity_matrix[SQ])[subquiver_vertices,:]
+    subquiver_matrix = (Q[SQ])[subquiver_vertices,:]
 
-    sums = asList(
-        for subset in subsetsClosedUnderArrows(subMat) list(
-            sumList(weights_subset)
-    all(sums, x -> x + minWeight >= 0)
-    """
+    for ss in subsetsClosedUnderArrows(subquiver_matrix):
+        if sum(weights[ss]) + minimum_weight < 0:
+            return False
+    return True
 
 
-#def isStable(SQ, Q):
+def isStable(SQ, Q):
+    # get the vertices in the subquiver
+    subquiver_vertices = list(set([x for y in SQ for x in Q.Q1[y]]))
+    other_vertices = [x for x in Q.Q0 if x not in subquiver_vertices]
+
+    # inherited weights on the subquiver
+    weights = Q.weights[other_vertices]
+
+    # negative weights in Q_0 \ subQ_0
+    minimum_weight = sum(apply(lambda x: x if x <=0 else 0, [0] + weights))
+
+    subquiver_matrix = (Q[SQ])[subquiver_vertices,:]
+
+    for ss in subsetsClosedUnderArrows(subquiver_matrix):
+        if sum(weights[ss]) + minimum_weight <= 0:
+            return False
+    return True
+
 #def isTight(Q):
 #def makeTight(Q, theta):
 #def maxCodimensionUnstable(Q):
