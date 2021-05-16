@@ -176,17 +176,81 @@ def isStable(SQ, Q):
     return True
 
 
-def isTight(Q):
+def isTight(Q, flow=None):
+    if flow is not None:
+        Q.flow=flow
+        Q.weight=theta(Q, flow)
     maximal_unstable_subs = maximalUnstableSubquivers(Q, return_singletons=True)
 
     num_arrows = Q.connectivity_matrix.shape[1]
     if num_arrows > 1:
-        return all(apply(lambda x: len(x) != (num_arrows - 1), maximal_unstable_subs["nonsingletons"]))
+        return all(list(map(lambda x: len(x) != (num_arrows - 1), maximal_unstable_subs["nonsingletons"])))
     else:
         return len(maxUnstSubs["singletons"]) < 1
 
 
-#def makeTight(Q, theta):
+def makeTight(Q, theta):
+    print("looking at ", Q, theta)
+    potentialF = list(incInverse(Q, theta))
+    print("f = ", potentialF)
+
+    # this function calls itself recursively until a tight quiver is produced
+    if isTight(Q, potentialF):
+        return ToricQuiver(Q.connectivity_matrix, potentialF);
+    else:
+        if (len(list(stableTrees(Q, theta))) < 1):
+            print("Error: provided weight theta is not in C(Q) and so does not admit a tight toric quiver")
+            return
+
+        # find a maximal unstable subquiver, called R, of codimension 1 (this exists if not tight)
+        dm = np.zeros((len(potentialF), len(potentialF)))
+        np.fill_diagonal(dm, potentialF)
+        Qcm = matrixFromEdges(Q.Q1)*dm
+
+        max_unstable_subs = maximalUnstableSubquivers(ToricQuiver(Q.connectivity_matrix, potentialF), return_singletons=True)
+        R = max_unstable_subs['nonsingletons'][0]
+        Rvertices = [x for y in R for x in Q.Q1[y]]
+        S = []
+
+        # generate a connected subset of R0 that is closed under arrows and has weight sum <= 0
+        if len(R) < 1:
+            # this is for the case of quivers with 1 arrow or similar
+            Rvertices = max_unstable_subs['singletons'][0]
+            S = Rvertices
+        else:
+            success = False;
+            for i in range(1, len(Rvertices)):
+                combs = combinations(Rvertices, len(Rvertices)-i)
+                for c in combs:
+                    if sum([theta[x] for x in c]) <= 0:
+                        if isClosedUnderArrows(c, Q.connectivity_matrix[:,R]):
+                            success = True
+                            S = c
+                            break
+                if success:
+                    break
+
+        # alpha is an arrow in Q1 with head in R and tail in Q\R
+        alpha = [x for x in range(len(Q.Q1)) if x not in R]
+        alpha = alpha[0]
+        a = [min(alpha), max(alpha)]
+        (aMinus, aPlus) = (a[0], a[1])
+
+        # contract the arrow alpha to create a new quiver
+        r1 = range(aMinus)
+        r2 = list(range(aMinus+1,aPlus))+list(range(aPlus+1, len(Q.Q1)))
+
+        p1 = Q.connectivity_matrix[r1,:]
+        p2 = Q.connectivity_matrix[:,a].sum(axis=0).tolist()[0]
+        p3 = Q.connectivity_matrix[r2,:]
+
+        new_matrix = np.concatenate((p1,p2,p3))
+        new_flow = [f for i, f in enumerate(potentialF) if i != alpha]
+
+        new_weight = np.array(np.matmul(new_matrix, np.matrix(potentialF).transpose()).transpose().astype("int32")).ravel()
+        new_q = ToricQuiver(new_matrix)
+
+        return makeTight(new_q, new_weight)
 
 
 def maxCodimensionUnstable(Q):
@@ -325,8 +389,10 @@ def spanningTree(Q, tree_format="edge"):
 
 
 def stableTrees(Q, weight):
-    Qalt = ToricQuiver(Q, flow=incInverse(Q, weight))
-    for s in allSpanningTrees(Q):
+    f = list(incInverse(Q, weight))
+    print("the flow is ")
+    Qalt = ToricQuiver(Q, f)
+    for s in allSpanningTrees(Q, tree_format="vertex"):
         if isStable(s[0], Qalt):
             yield s
 
