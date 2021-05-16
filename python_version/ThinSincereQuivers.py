@@ -276,7 +276,32 @@ def nonstableSubquivers(Q, output_format="subquiver"):
                 yield x
 
 
-#def potentialWalls(Q, theta)
+def potentialWalls(Q, theta):
+    nv_set = Q.Q0
+    num_to_check = int((len(nv_set)+1)/2)
+
+    # create list of possible Qminus
+    qminus = [combinations(nv_set, i) for i in range(1, num_to_check)]
+
+    already_met = set()
+
+    walls = []
+    for Qm1 in qminus:
+        for Qm in Qm1:
+            qms = '_'.join([str(x) for x in Qm])
+            if not qms in already_met:
+                # restrict to only vertices/edgesin Qm
+                qm_edges = np.where(np.absolute(Q.connectivity_matrix[Qm,:]).sum(axis=0) == 2)[1]
+                Qp = list(set(nv_set).difference(set(Qm)))
+                qps = '_'.join([str(x) for x in Qp])
+                already_met = already_met.union({qms,qps})
+
+                if gt.isConnected(Qm, [Q.Q1[x] for x in qm_edges]):
+                    qp_edges = np.where(np.absolute(Q.connectivity_matrix[Qp,:]).sum(axis=0) == 2)[1]
+                
+                    if (len(Qp) < 2) or gt.isConnected(Qp, [Q.Q1[x] for x in qp_edges]):
+                        walls.append([Qp, wallType(Qp, Q)])
+    return walls
 
 
 def primitiveArrows(Q):
@@ -321,6 +346,8 @@ def subquivers(Q):
 
 
 def theta(M, F=None):
+    if not isinstance(M, np.matrix):
+        M = M.connectivity_matrix
     if F is None:
         F = np.ones(M.shape[1])
     return np.array(np.matmul(M, np.matrix(F).transpose()).transpose().astype("int32")).ravel()
@@ -345,4 +372,7 @@ def unstableSubquivers(Q, output_format="subquiver"):
                 yield x
 
 
-#def wallType(W):
+def wallType(Qplus, Q):
+    tplus = np.where(Q.connectivity_matrix[Qplus,:].sum(axis=0) < 0, 1, 0).sum()
+    tminus = np.where(Q.connectivity_matrix[Qplus,:].sum(axis=0) > 0, 1, 0).sum()
+    return (tplus, tminus)
