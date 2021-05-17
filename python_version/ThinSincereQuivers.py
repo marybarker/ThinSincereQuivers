@@ -1,6 +1,7 @@
 import graph_tools as gt
 import numpy as np
 from itertools import combinations, chain
+import cvxpy as cp
 
 edgesFromMatrix = gt.edgesFromMatrix
 matrixFromEdges = gt.matrixFromEdges
@@ -123,7 +124,19 @@ def incInverse(Q, theta):
     nc = Q.connectivity_matrix.shape[1]
     a = np.zeros((nc,nc))
     np.fill_diagonal(a, nonzero_flows)
-    return np.array((np.linalg.pinv(Q.connectivity_matrix*a)*(np.matrix(theta).transpose()))).ravel()
+    #return np.array((np.linalg.pinv(Q.connectivity_matrix*a)*(np.matrix(theta).transpose()))).ravel()
+    #return np.array(np.linalg.lstsq(Q.connectivity_matrix*a, np.matrix(theta).transpose())[0]).ravel()
+    #x = cp.Int(nc)
+    x = cp.Variable(nc, integer=True)
+
+    a = Q.connectivity_matrix*a
+    # set up the L2-norm minimization problem
+    prob = cp.Problem(cp.Minimize(cp.norm(a @ x - theta, 2)))
+    #prob = cp.Problem(obj)
+    # solve the problem using an appropriate solver
+    sol = prob.solve(solver = 'ECOS_BB')
+    return np.array(x.value, dtype='int32').ravel()
+
 
 
 def isClosedUnderArrows(V, Q):
@@ -193,6 +206,7 @@ def makeTight(Q, theta):
     print("looking at ", Q, theta)
     potentialF = list(incInverse(Q, theta))
     print("f = ", potentialF)
+    print(Q.connectivity_matrix*np.matrix(potentialF).transpose())
 
     # this function calls itself recursively until a tight quiver is produced
     if isTight(Q, potentialF):
