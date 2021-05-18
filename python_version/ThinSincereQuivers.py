@@ -42,6 +42,9 @@ class ToricQuiver():
         f = [f if i in arrows else 0 for i, f in enumerate(self.flow)]
         return ToricQuiver(self.connectivity_matrix, flow=f)
 
+    def slice(self, arrows):
+        return ToricQuiver(self.connectivity_matrix[:,arrows])
+
 
 def allSpanningTrees(Q, tree_format="edge"):
     return gt.allSpanningTrees(Q.connectivity_matrix, tree_format=tree_format)
@@ -181,7 +184,7 @@ def isStable(SQ, Q):
     # negative weights in Q_0 \ subQ_0
     minimum_weight = sum(map(lambda x: x if x <=0 else 0, [0] + weights))
 
-    subquiver_matrix = (Q[SQ])[subquiver_vertices,:]
+    subquiver_matrix = (Q.connectivity_matrix[subquiver_vertices,:])[:,SQ]
 
     for ss in gt.subsetsClosedUnderArrows(subquiver_matrix):
         if sum(weights[list(ss)]) + minimum_weight <= 0:
@@ -202,17 +205,20 @@ def isTight(Q, flow=None):
         return len(maxUnstSubs["singletons"]) < 1
 
 
-def makeTight(Q, theta):
-    print("looking at ", Q, theta)
-    potentialF = list(incInverse(Q, theta))
-    print("f = ", potentialF)
-    print(Q.connectivity_matrix*np.matrix(potentialF).transpose())
+def makeTight(Q, th):
+    if len(th) == len(Q.Q1): # if passing in a flow instead of weights
+        potentialF = th
+        th = theta(Q, potentialF)
+    else:
+        potentialF = list(incInverse(Q, th))
+
+    print("the stable trees are: ", list(stableTrees(Q, th)))
 
     # this function calls itself recursively until a tight quiver is produced
     if isTight(Q, potentialF):
         return ToricQuiver(Q.connectivity_matrix, potentialF);
     else:
-        if (len(list(stableTrees(Q, theta))) < 1):
+        if (len(list(stableTrees(Q, th))) < 1):
             print("Error: provided weight theta is not in C(Q) and so does not admit a tight toric quiver")
             return
 
@@ -236,7 +242,7 @@ def makeTight(Q, theta):
             for i in range(1, len(Rvertices)):
                 combs = combinations(Rvertices, len(Rvertices)-i)
                 for c in combs:
-                    if sum([theta[x] for x in c]) <= 0:
+                    if sum([th[x] for x in c]) <= 0:
                         if isClosedUnderArrows(c, Q.connectivity_matrix[:,R]):
                             success = True
                             S = c
@@ -247,16 +253,17 @@ def makeTight(Q, theta):
         # alpha is an arrow in Q1 with head in R and tail in Q\R
         alpha = [x for x in range(len(Q.Q1)) if x not in R]
         alpha = alpha[0]
-        a = [min(alpha), max(alpha)]
-        (aMinus, aPlus) = (a[0], a[1])
+        (aMinus, aPlus) = sorted(Q.Q1[alpha])
 
         # contract the arrow alpha to create a new quiver
         r1 = range(aMinus)
-        r2 = list(range(aMinus+1,aPlus))+list(range(aPlus+1, len(Q.Q1)))
+        r2 = list(range(aMinus+1,aPlus))+list(range(aPlus+1, len(Q.Q0)))
+        print(r2)
 
         p1 = Q.connectivity_matrix[r1,:]
-        p2 = Q.connectivity_matrix[:,a].sum(axis=0).tolist()[0]
+        p2 = Q.connectivity_matrix[Q.Q1[alpha],:].sum(axis=0).tolist()
         p3 = Q.connectivity_matrix[r2,:]
+        print("Ps are ", p1,p2,p3)
 
         new_matrix = np.concatenate((p1,p2,p3))
         new_flow = [f for i, f in enumerate(potentialF) if i != alpha]
@@ -270,7 +277,6 @@ def makeTight(Q, theta):
 def maxCodimensionUnstable(Q):
     num_arrows = len(Q.Q1)
     maximal_unstables = maximalUnstableSubquivers(Q, True)
-    print("looking at ", maximal_unstables)
 
     if len(maximal_unstables["singletons"]) > 0:
         return num_arrows
@@ -403,11 +409,9 @@ def spanningTree(Q, tree_format="edge"):
 
 
 def stableTrees(Q, weight):
-    f = list(incInverse(Q, weight))
-    print("the flow is ")
-    Qalt = ToricQuiver(Q, f)
     for s in allSpanningTrees(Q, tree_format="vertex"):
-        if isStable(s[0], Qalt):
+        print(incInverse(Q.slice(s[0]), weight), " and this is ", s[0])
+        if all(incInverse(Q.slice(s[0]), weight) >= 0):
             yield s
 
 
@@ -444,11 +448,11 @@ def threeVertexQuiver(a,b,c, flow="default"):
 def unstableSubquivers(Q, output_format="subquiver"):
     if output_format=="subquiver":
         for x in subquivers(Q):
-            if not isSemistable(x, Q):
+            if not isStable(x, Q):
                 yield Q.subquiver(x)
     else:
         for x in subquivers(Q):
-            if not isSemistable(x, Q):
+            if not isStable(x, Q):
                 yield x
 
 
