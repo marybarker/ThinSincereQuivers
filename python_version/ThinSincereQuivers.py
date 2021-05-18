@@ -257,19 +257,19 @@ def makeTight(Q, th):
 
         # contract the arrow alpha to create a new quiver
         r1 = range(aMinus)
-        r2 = list(range(aMinus+1,aPlus))+list(range(aPlus+1, len(Q.Q0)))
-        print(r2)
-
+        r2 = list(range(aMinus+1,len(Q.Q0)))
+        r2.remove(aPlus)
         p1 = Q.connectivity_matrix[r1,:]
         p2 = Q.connectivity_matrix[Q.Q1[alpha],:].sum(axis=0).tolist()
         p3 = Q.connectivity_matrix[r2,:]
-        print("Ps are ", p1,p2,p3)
 
         new_matrix = np.concatenate((p1,p2,p3))
         new_flow = [f for i, f in enumerate(potentialF) if i != alpha]
+        nonempty_edges = np.where(np.absolute(new_matrix).sum(axis=0) > 0)[0]
+        new_matrix = new_matrix
 
         new_weight = np.array(np.matmul(new_matrix, np.matrix(potentialF).transpose()).transpose().astype("int32")).ravel()
-        new_q = ToricQuiver(new_matrix)
+        new_q = ToricQuiver(new_matrix[:,nonempty_edges])
 
         return makeTight(new_q, new_weight)
 
