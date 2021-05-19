@@ -1704,14 +1704,23 @@ multidoc ///
                 }@
 
             Example
+                -- create a toric quiver from matrix
                 Q = toricQuiver matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}})
+                -- create a toric quiver from matrix with specified flow
                 Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), {3, 1, 0, 5})
+                -- create a toric quiver from a list of edges
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
+                -- create a toric quiver from a list of edges and a flow
                 Q = toricQuiver ({{0,1},{0,1},{0,2},{0,2}}, {1,2,3,4})
+                -- create a toric quiver from a matrix with keyword flow
                 Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), Flow=>"Canonical")
+                -- create a toric quiver from a matrix with random flow
                 Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
+                -- create a toric quiver copied from another one
                 R = toricQuiver(Q)
+                -- create a toric quiver copied from another, but with alternative flow
                 R = toricQuiver(Q, {1,2,3,4})
+        SeeAlso
         SeeAlso
             "bipartiteQuiver"
 
@@ -1839,8 +1848,11 @@ multidoc ///
                 is the fully connected bipartite graph with 
                 {\tt N} source vertices and {\tt M} sink vertices.
             Example
+                -- create a bipartite quiver with 2 sources and 3 sinks
                 Q = bipartiteQuiver (2, 3)
+                -- create a bipartite quiver with 2 sources and 3 sinks and a random flow
                 Q = bipartiteQuiver (2, 3, Flow=>"Random")
+                -- create a bipartite quiver with 2 sources and 3 sinks and a specified flow
                 Q = bipartiteQuiver (2, 3, Flow=>{1, 2, 1, 3, 1, 4})
     Node
         Key
@@ -1860,8 +1872,11 @@ multidoc ///
             Q: ToricQuiver
         Description
             Example
+                -- create a chain quiver with 3 vertices and 6 edges
                 Q = chainQuiver {1,2,3}
+                -- create a chain quiver with 3 vertices and 6 edges and a random flow
                 Q = chainQuiver ({1,2,3}, Flow=>"Random")
+                -- create a chain quiver with 3 vertices and 6 edges and a specified flow
                 Q = chainQuiver ({1,2,3}, Flow=>{1, 2, 1, 3, 1, 4})
     Node
         Key
@@ -1881,8 +1896,11 @@ multidoc ///
             Q: ToricQuiver
         Description
             Example
+                -- create a quiver with 3 vertices and 6 edges
                 Q = threeVertexQuiver {1,2,3}
+                -- create a quiver with 3 vertices and 6 edges and a random flow
                 Q = threeVertexQuiver ({1,2,3}, Flow=>"Random")
+                -- create a quiver with 3 vertices and 6 edges and a specified flow
                 Q = threeVertexQuiver ({1,2,3}, Flow=>{1, 2, 1, 3, 1, 4})
     Node
         Key
