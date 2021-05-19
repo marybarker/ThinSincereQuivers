@@ -52,11 +52,7 @@ export {
     "Axis",
     "EdgesAdded",
     "Flow",
-    "MatrixType",
-    "MaxSum",
-    "MinSum",
     "Oriented",
-    "Output",
     "RavelLoops",
     "Replacement",
     "ReturnSingletons",
@@ -68,8 +64,8 @@ export {
 -----------------------------------------------------------
 -- PACKAGE GLOBALS: special variable names, types, and constants
 -----------------------------------------------------------
-protect IncidenceMatrix
 protect flow
+protect IncidenceMatrix
 protect NonSingletons
 protect Q0
 protect Q1
@@ -1137,10 +1133,8 @@ asList = x -> (
 -- take all possible combinations of length k from list l -- 
 -- optional arguments: 
 -- -- Replacement(true/false) = with replacement
--- -- MinSum(numeric value) = exclude all combinations with sum below MinSum
--- -- MaxSum(numeric value) = exclude all combinations with sum above MaxSum
 -- -- Order(true/false) = whether or not the ordering of combination values matters
-combinations = {Replacement=>true, MinSum=>-1000, MaxSum=>-1000, Order=>true} >> opts -> (k, l) -> (
+combinations = {Replacement=>true, Order=>true} >> opts -> (k, l) -> (
     combs := {};
     combs1 := {};
     combs2 := {};
@@ -1160,14 +1154,6 @@ combinations = {Replacement=>true, MinSum=>-1000, MaxSum=>-1000, Order=>true} >>
         );
     )
     else combs1 = for i in l list(asList(i));
-
-    -- if we are using restricting either by a minimum or maximum sum -- 
-    if opts.MinSum != -1000 then (
-       combs1 = for i in combs1 list(if sumList(i) < opts.MinSum then (continue;) else (i));
-    );
-    if opts.MaxSum != -1000 then (
-       combs1 = for i in combs1 list(if sumList(i) > opts.MaxSum then (continue;) else (i));
-    );
 
     if opts.Order != true then (
         combs = unique(
@@ -2539,5 +2525,102 @@ multidoc ///
                 and ending in {\tt Qplus}. 
             Example
                 wallType({0,2,3}, bipartiteQuiver(2, 3))
+-- documentation for symbols
+    Node
+        Key
+            AsSubquiver
+        Description
+            Text
+                option for subquiver representation. Applying
+                {\tt AsSubquiver = true} insures that the matrix representation 
+                of the subquiver is the same size as the matrix original quiver. 
+                If false, then the subquiver is returned as a standalone quiver 
+                represented by only the vertices and arrows comprising the subquiver. 
+    Node
+        Key
+            Axis
+        Description
+            Text
+                When summing a two dimensional list, the axis command can be either {\tt Row} 
+                or {\tt Col}. 
+    Node
+        Key
+            EdgesAdded
+        Description
+            Text
+                optional variable-length list of edges that track the path being stored in a cycle
+    Node
+        Key
+            Flow
+        Description
+            Text
+                optional argument that can be either a list of integer values assigned to each 
+                edge in the quiver, or else a string with values {\tt Canonical}, which assigns 
+                a value of 1 to each edge, or {\tt Random}, which assigns random integer values. 
+    Node
+        Key
+            Oriented
+        Description
+            Text
+                optional argument whether to respect orientation of edges, or to consider the 
+                (undirected) underlying grph of a given quiver.
+    Node
+        Key
+            RavelLoops
+        Description
+            Text
+                Loops (i.e. edges whose head and tail are a single vertex {\tt v}) can be represented by an 
+                edge of the form {\tt (v,v)} or else of the form {\tt (v)}. Setting to true returns all 
+                edges with the form {\tt (v1,v2)} where {\tt v1} and {\tt v2} may be identical. (This insures that 
+                all edges have length 2)
+    Node
+        Key
+            Replacement
+        Description
+            Text
+                optional argument when specifying combinations. Combinations with {\tt Replacement => true} 
+                allows items to be replaced. 
+    Node
+        Key
+            ReturnSingletons
+        Description
+            Text
+                optional argument to consider single vertices as subquivers. For most computations, 
+                these subquivers are trivial, and are ignored. 
+    Node
+        Key
+            SavePath
+        Description
+            Text
+                optional argument when finding paths between vertices in a given graph. 
+                {\tt SavePath=>true} insures that the function returns the path, if it exists. 
+///
+TEST ///
+	Q = bipartiteQuiver(2, 3);
+	assert isTight Q
+	assert (theta Q === {-3,-3,2,2,2})
+	assert (flowPolytope Q == {{-1, 1}, {-1, 0}, {1, -1}, {0, -1}, {1, 0}, {0, 1}})
+	assert (entries basisForFlowPolytope Q === {{-1, 0}, {0, -1}, {1, 1}, {1, 0}, {0, 1}, {-1, -1}})
+	th = {-5,-1,2,2,2};
+	F = incInverse(th, Q)
+	assert not isTight(F, Q)
+	assert isAcyclic makeTight(th, Q);
+	assert (makeTight(th, Q) == toricQuiver({{1,0},{1,0},{1,0}}, {-1,1,1}))
+	assert not isSemistable({1,2}, Q)
+	assert isStable({1,2,3,4}, Q)
+	assert (stableTrees(th,Q) === {{0, 1, 2, 5}, {0, 1, 2, 4}, {0, 1, 2, 3}})
+	Q = bipartiteQuiver(2, 2)
+	assert (subquivers(Q, Format=>"list") === {{0}, {1}, {2}, {3}, {0, 1}, {0, 2}, {1, 2}, {0, 3}, {1, 3}, {2, 3}, {0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}})
+	assert (allSpanningTrees Q == {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}})
+	assert not isClosedUnderArrows({1, 2}, Q)
+	munsbs = maximalUnstableSubquivers(Q, ReturnSingletons=>true)
+	vals = flatten for key in keys(munsbs) list(munsbs#key)
+	assert (vals ===  {{0}, {1}, {0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}})
+	P = chainQuiver {2,2}
+	Q = chainQuiver {1,2,3}
+	assert (mergeOnVertex(P,2,Q,0) == chainQuiver {2,2,1,2,3})
+	assert (mergeOnArrow(P,3,Q,0) == chainQuiver {2,2,2,3})
+	Q = toricQuiver {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}}
+	assert (primitiveArrows Q === {0,3,5})
 ///
 end--
