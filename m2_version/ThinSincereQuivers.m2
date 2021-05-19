@@ -1721,7 +1721,6 @@ multidoc ///
                 -- create a toric quiver copied from another, but with alternative flow
                 R = toricQuiver(Q, {1,2,3,4})
         SeeAlso
-        SeeAlso
             "bipartiteQuiver"
 
     Node
