@@ -245,5 +245,3 @@ def subsetsClosedUnderArrows(mat):
             if isClosedUnderArrows(c, mat):
                 yield c
     #return [c for i in current_vertices[1:] for c in combinations(current_vertices, i) if isClosedUnderArrows(c, mat)]
-
-

@@ -193,10 +193,9 @@ def isStable(SQ, Q):
 
 
 def isTight(Q, flow=None):
-    if flow is not None:
-        Q.flow=flow
-        Q.weight=theta(Q, flow)
-    maximal_unstable_subs = maximalUnstableSubquivers(Q, return_singletons=True)
+    if flow is None:
+        flow=Q.flow
+    maximal_unstable_subs = maximalUnstableSubquivers(ToricQuiver(Q.connectivity_matrix, flow), return_singletons=True)
 
     num_arrows = Q.connectivity_matrix.shape[1]
     if num_arrows > 1:
@@ -265,13 +264,15 @@ def makeTight(Q, th):
 
         new_matrix = np.concatenate((p1,p2,p3))
         new_flow = [f for i, f in enumerate(potentialF) if i != alpha]
-        nonempty_edges = np.where(np.absolute(new_matrix).sum(axis=0) > 0)[0]
-        new_matrix = new_matrix
+        nonempty_edges = np.where(np.absolute(new_matrix).sum(axis=0) > 0)[1]
+        print("the nonempty edges are ", nonempty_edges, new_matrix)
 
         new_weight = np.array(np.matmul(new_matrix, np.matrix(potentialF).transpose()).transpose().astype("int32")).ravel()
         new_q = ToricQuiver(new_matrix[:,nonempty_edges])
+        print("contracted arrow %d with vertices %d and %d to get "%(alpha, aMinus, aPlus), new_q, new_flow)
+        print(isTight(new_q, new_flow))
 
-        return makeTight(new_q, new_weight)
+        return makeTight(new_q, new_flow)
 
 
 def maxCodimensionUnstable(Q):
@@ -410,7 +411,6 @@ def spanningTree(Q, tree_format="edge"):
 
 def stableTrees(Q, weight):
     for s in allSpanningTrees(Q, tree_format="vertex"):
-        print(incInverse(Q.slice(s[0]), weight), " and this is ", s[0])
         if all(incInverse(Q.slice(s[0]), weight) >= 0):
             yield s
 
