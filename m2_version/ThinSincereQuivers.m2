@@ -1722,7 +1722,6 @@ multidoc ///
                 R = toricQuiver(Q, {1,2,3,4})
         SeeAlso
             "bipartiteQuiver"
-
     Node
         Key
             "toric quiver representation"
