@@ -49,14 +49,8 @@ export {
     "wallType",
 -- Options
     "AsSubquiver",
-    "Axis",
-    "EdgesAdded",
     "Flow",
-    "Oriented",
-    "RavelLoops",
-    "Replacement",
     "ReturnSingletons",
-    "SavePath",
 -- Quiver objects 
     "ToricQuiver",
     "toricQuiver"
@@ -64,12 +58,18 @@ export {
 -----------------------------------------------------------
 -- PACKAGE GLOBALS: special variable names, types, and constants
 -----------------------------------------------------------
+protect Axis
+protect EdgesAdded
 protect flow
 protect IncidenceMatrix
 protect NonSingletons
+protect Oriented
 protect Q0
 protect Q1
 protect Qplus
+protect RavelLoops
+protect Replacement
+protect SavePath
 protect Singletons
 protect WallType
 protect weights
@@ -2552,50 +2552,25 @@ multidoc ///
                 of the subquiver is the same size as the matrix original quiver. 
                 If false, then the subquiver is returned as a standalone quiver 
                 represented by only the vertices and arrows comprising the subquiver. 
-    Node
-        Key
-            Axis
-        Description
-            Text
-                When summing a two dimensional list, the axis command can be either {\tt Row} 
-                or {\tt Col}. 
-    Node
-        Key
-            EdgesAdded
-        Description
-            Text
-                optional variable-length list of edges that track the path being stored in a cycle
+            Example
+                subquivers(bipartiteQuiver(2, 2), Format=>"quiver", AsSubquiver=>true)
+                subquivers(bipartiteQuiver(2, 2), Format=>"quiver", AsSubquiver=>false)
+        SeeAlso
+            subquivers
     Node
         Key
             Flow
         Description
             Text
-                optional argument that can be either a list of integer values assigned to each 
-                edge in the quiver, or else a string with values {\tt Canonical}, which assigns 
+                optional argument that can be a string with values {\tt Canonical}, which assigns 
                 a value of 1 to each edge, or {\tt Random}, which assigns random integer values. 
-    Node
-        Key
-            Oriented
-        Description
-            Text
-                optional argument whether to respect orientation of edges, or to consider the 
-                (undirected) underlying grph of a given quiver.
-    Node
-        Key
-            RavelLoops
-        Description
-            Text
-                Loops (i.e. edges whose head and tail are a single vertex {\tt v}) can be represented by an 
-                edge of the form {\tt (v,v)} or else of the form {\tt (v)}. Setting to true returns all 
-                edges with the form {\tt (v1,v2)} where {\tt v1} and {\tt v2} may be identical. (This insures that 
-                all edges have length 2)
-    Node
-        Key
-            Replacement
-        Description
-            Text
-                optional argument when specifying combinations. Combinations with {\tt Replacement => true} 
-                allows items to be replaced. 
+            Example
+                -- create a toric quiver from a matrix with keyword flow
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), Flow=>"Canonical")
+                -- create a toric quiver from a matrix with random flow
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
+        SeeAlso
+            toricQuiver
     Node
         Key
             ReturnSingletons
@@ -2603,13 +2578,12 @@ multidoc ///
             Text
                 optional argument to consider single vertices as subquivers. For most computations, 
                 these subquivers are trivial, and are ignored. 
-    Node
-        Key
-            SavePath
-        Description
-            Text
-                optional argument when finding paths between vertices in a given graph. 
-                {\tt SavePath=>true} insures that the function returns the path, if it exists. 
+            Example
+                maximalNonstableSubquivers(bipartiteQuiver (2, 3), ReturnSingletons=>true)
+                maximalNonstableSubquivers(bipartiteQuiver (2, 3), ReturnSingletons=>false)
+        SeeAlso
+            maximalNonstableSubquivers
+            maximalUnstableSubquivers
 ///
 TEST ///
 	Q = bipartiteQuiver(2, 3);
