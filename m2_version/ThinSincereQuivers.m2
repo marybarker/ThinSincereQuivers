@@ -416,35 +416,38 @@ flowPolytope(List, ToricQuiver) := opts -> (th, Q) -> (
             incInverse(th, Q^x)
         ) else (continue;)
     );
-
-    -- simplified basis option reduces the dimension to what is strictly necessary.
-    -- Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
-    -- since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
-    if instance(opts.Format, String) and (toString(opts.Format) != "SimplifiedBasis") then (
-        regularFlows
+    if #regularFlows < 1 then (
+        {}
     ) else (
-
-        -- first generate a basis (ether user-specified or generated from first spanning tree)
-        fpb := {};
-        if instance(opts.Format, List) then ( -- if Format is a spanning tree
-            fpb = basisForFlowPolytope(opts.Format, toricQuiver(Q, incInverse(th, Q)));
-        ) else ( -- if Format is the string "SimplifiedBasis" 
-            fpb = basisForFlowPolytope(toricQuiver(Q, incInverse(th, Q)));
-        );
-
-        -- translate regularFlows to contain origin by subtracting of first of them from all
-        kerF := flatten for f in regularFlows list(
-            ff := f - regularFlows#0;
-            entries transpose solve(fpb, matrix(for fff in ff list ({round fff})))
-        );
-
-        -- translate interior point to origin(if interior lattice point exists)
-        ip := interiorLatticePoints convexHull transpose matrix kerF;
-        if #ip > 0 then (
-            ip = first entries transpose first ip;
-            for e in kerF list(e - ip)
+        -- simplified basis option reduces the dimension to what is strictly necessary.
+        -- Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
+        -- since the polytope has dimension |Q1|-|Q0|+1 <= |Q1|
+        if instance(opts.Format, String) and (toString(opts.Format) != "SimplifiedBasis") then (
+            regularFlows
         ) else (
-            kerF
+
+            -- first generate a basis (ether user-specified or generated from first spanning tree)
+            fpb := {};
+            if instance(opts.Format, List) then ( -- if Format is a spanning tree
+                fpb = basisForFlowPolytope(opts.Format, toricQuiver(Q, incInverse(th, Q)));
+            ) else ( -- if Format is the string "SimplifiedBasis" 
+                fpb = basisForFlowPolytope(toricQuiver(Q, incInverse(th, Q)));
+            );
+
+            -- translate regularFlows to contain origin by subtracting of first of them from all
+            kerF := flatten for f in regularFlows list(
+                ff := f - regularFlows#0;
+                entries transpose solve(fpb, matrix(for fff in ff list ({round fff})))
+            );
+
+            -- translate interior point to origin(if interior lattice point exists)
+            ip := interiorLatticePoints convexHull transpose matrix kerF;
+            if #ip > 0 then (
+                ip = first entries transpose first ip;
+                for e in kerF list(e - ip)
+            ) else (
+                kerF
+            )
         )
     )
 )
