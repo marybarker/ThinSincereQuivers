@@ -1761,7 +1761,9 @@ multidoc ///
                 The two methods corresponding to these ideas are referenced in the examples below. 
             Example
                 Q = bipartiteQuiver(2, 3)
+                -- show the subquiver consisting of arross 0, 1 and 3, by removing all of the others
                 Q_{0,1,3}
+                -- show the subquiver consisting of arross 0, 1 and 3, by setting flow to 0 on all other arrows 
                 Q^{0,1,3}
         SeeAlso
             (symbol ^, ToricQuiver, List)
