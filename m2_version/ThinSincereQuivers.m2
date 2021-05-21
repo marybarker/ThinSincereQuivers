@@ -1624,9 +1624,6 @@ multidoc ///
                 @UL {
                     {TO "toric quiver representation"},
                     {TO "subquiver representation"},
-                    -- {TO "toricQuiver"},
-                    -- {TO "flowPolytope"},
-                    -- {TO "dualFlowPolytope"},
                 }@
     Node
         Key
@@ -1747,6 +1744,25 @@ multidoc ///
             Example
                 Q0 = {{0,2},{0,3},{0,4},{1,2},{1,3},{1,4}}
                 Q = toricQuiver(Q0, Flow=>"Random")
+            Text
+                Alternatively, one can construct a toric quiver using any of the following constructions
+            Example
+                -- create a toric quiver from matrix
+                Q = toricQuiver matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}})
+                -- create a toric quiver from matrix with specified flow
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), {3, 1, 0, 5})
+                -- create a toric quiver from a list of edges
+                Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
+                -- create a toric quiver from a list of edges and a flow
+                Q = toricQuiver ({{0,1},{0,1},{0,2},{0,2}}, {1,2,3,4})
+                -- create a toric quiver from a matrix with keyword flow
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), Flow=>"Canonical")
+                -- create a toric quiver from a matrix with random flow
+                Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
+                -- create a toric quiver copied from another one
+                R = toricQuiver(Q)
+                -- create a toric quiver copied from another, but with alternative flow
+                R = toricQuiver(Q, {1,2,3,4})
     Node
         Key
             "subquiver representation"
