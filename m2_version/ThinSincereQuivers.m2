@@ -1745,23 +1745,38 @@ multidoc ///
                 Q0 = {{0,2},{0,3},{0,4},{1,2},{1,3},{1,4}}
                 Q = toricQuiver(Q0, Flow=>"Random")
             Text
-                Alternatively, one can construct a toric quiver using any of the following constructions
+                Alternatively, one can construct a toric quiver using any of the following constructions:
+            Text
+                create a toric quiver from matrix
             Example
-                -- create a toric quiver from matrix
                 Q = toricQuiver matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}})
-                -- create a toric quiver from matrix with specified flow
+            Text
+                create a toric quiver from matrix with specified flow
+            Example
                 Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), {3, 1, 0, 5})
-                -- create a toric quiver from a list of edges
+            Text
+                create a toric quiver from a list of edges
+            Example
                 Q = toricQuiver {{0,1},{0,1},{0,2},{0,2}}
-                -- create a toric quiver from a list of edges and a flow
+            Text
+                create a toric quiver from a list of edges and a flow
+            Example
                 Q = toricQuiver ({{0,1},{0,1},{0,2},{0,2}}, {1,2,3,4})
-                -- create a toric quiver from a matrix with keyword flow
+            Text
+                create a toric quiver from a matrix with keyword flow
+            Example
                 Q = toricQuiver(matrix({{-1,-1,-1,-1},{1,1,0,0},{0,0,1,1}}), Flow=>"Canonical")
-                -- create a toric quiver from a matrix with random flow
+            Text
+                create a toric quiver from a matrix with random flow
+            Example
                 Q = toricQuiver(matrix({{-1,-1,-1,-1},{0,0,1,1},{1,1,0,0}}), Flow=>"Random")
-                -- create a toric quiver copied from another one
+            Text
+                create a toric quiver copied from another one
+            Example
                 R = toricQuiver(Q)
-                -- create a toric quiver copied from another, but with alternative flow
+            Text
+                create a toric quiver copied from another, but with alternative flow
+            Example
                 R = toricQuiver(Q, {1,2,3,4})
     Node
         Key
