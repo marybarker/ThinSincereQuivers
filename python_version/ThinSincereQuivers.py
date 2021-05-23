@@ -127,16 +127,12 @@ def incInverse(Q, theta):
     nc = Q.connectivity_matrix.shape[1]
     a = np.zeros((nc,nc))
     np.fill_diagonal(a, nonzero_flows)
-    #return np.array((np.linalg.pinv(Q.connectivity_matrix*a)*(np.matrix(theta).transpose()))).ravel()
-    #return np.array(np.linalg.lstsq(Q.connectivity_matrix*a, np.matrix(theta).transpose())[0]).ravel()
-    #x = cp.Int(nc)
-    x = cp.Variable(nc, integer=True)
-
     a = Q.connectivity_matrix*a
+    #return np.array((np.linalg.pinv(a)*(np.matrix(theta).transpose()))).ravel()
+    #return np.array(np.linalg.lstsq(a, np.matrix(theta).transpose())[0]).ravel()
+    x = cp.Variable(nc, integer=True)
     # set up the L2-norm minimization problem
     prob = cp.Problem(cp.Minimize(cp.norm(a @ x - theta, 2)))
-    #prob = cp.Problem(obj)
-    # solve the problem using an appropriate solver
     sol = prob.solve(solver = 'ECOS_BB')
     return np.array(x.value, dtype='int32').ravel()
 
@@ -196,6 +192,7 @@ def isTight(Q, flow=None):
     if flow is None:
         flow=Q.flow
     maximal_unstable_subs = maximalUnstableSubquivers(ToricQuiver(Q.connectivity_matrix, flow), return_singletons=True)
+    print("the maximal unstable subquivers are ", maximal_unstable_subs)
 
     num_arrows = Q.connectivity_matrix.shape[1]
     if num_arrows > 1:
@@ -211,7 +208,7 @@ def makeTight(Q, th):
     else:
         potentialF = list(incInverse(Q, th))
 
-    print("the stable trees are: ", list(stableTrees(Q, th)))
+    print("the stable trees are: ", list(stableTrees(Q, th)), isTight(Q, potentialF))
 
     # this function calls itself recursively until a tight quiver is produced
     if isTight(Q, potentialF):
@@ -293,15 +290,13 @@ def maximalNonstableSubquivers(Q):
     checked = [False for s in nonstable_nonsingletons]
 
     for i, subquiver1 in enumerate(nonstable_nonsingletons):
-        is_maximal = True
         for j, subquiver2 in enumerate(nonstable_nonsingletons):
             if not checked[j] and not checked[i]:
                 if isProperSubset(subquiver1, subquiver2):
-                    is_maximal = False
                     checked[i] = True
                     break
-        if is_maximal:
-            with_arrows.append(subquiver1)
+    indices = list(filter(lambda x: not checked[x], range(len(checked))))
+    with_arrows = [unstable_nonsingletons[y] for y in indices]
     to_return = {"nonsingletons": with_arrows}
 
     if return_singletons:
@@ -317,27 +312,24 @@ def maximalNonstableSubquivers(Q):
 
 def maximalUnstableSubquivers(Q, return_singletons=False):
     unstable_nonsingletons = list(unstableSubquivers(Q, "list"))
-
-    with_arrows = []
     checked = [False for s in unstable_nonsingletons]
 
     for i, subquiver1 in enumerate(unstable_nonsingletons):
-        is_maximal = True
         for j, subquiver2 in enumerate(unstable_nonsingletons):
-            if not checked[j] and not checked[i]:
+            if not (checked[j] or checked[i] or i == j):
                 if isProperSubset(subquiver1, subquiver2):
-                    is_maximal = False
                     checked[i] = True
                     break
-        if is_maximal:
-            with_arrows.append(subquiver1)
-    to_return = {"nonsingletons": with_arrows}
+
+    indices = list(filter(lambda x: not checked[x], range(len(checked))))
+    edges = [unstable_nonsingletons[y] for y in indices]
+    to_return = {"nonsingletons": edges}
 
     if return_singletons:
-        if len(with_arrows) < 1:
-            with_arrows = [[]]
+        if len(edges) < 1:
+            edges = [[]]
 
-        contained_singletons = [x for y in set(chain(*with_arrows)) for x in Q.Q1[y]]
+        contained_singletons = [x for y in set(chain(*edges)) for x in Q.Q1[y]]
         unstable_singletons = set([i for i, x in enumerate(Q.weight) if x < 0])
 
         to_return["singletons"] = list(unstable_singletons.difference(contained_singletons))
@@ -411,7 +403,9 @@ def spanningTree(Q, tree_format="edge"):
 
 def stableTrees(Q, weight):
     for s in allSpanningTrees(Q, tree_format="vertex"):
-        if all(incInverse(Q.slice(s[0]), weight) >= 0):
+        ii = incInverse(Q.slice(s[0]), weight)
+        print('stable tree: ', s, ii)
+        if all(incInverse(Q.slice(s[0]), weight) > 0):
             yield s
 
 
