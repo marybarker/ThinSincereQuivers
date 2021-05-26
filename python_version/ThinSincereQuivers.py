@@ -442,11 +442,11 @@ def threeVertexQuiver(a,b,c, flow="default"):
 def unstableSubquivers(Q, output_format="subquiver"):
     if output_format=="subquiver":
         for x in subquivers(Q):
-            if not isStable(x, Q):
+            if not isSemistable(x, Q):
                 yield Q.subquiver(x)
     else:
         for x in subquivers(Q):
-            if not isStable(x, Q):
+            if not isSemistable(x, Q):
                 yield x
 
 
