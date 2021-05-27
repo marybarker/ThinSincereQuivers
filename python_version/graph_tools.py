@@ -1,4 +1,5 @@
 import numpy as np
+import cvxpy as cp
 from itertools import combinations
 
 
@@ -149,6 +150,26 @@ def findCycleDFS(start_v, visited, E):
         if ret_val:
             return True
     return ret_val
+
+
+def identicalLists(list1, list2):
+    if len(list1) != len(list2):
+        return False
+    else:
+        return np.all([list1[x] == list2[x] for x in range(len(list1))])
+
+
+def intSolve(A, b, nonneg=False):
+    nc = A.shape[1]
+    x = cp.Variable(nc, integer=True)
+    # set up the L2-norm minimization problem
+    if nonneg:
+        prob = cp.Problem(cp.Minimize(cp.norm(A @ x - b, 2)), [x >= 0])
+    else:
+        prob = cp.Problem(cp.Minimize(cp.norm(A @ x - b, 2)))
+
+    sol = prob.solve(solver = 'ECOS_BB')
+    return np.array(x.value, dtype='int32').ravel()
 
 
 

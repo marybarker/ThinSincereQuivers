@@ -1,7 +1,6 @@
 import graph_tools as gt
 import numpy as np
 from itertools import combinations, chain
-import cvxpy as cp
 
 edgesFromMatrix = gt.edgesFromMatrix
 matrixFromEdges = gt.matrixFromEdges
@@ -100,8 +99,9 @@ def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
     all_trees = allSpanningTrees(Q, tree_format="vertex")
     regular_flows = []
     for t in all_trees:
-        f = np.round(np.array(incInverse(Q.subquiver(t[0]), weight)))
-        if all(f >= -0):
+        f = incInverse(Q.subquiver(t[0]), weight)
+        f = incInverse(Q.subquiver(t[0]), weight, False)
+        if all(f >= 0):
             regular_flows.append(f)
 
     # simplified basis option reduces the dimension to what is strictly necessary.
@@ -122,19 +122,14 @@ def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
         return np.array(np.round(fpb*kerF), dtype='int32')
 
 
-def incInverse(Q, theta):
+def incInverse(Q, theta, nonneg=True):
     nonzero_flows = [1 if x != 0 else 0 for x in Q.flow]
     nc = Q.connectivity_matrix.shape[1]
     a = np.zeros((nc,nc))
     np.fill_diagonal(a, nonzero_flows)
     a = Q.connectivity_matrix*a
-    #return np.array((np.linalg.pinv(a)*(np.matrix(theta).transpose()))).ravel()
-    #return np.array(np.linalg.lstsq(a, np.matrix(theta).transpose())[0]).ravel()
-    x = cp.Variable(nc, integer=True)
-    # set up the L2-norm minimization problem
-    prob = cp.Problem(cp.Minimize(cp.norm(a @ x - theta, 2)), [x >= 0])
-    sol = prob.solve(solver = 'ECOS_BB')
-    return np.array(x.value, dtype='int32').ravel()
+
+    return gt.intSolve(a, theta, nonneg=nonneg)
 
 
 
@@ -155,7 +150,6 @@ def isSemistable(SQ, Q):
     other_vertices = [x for x in Q.Q0 if x not in subquiver_vertices]
 
     # inherited weights on the subquiver
-    #weights = Q.weight[other_vertices]
     weights = np.array([Q.weight[x] for x in subquiver_vertices])
 
     # negative weights in Q_0 \ subQ_0
@@ -389,7 +383,29 @@ def primitiveArrows(Q):
 #def referenceThetas(CQ):
 
 
-#def sameChamber(theta1, theta2, CQ):
+def sameChamber(theta1, theta2, CQ):
+    """
+    this function checks if the weights theta1 and theta2 
+    belong to the same chamber in the wall chamber decomposition for Q
+    """
+    trees_theta1 = stableTrees(Q, theta1)
+    trees_theta2 = stableTrees(Q, theta2)
+    if len(trees_theta1) < 1:
+        if len(trees_theta2) < 1:
+            return "cannot be determined. stableTrees are empty"
+        else:
+            return False
+    elif len(trees_theta2) < 1:
+         return False
+    elif gt.identicalLists(trees_theta1, trees_theta2):
+        return true
+    else:
+        p1 = flowPolytope(Q, weight=theta1)
+        p2 = flowPolytope(Q, weight=theta2)
+        if p1 == p2:
+            return True
+        else:
+            return "cannot be determined"
 
 
 def spanningTree(Q, tree_format="edge"):
@@ -448,3 +464,4 @@ def wallType(Qplus, Q):
     tplus = np.where(Q.connectivity_matrix[Qplus,:].sum(axis=0) < 0, 1, 0).sum()
     tminus = np.where(Q.connectivity_matrix[Qplus,:].sum(axis=0) > 0, 1, 0).sum()
     return (tplus, tminus)
+
