@@ -85,7 +85,11 @@ def chainQuiver(l, flow="default"):
 
 
 def coneIntersection(a, b):
-    return np.matrix((a[:, None] == b).all(-1).any(1))
+    return np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1))
+
+
+def intersectionDim(a, b):
+    return np.linalg.matrix_rank(np.matrix((a[:, None] == b).all(-1).any(1)))
     #nr, nc = a.shape
     #dtype={'names':['f{}'.format(i) for i in range(nc)],
     #       'formats':nc * [a.dtype]}
@@ -108,8 +112,8 @@ def coneSystem(Q):
         aij = [j \
             for i, tci in enumerate(tree_chambers) \
             for j in range(i+1, len(tree_chambers)) \
-            if np.linalg.matrix_rank(coneIntersection(np.array(tree_chambers[i]), 
-                                                      np.array(tree_chambers[j]))) >= cone_dim \
+            if intersectionDim(tree_chambers[i], 
+                               tree_chambers[j]) >= cone_dim \
         ]
 
         # now add each cone CT to the list of admissable subcones 
@@ -130,7 +134,7 @@ def coneSystem(Q):
                 for j in aij[i].tolist():
                     tree_j = tree_chambers[j]
                     tree_ij = coneIntersection(tree_i, tree_j)
-                    if np.linalg.matrix_rank(tree_ij >= cone_dim):
+                    if np.linalg.matrix_rank(tree_ij) >= cone_dim:
                         all_empty = False
                         added_to.add(tree_ij)
                         current_list.append((tree_ij, j))
@@ -141,14 +145,13 @@ def coneSystem(Q):
                subsets = subsets + list(zip(*last_list))[0]
 
         for si in subsets:
-            containsSomething = False
+            contains_something = False
             for sj in subsets:
-                if si != sj and coneIntersection(si, sj).shape[0] > sj.shape[0]:
-                    containsSomething = True
+                if si != sj and coneIntersection(si, sj).shape[0] >= sj.shape[0]:
+                    contains_something = True
                     break
-            if not containsSomething:
+            if not contains_something:
                 yield si
-
 
 
 def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
