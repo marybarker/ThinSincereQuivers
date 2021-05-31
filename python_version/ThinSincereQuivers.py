@@ -84,28 +84,6 @@ def chainQuiver(l, flow="default"):
     return ToricQuiver([[i, i+1] for i, li in enumerate(l) for j in range(li)], flow=flow)
 
 
-def coneIntersection(a, b):
-    #print("intersecting: ", a, b)
-    #print("intersection is:",  np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
-    return np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1))
-
-
-def intersectionDim(a, b):
-    #return np.linalg.matrix_rank(np.matrix((a[:, None] == b).all(-1).any(1)))
-    #print("dim: intersecting: ", a, b)
-    #print("dim: intersection is:",  np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
-    return np.linalg.matrix_rank(np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
-    #nr, nc = a.shape
-    #dtype={'names':['f{}'.format(i) for i in range(nc)],
-    #       'formats':nc * [a.dtype]}
-    #c = np.intersect1d(a.view(dtype), b.view(dtype))
-    #return c.view(a.dtype).reshape(-1, nc)
-def matDiff(a, b):
-    if a.shape != b.shape:
-        return True
-    return np.all(a != b)
-
-
 def coneSystem(Q):
     spanning_trees = allSpanningTrees(Q, tree_format="vertex")
     qcmt = Q.connectivity_matrix.transpose()
@@ -121,7 +99,7 @@ def coneSystem(Q):
         aij = [j \
             for i, tci in enumerate(tree_chambers) \
             for j in range(i+1, len(tree_chambers)) \
-            if intersectionDim(tree_chambers[i], 
+            if gt.intersectionDim(tree_chambers[i], 
                                tree_chambers[j]) >= cone_dim \
         ]
         # now add each cone CT to the list of admissable subcones 
@@ -140,10 +118,9 @@ def coneSystem(Q):
                 current_list = []
                 for list_entry in last_list:
                     tree_i, i = list_entry
-                    print("current tree: ", aij)
                     for j in aij[i].tolist():
                         tree_j = tree_chambers[j]
-                        tree_ij = coneIntersection(tree_i, tree_j)
+                        tree_ij = gt.coneIntersection(tree_i, tree_j)
                         if np.linalg.matrix_rank(tree_ij) >= cone_dim:
                             all_empty = False
                             added_to.add(str(tree_ij))
@@ -157,7 +134,7 @@ def coneSystem(Q):
         for si in subsets:
             contains_something = False
             for sj in subsets:
-                if matDiff(si, sj) and coneIntersection(si, sj).shape[0] >= sj.shape[0]:
+                if gt.matDiff(si, sj) and gt.coneIntersection(si, sj).shape[0] >= sj.shape[0]:
                     contains_something = True
                     break
             if not contains_something:

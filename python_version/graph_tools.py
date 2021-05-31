@@ -37,8 +37,15 @@ def allSpanningTrees(M, tree_format="edge"):
             return [range(Q1),[]]
 
 
+
+def coneIntersection(a, b):
+    return np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1))
+
+
+
 def edgesFromMatrix(mat):
     return [[r.index(-1), r.index(1)] for r in np.matrix(mat).transpose().tolist()]
+
 
 
 def edgesOutOf(p, edge_list, oriented=False):
@@ -55,18 +62,6 @@ def edgesOutOf(p, edge_list, oriented=False):
     if oriented:
         return [(i, e) for i, e in enumerate(edge_list) if p == e[0]]
     return [(i, e) for i, e in enumerate(edge_list) if p in e]
-
-def isAcyclic(mat):
-    edges = edgesFromMatrix(mat)
-    verts = range(mat.shape[0])
-
-    for first_v in verts:
-        visited = [0 if x != first_v else 1 for x in verts]
-        result = findCycleDFS(first_v, visited, edges)
-        if result:
-            return False
-    return True
-
 
 # check if there exists a cycle in a (possibly unconnected)
 # oriented graph, passed in matrix form. 
@@ -159,6 +154,18 @@ def identicalLists(list1, list2):
         return np.all([list1[x] == list2[x] for x in range(len(list1))])
 
 
+def intersectionDim(a, b):
+    #return np.linalg.matrix_rank(np.matrix((a[:, None] == b).all(-1).any(1)))
+    #print("dim: intersecting: ", a, b)
+    #print("dim: intersection is:",  np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
+    return np.linalg.matrix_rank(np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
+    #nr, nc = a.shape
+    #dtype={'names':['f{}'.format(i) for i in range(nc)],
+    #       'formats':nc * [a.dtype]}
+    #c = np.intersect1d(a.view(dtype), b.view(dtype))
+    #return c.view(a.dtype).reshape(-1, nc)
+
+
 def intSolve(A, b, nonneg=False):
     nc = A.shape[1]
     x = cp.Variable(nc, integer=True)
@@ -171,6 +178,18 @@ def intSolve(A, b, nonneg=False):
     sol = prob.solve(solver = 'ECOS_BB')
     return np.array(x.value, dtype='int32').ravel()
 
+
+
+def isAcyclic(mat):
+    edges = edgesFromMatrix(mat)
+    verts = range(mat.shape[0])
+
+    for first_v in verts:
+        visited = [0 if x != first_v else 1 for x in verts]
+        result = findCycleDFS(first_v, visited, edges)
+        if result:
+            return False
+    return True
 
 
 def isClosedUnderArrows(V, Q):
@@ -186,6 +205,13 @@ def isConnected(node_list, edge_list):
             disconnected = True
             break
     return not disconnected
+
+
+
+def matDiff(a, b):
+    if a.shape != b.shape:
+        return True
+    return np.all(a != b)
 
 
 
