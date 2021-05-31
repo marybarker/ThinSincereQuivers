@@ -85,29 +85,38 @@ def chainQuiver(l, flow="default"):
 
 
 def coneIntersection(a, b):
+    #print("intersecting: ", a, b)
+    #print("intersection is:",  np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
     return np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1))
 
 
 def intersectionDim(a, b):
-    return np.linalg.matrix_rank(np.matrix((a[:, None] == b).all(-1).any(1)))
+    #return np.linalg.matrix_rank(np.matrix((a[:, None] == b).all(-1).any(1)))
+    #print("dim: intersecting: ", a, b)
+    #print("dim: intersection is:",  np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
+    return np.linalg.matrix_rank(np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
     #nr, nc = a.shape
     #dtype={'names':['f{}'.format(i) for i in range(nc)],
     #       'formats':nc * [a.dtype]}
     #c = np.intersect1d(a.view(dtype), b.view(dtype))
     #return c.view(a.dtype).reshape(-1, nc)
+def matDiff(a, b):
+    if a.shape != b.shape:
+        return True
+    return np.all(a != b)
 
 
 def coneSystem(Q):
-    spanning_trees = allSpanningTrees(Q)
+    spanning_trees = allSpanningTrees(Q, tree_format="vertex")
     qcmt = Q.connectivity_matrix.transpose()
 
-    Q_dim = qcmt.shape[0] - qcm.shape[1] + 1
-    cone_dim = qcm.shape[1] - 1
+    Q_dim = qcmt.shape[0] - qcmt.shape[1] + 1
+    cone_dim = qcmt.shape[1] - 1
 
     # create list of cones CT for each tree T
-    tree_chambers = unique(apply(lambda st: qcmt[st,:], spanning_trees))
+    tree_chambers = list(map(lambda st: qcmt[st[0],:], spanning_trees))
 
-    if len(tree_chambers) > 1 then (
+    if len(tree_chambers) > 1:
         # find all pairs of cones with full-dimensional interesection
         aij = [j \
             for i, tci in enumerate(tree_chambers) \
@@ -115,39 +124,40 @@ def coneSystem(Q):
             if intersectionDim(tree_chambers[i], 
                                tree_chambers[j]) >= cone_dim \
         ]
-
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
-        added_to = set(tree_chambers) # keep track of cones that have already been added
+        added_to = set([str(t) for t in tree_chambers]) # keep track of cones that have already been added
         last_list = [(tc, tci) for tci, tc in enumerate(tree_chambers)]
         subsets = list(tree_chambers)
 
-        # generate all possible intersections of cones
-        for ctr in range(len(spanning_trees)):
-            # stopping condition: if all intersections tried in the latest loop iteration are up lower-dim
-            all_empty = True 
+        if len(aij) > 1:
+            # generate all possible intersections of cones
+            for ctr in range(len(spanning_trees)):
+                # stopping condition: if all intersections tried in the latest loop iteration are up lower-dim
+                all_empty = True 
 
-            # create a list of intersecting pairs from intersecting treeChamber elements with lastList elements
-            current_list = []
-            for list_entry in last_list:
-                tree_i, i = list_entry
-                for j in aij[i].tolist():
-                    tree_j = tree_chambers[j]
-                    tree_ij = coneIntersection(tree_i, tree_j)
-                    if np.linalg.matrix_rank(tree_ij) >= cone_dim:
-                        all_empty = False
-                        added_to.add(tree_ij)
-                        current_list.append((tree_ij, j))
-            if all_empty:
-               break
-            else:
-               last_list = list(currentList)
-               subsets = subsets + list(zip(*last_list))[0]
+                # create a list of intersecting pairs from intersecting treeChamber elements with lastList elements
+                current_list = []
+                for list_entry in last_list:
+                    tree_i, i = list_entry
+                    print("current tree: ", aij)
+                    for j in aij[i].tolist():
+                        tree_j = tree_chambers[j]
+                        tree_ij = coneIntersection(tree_i, tree_j)
+                        if np.linalg.matrix_rank(tree_ij) >= cone_dim:
+                            all_empty = False
+                            added_to.add(str(tree_ij))
+                            current_list.append((tree_ij, j))
+                if all_empty:
+                   break
+                else:
+                   last_list = list(currentList)
+                   subsets = subsets + list(zip(*last_list))[0]
 
         for si in subsets:
             contains_something = False
             for sj in subsets:
-                if si != sj and coneIntersection(si, sj).shape[0] >= sj.shape[0]:
+                if matDiff(si, sj) and coneIntersection(si, sj).shape[0] >= sj.shape[0]:
                     contains_something = True
                     break
             if not contains_something:
