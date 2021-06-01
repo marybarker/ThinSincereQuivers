@@ -131,14 +131,19 @@ def coneSystem(Q):
                    last_list = list(currentList)
                    subsets = subsets + list(zip(*last_list))[0]
 
+        to_keep = []
+        added_to = set()
         for si in subsets:
-            contains_something = False
-            for sj in subsets:
-                if gt.matDiff(si, sj) and gt.coneIntersection(si, sj).shape[0] >= sj.shape[0]:
-                    contains_something = True
-                    break
-            if not contains_something:
-                yield si
+            if str(si) not in added_to:
+                contains_something = False
+                for sj in subsets:
+                    if gt.matDiff(si, sj) and gt.coneIntersection(si, sj).shape[0] >= sj.shape[0]:
+                        contains_something = True
+                        break
+                if not contains_something:
+                    to_keep.append(si)
+                    added_to.add(str(si))
+        return to_keep
 
 
 def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
