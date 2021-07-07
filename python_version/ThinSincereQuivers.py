@@ -10,43 +10,43 @@ class ToricQuiver():
     def __init__(self, graph_obj, flow="default"):
         if isinstance(graph_obj, list): # if graph input is a list of edges
             self.Q1 = graph_obj
-            self.connectivity_matrix = matrixFromEdges(graph_obj)
+            self.incidence_matrix = matrixFromEdges(graph_obj)
         elif isinstance(graph_obj, np.matrix): # if graph input is an incidence matrix
-            self.connectivity_matrix = graph_obj
+            self.incidence_matrix = graph_obj
             self.Q1 = edgesFromMatrix(graph_obj)
         else:#isinstance(graph_obj, ToricQuiver):
-            self.connectivity_matrix = graph_obj.connectivity_matrix
+            self.incidence_matrix = graph_obj.incidence_matrix
             self.Q1 = graph_obj.Q1
             
-        self.Q0 = range(self.connectivity_matrix.shape[0])
+        self.Q0 = range(self.incidence_matrix.shape[0])
         if flow == "default":
             self.flow = list(np.ones(len(self.Q1), dtype="int32"))
         elif isinstance(flow, list) and len(flow) == len(self.Q1):
             self.flow = flow
         else:
             return "Error in init: provided flow is not compatible with edges"
-        self.weight = theta(self.connectivity_matrix, self.flow)
+        self.weight = theta(self.incidence_matrix, self.flow)
         
 
     def __repr__(self):
         return "toric quiver:\nincidence matrix: " \
-               +repr(self.connectivity_matrix)+"\nedges: " \
+               +repr(self.incidence_matrix)+"\nedges: " \
                +repr(self.Q1)+"\nflow: "+repr(self.flow) \
                +"\nweight: "+repr(self.weight)
 
     def __getitem__(self, i):
-        return self.connectivity_matrix[:,i]
+        return self.incidence_matrix[:,i]
 
     def subquiver(self, arrows):
         f = [f if i in arrows else 0 for i, f in enumerate(self.flow)]
-        return ToricQuiver(self.connectivity_matrix, flow=f)
+        return ToricQuiver(self.incidence_matrix, flow=f)
 
     def slice(self, arrows):
-        return ToricQuiver(self.connectivity_matrix[:,arrows])
+        return ToricQuiver(self.incidence_matrix[:,arrows])
 
 
 def allSpanningTrees(Q, tree_format="edge"):
-    return gt.allSpanningTrees(Q.connectivity_matrix, tree_format=tree_format)
+    return gt.allSpanningTrees(Q.incidence_matrix, tree_format=tree_format)
 
 
 def basisForFlowPolytope(Q, spanning_tree=None):
@@ -86,7 +86,7 @@ def chainQuiver(l, flow="default"):
 
 def coneSystem(Q):
     spanning_trees = allSpanningTrees(Q, tree_format="vertex")
-    qcmt = Q.connectivity_matrix.transpose()
+    qcmt = Q.incidence_matrix.transpose()
 
     Q_dim = qcmt.shape[0] - qcmt.shape[1] + 1
     cone_dim = qcmt.shape[1] - 1
@@ -183,10 +183,10 @@ def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
 
 def incInverse(Q, theta, nonneg=True):
     nonzero_flows = [1 if x != 0 else 0 for x in Q.flow]
-    nc = Q.connectivity_matrix.shape[1]
+    nc = Q.incidence_matrix.shape[1]
     a = np.zeros((nc,nc))
     np.fill_diagonal(a, nonzero_flows)
-    a = Q.connectivity_matrix*a
+    a = Q.incidence_matrix*a
 
     return gt.intSolve(a, theta, nonneg=nonneg)
 
@@ -196,7 +196,7 @@ def isClosedUnderArrows(V, Q):
     if isinstance(Q, np.matrix):
         return gt.isClosedUnderArrows(V, Q)
     else:
-        return gt.isClosedUnderArrows(V, Q.connectivity_matrix)
+        return gt.isClosedUnderArrows(V, Q.incidence_matrix)
 
 
 def isProperSubset(A, B):
@@ -233,7 +233,7 @@ def isStable(SQ, Q):
     # negative weights in Q_0 \ subQ_0
     minimum_weight = sum(map(lambda x: x if x <=0 else 0, [0] + weights))
 
-    subquiver_matrix = (Q.connectivity_matrix[subquiver_vertices,:])[:,SQ]
+    subquiver_matrix = (Q.incidence_matrix[subquiver_vertices,:])[:,SQ]
 
     for ss in gt.subsetsClosedUnderArrows(subquiver_matrix):
         if sum(weights[list(ss)]) + minimum_weight <= 0:
@@ -244,9 +244,9 @@ def isStable(SQ, Q):
 def isTight(Q, flow=None):
     if flow is None:
         flow=Q.flow
-    maximal_unstable_subs = maximalUnstableSubquivers(ToricQuiver(Q.connectivity_matrix, flow), return_singletons=True)
+    maximal_unstable_subs = maximalUnstableSubquivers(ToricQuiver(Q.incidence_matrix, flow), return_singletons=True)
 
-    num_arrows = Q.connectivity_matrix.shape[1]
+    num_arrows = Q.incidence_matrix.shape[1]
     if num_arrows > 1:
         return all(list(map(lambda x: len(x) != (num_arrows - 1), maximal_unstable_subs["nonsingletons"])))
     else:
@@ -263,7 +263,7 @@ def makeTight(Q, th):
 
     # this function calls itself recursively until a tight quiver is produced
     if isTight(Q, potentialF):
-        return ToricQuiver(Q.connectivity_matrix, potentialF);
+        return ToricQuiver(Q.incidence_matrix, potentialF);
     else:
         if (len(list(stableTrees(Q, th))) < 1):
             print("Error: provided weight theta is not in C(Q) and so does not admit a tight toric quiver")
@@ -274,7 +274,7 @@ def makeTight(Q, th):
         np.fill_diagonal(dm, potentialF)
         Qcm = matrixFromEdges(Q.Q1)*dm
 
-        max_unstable_subs = maximalUnstableSubquivers(ToricQuiver(Q.connectivity_matrix, potentialF), return_singletons=True)
+        max_unstable_subs = maximalUnstableSubquivers(ToricQuiver(Q.incidence_matrix, potentialF), return_singletons=True)
         R = max_unstable_subs['nonsingletons'][0]
         Rvertices = [x for y in R for x in Q.Q1[y]]
         S = []
@@ -290,7 +290,7 @@ def makeTight(Q, th):
                 combs = combinations(Rvertices, len(Rvertices)-i)
                 for c in combs:
                     if sum([th[x] for x in c]) <= 0:
-                        if isClosedUnderArrows(c, Q.connectivity_matrix[:,R]):
+                        if isClosedUnderArrows(c, Q.incidence_matrix[:,R]):
                             success = True
                             S = c
                             break
@@ -306,9 +306,9 @@ def makeTight(Q, th):
         r1 = range(aMinus)
         r2 = list(range(aMinus+1,len(Q.Q0)))
         r2.remove(aPlus)
-        p1 = Q.connectivity_matrix[r1,:]
-        p2 = Q.connectivity_matrix[Q.Q1[alpha],:].sum(axis=0).tolist()
-        p3 = Q.connectivity_matrix[r2,:]
+        p1 = Q.incidence_matrix[r1,:]
+        p2 = Q.incidence_matrix[Q.Q1[alpha],:].sum(axis=0).tolist()
+        p3 = Q.incidence_matrix[r2,:]
 
         new_matrix = np.concatenate((p1,p2,p3))
         new_flow = [f for i, f in enumerate(potentialF) if i != alpha]
@@ -385,8 +385,8 @@ def maximalUnstableSubquivers(Q, return_singletons=False):
 
 
 def mergeOnArrow(Q1, a1, Q2, a2):
-    A1 = Q1.connectivity_matrix
-    A2 = Q2.connectivity_matrix
+    A1 = Q1.incidence_matrix
+    A2 = Q2.incidence_matrix
 
     # shape of output matrix
     nrow = A1.shape[0] + A2.shape[0] - 2
@@ -411,8 +411,8 @@ def mergeOnArrow(Q1, a1, Q2, a2):
 
 
 def mergeOnVertex(Q1, v1, Q2, v2):
-    A1 = Q1.connectivity_matrix
-    A2 = Q2.connectivity_matrix
+    A1 = Q1.incidence_matrix
+    A2 = Q2.incidence_matrix
 
     # shape of output matrix
     nrow = A1.shape[0] + A2.shape[0] - 1
@@ -457,13 +457,13 @@ def potentialWalls(Q, theta):
             qms = '_'.join([str(x) for x in Qm])
             if not qms in already_met:
                 # restrict to only vertices/edgesin Qm
-                qm_edges = np.where(np.absolute(Q.connectivity_matrix[Qm,:]).sum(axis=0) == 2)[1]
+                qm_edges = np.where(np.absolute(Q.incidence_matrix[Qm,:]).sum(axis=0) == 2)[1]
                 Qp = list(set(nv_set).difference(set(Qm)))
                 qps = '_'.join([str(x) for x in Qp])
                 already_met = already_met.union({qms,qps})
 
                 if gt.isConnected(Qm, [Q.Q1[x] for x in qm_edges]):
-                    qp_edges = np.where(np.absolute(Q.connectivity_matrix[Qp,:]).sum(axis=0) == 2)[1]
+                    qp_edges = np.where(np.absolute(Q.incidence_matrix[Qp,:]).sum(axis=0) == 2)[1]
                 
                     if (len(Qp) < 2) or gt.isConnected(Qp, [Q.Q1[x] for x in qp_edges]):
                         walls.append([Qp, wallType(Qp, Q)])
@@ -480,7 +480,18 @@ def primitiveArrows(Q):
     return edges
 
 
-#def referenceThetas(CQ):
+def referenceThetas(CQ):
+    """
+    input: CQ is a list of matrices m, where the columns of m correspond to vertices 
+            defining the cone corresponding to that sub-chamber
+    output: list of interior lattice points, one for each chamber
+    
+    """
+    rts = []
+    for rays in CQ:
+        avg = np.array(rays.sum(axis=1)).reshape(-1)
+        rts.append(avg/np.gcd.reduce(avg))
+    return rts
 
 
 def sameChamber(theta1, theta2, CQ):
@@ -509,7 +520,7 @@ def sameChamber(theta1, theta2, CQ):
 
 
 def spanningTree(Q, tree_format="edge"):
-    return gt.spanningTree(Q.connectivity_matrix, tree_format=tree_format)
+    return gt.spanningTree(Q.incidence_matrix, tree_format=tree_format)
 
 
 def stableTrees(Q, weight):
@@ -523,7 +534,7 @@ def subsetsClosedUnderArrows(Q):
     if isinstance(Q, np.matrix):
         return gt.subsetsClosedUnderArrows(Q)
     else:
-        return gt.subsetsClosedUnderArrows(Q.connectivity_matrix)
+        return gt.subsetsClosedUnderArrows(Q.incidence_matrix)
 
 
 def subquivers(Q):
@@ -535,7 +546,7 @@ def subquivers(Q):
 
 def theta(M, F=None):
     if not isinstance(M, np.matrix):
-        M = M.connectivity_matrix
+        M = M.incidence_matrix
     if F is None:
         F = np.ones(M.shape[1])
     return np.array(np.matmul(M, np.matrix(F).transpose()).transpose().astype("int32")).ravel()
@@ -561,7 +572,7 @@ def unstableSubquivers(Q, output_format="subquiver"):
 
 
 def wallType(Qplus, Q):
-    tplus = np.where(Q.connectivity_matrix[Qplus,:].sum(axis=0) < 0, 1, 0).sum()
-    tminus = np.where(Q.connectivity_matrix[Qplus,:].sum(axis=0) > 0, 1, 0).sum()
+    tplus = np.where(Q.incidence_matrix[Qplus,:].sum(axis=0) < 0, 1, 0).sum()
+    tminus = np.where(Q.incidence_matrix[Qplus,:].sum(axis=0) > 0, 1, 0).sum()
     return (tplus, tminus)
 

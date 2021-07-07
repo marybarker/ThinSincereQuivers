@@ -27,7 +27,7 @@ print("\n")
 print(tsq.flowPolytope(Q1))
 print("\n")
 
-print([x for x in tsq.subsetsClosedUnderArrows(Q1.connectivity_matrix)])
+print([x for x in tsq.subsetsClosedUnderArrows(Q1.incidence_matrix)])
 
 print(tsq.maximalUnstableSubquivers(Q1, True))
 
