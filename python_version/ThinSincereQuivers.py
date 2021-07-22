@@ -158,7 +158,6 @@ def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
     all_trees = allSpanningTrees(Q, tree_format="vertex")
     regular_flows = []
     for t in all_trees:
-        f = incInverse(Q.subquiver(t[0]), weight)
         f = incInverse(Q.subquiver(t[0]), weight, False)
         if all(f >= 0):
             regular_flows.append(f)
@@ -557,7 +556,7 @@ def threeVertexQuiver(a,b,c, flow="default"):
           + [[1,2] for i in range(b)] \
           + [[0,2] for i in range(c)]
 
-    return ToricQuiver(Es, flow=flow)
+    return ToricQuiver(edges, flow=flow)
 
 
 def unstableSubquivers(Q, output_format="subquiver"):
