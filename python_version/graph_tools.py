@@ -53,21 +53,22 @@ def coneIntersection(a, b):
     aDim = np.linalg.matrix_rank(a)
     bDim = np.linalg.matrix_rank(b)
 
-    aP = a.transpose().tolist()
-    bP = b.transpose().tolist()
-    aPoints = (a*aB).transpose().tolist()+[[0 for x in range(aDim)]]
-    bPoints = (b*bB).transpose().tolist()+[[0 for x in range(bDim)]]
+    aPoints = a.transpose().tolist()
+    bPoints = b.transpose().tolist()
+    aP = (a*aB).transpose().tolist()+[[0 for x in range(aDim)]]
+    bP = (b*bB).transpose().tolist()+[[0 for x in range(bDim)]]
 
-    aC = ConvexHull(aPoints)
-    bC = ConvexHull(bPoints)
+    aC = ConvexHull(aP)
+    bC = ConvexHull(bP)
 
     aH = aC.equations
-    aV = aC.vertices[:-2]
+    aV = aC.vertices
     bH = bC.equations
-    bV = bC.vertices[:-2]
+    bV = bC.vertices
+
     # first find the points in a that are 'contained' in b
-    aP = [i for i in aV if isInside(aP[i], bH)]
-    bP = [i for i in bV if isInside(bP[i], aH)]
+    aP = [i for i in aV if isInside(aPoints[i], bH)]
+    bP = [i for i in bV if isInside(bPoints[i], aH)]
 
 
 
