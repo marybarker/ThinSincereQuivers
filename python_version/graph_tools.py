@@ -1,6 +1,7 @@
 import numpy as np
 import cvxpy as cp
 from itertools import combinations
+from pyhull.convex_hull import ConvexHull
 
 
 def allSpanningTrees(M, tree_format="edge"):
@@ -39,7 +40,36 @@ def allSpanningTrees(M, tree_format="edge"):
 
 
 def coneIntersection(a, b):
-    return np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1))
+    shared_rays = np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1))
+    print("in coneIntersection, the shared rays so far: ")
+    print((shared_rays,"--",a,"--",b))
+
+    # put a and b in lower dimensions first 
+    aBasis = scipy.linalg.orth(a)
+    bBasis = scipy.linalg.orth(b)
+    aB = aBasis.transpose()*scipy.linalg.inv(aBasis.transpose()*a)
+    bB = bBasis.transpose()*scipy.linalg.inv(bBasis.transpose()*b)
+
+    aDim = np.linalg.matrix_rank(a)
+    bDim = np.linalg.matrix_rank(b)
+
+    aPoints = a.transpose().tolist()
+    bPoints = b.transpose().tolist()
+    aP = (a*aB).transpose().tolist()+[[0 for x in range(aDim)]]
+    bP = (b*bB).transpose().tolist()+[[0 for x in range(bDim)]]
+
+    aC = ConvexHull(aP)
+    bC = ConvexHull(bP)
+
+    aH = aC.equations
+    aV = aC.vertices
+    bH = bC.equations
+    bV = bC.vertices
+
+    # first find the points in a that are 'contained' in b
+    aP = [i for i in aV if isInside(aPoints[i], bH)]
+    bP = [i for i in bV if isInside(bPoints[i], aH)]
+
 
 
 
