@@ -441,7 +441,7 @@ def nonstableSubquivers(Q, output_format="subquiver"):
                 yield x
 
 
-def potentialWalls(Q, theta):
+def potentialWalls(Q):
     nv_set = Q.Q0
     num_to_check = int((len(nv_set)+1)/2)
 
