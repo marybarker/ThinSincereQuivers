@@ -1,6 +1,7 @@
 import graph_tools as gt
 import numpy as np
 from itertools import combinations, chain
+from scipy.spatial import ConvexHull
 
 edgesFromMatrix = gt.edgesFromMatrix
 matrixFromEdges = gt.matrixFromEdges
@@ -43,6 +44,34 @@ class ToricQuiver():
 
     def slice(self, arrows):
         return ToricQuiver(self.incidence_matrix[:,arrows])
+
+
+class Cone():
+    def __init__(self, listOfVertices=[]):
+        if len(listOfVertices) > 0:
+            self.dim = len(listOfVertices[0])
+            self.hull = ConvexHull(listOfVertices)
+            self.interior_point = (np.matrix(listOfVertices)/len(list_of_vertices)).sum(axis=0).tolist()[0]
+            self.vertices = set([tuple(x) for x in listOfVertices])
+        else:
+            self.dim = 0
+            self.hull = []
+            self.interior_point = None
+            self.vertices = {}
+
+    def intersection(self, otherCone):
+        if self.dim != otherCone.dim:
+            return Cone()
+
+        selfEqs = self.hull.equations
+        otherEqs = otherCone.hull.equations
+        eqs = [x for x in selfEqs if x not in otherEqs] + list(otherEqs)
+        interior_point = [0.5*(self.interior_point[i] + otherCone.interior_point[i]) for i in range(self.dim)]
+        hsi = HalfSpaceIntersection(eqs, interior_point)
+        return Cone(hsi.intersections)
+
+    def __str__(self):
+        return ", ".join([str(x) for x in self.vertices])
 
 
 def allSpanningTrees(Q, tree_format="edge"):
@@ -95,18 +124,28 @@ def coneSystem(Q):
     tree_chambers = list(map(lambda st: qcmt[st[0],:], spanning_trees))
 
     if len(tree_chambers) > 1:
+        # find Vertices in C(Q) that define the subchambers
+        V = set([tuple(r) for mat in tree_chambers for r in mat.transpose().tolist()])
+        V = [np.array(v) for v in V]
+        A = gt.findLowerDimSpace(V)
+
+        # graham schmidt and find_lower_dim_space both transform the 
+        # coneSystem to something that contains the origin. 
+        coneBase = [[np.amin(A)-1 for x in range(len(Vprime[0]))]]
+        lower_dim_trees = [Cone(coneBase + (A*t).tolist()) for t in tree_chambers]
+
         # find all pairs of cones with full-dimensional interesection
-        aij = [j \
-            for i, tci in enumerate(tree_chambers) \
-            for j in range(i+1, len(tree_chambers)) \
-            if gt.intersectionDim(tree_chambers[i], 
-                               tree_chambers[j]) >= cone_dim \
+        aij = [i+j+1 \
+            for i, tci in enumerate(lower_dim_trees) \
+            for j, tcj in enumerate(lower_dim_trees[i+1:]) \
+            if (tci.intersection(tcj).dim == cone_dim)
         ]
+
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
-        added_to = set([str(t) for t in tree_chambers]) # keep track of cones that have already been added
-        last_list = [(tc, tci) for tci, tc in enumerate(tree_chambers)]
-        subsets = list(tree_chambers)
+        added_to = set([str(t) for t in lower_dim_trees]) 
+        last_list = [(tc, tci) for tci, tc in enumerate(lower_dim_trees)]
+        subsets = list(lower_dim_trees)
 
         if len(aij) > 1:
             # generate all possible intersections of cones
@@ -119,9 +158,9 @@ def coneSystem(Q):
                 for list_entry in last_list:
                     tree_i, i = list_entry
                     for j in aij[i].tolist():
-                        tree_j = tree_chambers[j]
-                        tree_ij = gt.coneIntersection(tree_i, tree_j)
-                        if np.linalg.matrix_rank(tree_ij) >= cone_dim:
+                        tree_j = lower_dim_trees[j]
+                        tree_ij = tree_i.intersection(tree_j)
+                        if tree_ij.dim >= cone_dim:
                             all_empty = False
                             added_to.add(str(tree_ij))
                             current_list.append((tree_ij, j))
@@ -137,7 +176,8 @@ def coneSystem(Q):
             if str(si) not in added_to:
                 contains_something = False
                 for sj in subsets:
-                    if gt.matDiff(si, sj) and gt.coneIntersection(si, sj).shape[0] >= sj.shape[0]:
+                    if gt.matDiff(si, sj) and 
+                    si.intersection(sj).vertices == sj.vertices:
                         contains_something = True
                         break
                 if not contains_something:
@@ -489,7 +529,7 @@ def referenceThetas(CQ):
     rts = []
     for rays in CQ:
         avg = np.array(rays.sum(axis=1)).reshape(-1)
-        rts.append(avg/np.gcd.reduce(avg))
+        rts.append(avg/max(1, np.gcd.reduce(avg)))
     return rts
 
 
