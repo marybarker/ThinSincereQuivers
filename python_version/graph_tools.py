@@ -1,7 +1,7 @@
 import numpy as np
 import cvxpy as cp
 from itertools import combinations
-from pyhull.convex_hull import ConvexHull
+#from pyhull.convex_hull import ConvexHull
 
 
 def allSpanningTrees(M, tree_format="edge"):
@@ -58,8 +58,8 @@ def coneIntersection(a, b):
     aP = (a*aB).transpose().tolist()+[[0 for x in range(aDim)]]
     bP = (b*bB).transpose().tolist()+[[0 for x in range(bDim)]]
 
-    aC = ConvexHull(aP)
-    bC = ConvexHull(bP)
+    #aC = ConvexHull(aP)
+    #bC = ConvexHull(bP)
 
     aH = aC.equations
     aV = aC.vertices
@@ -92,6 +92,7 @@ def edgesOutOf(p, edge_list, oriented=False):
     if oriented:
         return [(i, e) for i, e in enumerate(edge_list) if p == e[0]]
     return [(i, e) for i, e in enumerate(edge_list) if p in e]
+
 
 # check if there exists a cycle in a (possibly unconnected)
 # oriented graph, passed in matrix form. 
@@ -177,6 +178,35 @@ def findCycleDFS(start_v, visited, E):
     return ret_val
 
 
+def findLowerDimSpace(points):
+    # find the (hopefully lower dimensional) subspace 
+    # that contains the set of points, which should be input
+    # in the format of a list of lists
+
+    B = grahamSchmidt(points)
+    d = B.shape[0]
+    return matSolve(x=B, b=np.identity(d))
+
+
+def grahamShmidt(vectors):
+    vectors = [np.array(v) for v in vectors]
+
+    # get first vector to begin with and normalize
+    V0 = vectors[0]
+    V0 /= np.sum(V0**2)**0.5
+
+    basis = [V0]
+    for v in vectors[1:]:
+
+        V1 = v - proj(V1, basis)
+        lenV1 = np.sum(V1**2)**0.5
+        if lenV1 > 0:
+
+            V1 /= lenV1
+            basis.append(tuple(V1)
+    return np.matrix(basis).transpose()
+
+
 def identicalLists(list1, list2):
     if len(list1) != len(list2):
         return False
@@ -251,6 +281,24 @@ def matrixFromEdges(edges, oriented=True):
     return np.matrix([[tail if x == e[0] else 1 if x == e[1] else 0 for x in range(nv)] for e in edges]).transpose()
 
 
+def matSolve(a=None, x=None, b=None):
+    # solves the system ax = b where all 3 are 
+    # (possibly non-square) matrices, and the unknown 
+    # to solve for is the argument that is not defined. 
+    # e.g.: to solve the system AX = B for B, 
+    # try matSolve(a=A, x=X) and similarly for A and X
+
+    if (x is not None) and (b is not None):
+        # solve for a by multiplying b by a right inverse of x
+        xinv = np.linalg.pinv(x)
+        return b*xinv
+    elif (a is not None) and (b is not None):
+        # solve for x by inverting a
+        ainv = np.linalg.pinv(a)
+        return ainv*b
+    elif (a is not None) and (x is not None):
+        return a*x
+
 
 def primalUndirectedCycle(G):
     """gives the edges that comprise an undirected cycle in the graph G, 
@@ -279,6 +327,11 @@ def primalUndirectedCycle(G):
                             break
             return edge_indices
     return []
+
+
+def proj(a, b):
+    # projects vector a onto basis (consisting of a list b of vectors)
+    return np.matrix([b*np.dot(a, bb)/np.dot(bb, bb) for bb in b if np.dot(bb,bb) > 0]).sum(axis=0)
 
 
 def spanningTree(M, tree_format="edge"):
