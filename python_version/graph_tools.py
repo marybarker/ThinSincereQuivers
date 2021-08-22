@@ -185,25 +185,26 @@ def findLowerDimSpace(points):
 
     B = grahamSchmidt(points)
     d = B.shape[0]
-    return matSolve(x=B, b=np.identity(d))
+    return matSolve(x=B.transpose(), b=np.identity(d))
 
 
-def grahamShmidt(vectors):
+def grahamSchmidt(vectors):
     vectors = [np.array(v) for v in vectors]
 
     # get first vector to begin with and normalize
     V0 = vectors[0]
-    V0 /= np.sum(V0**2)**0.5
+    V0 = V0 / (np.dot(V0,V0)**0.5)
 
     basis = [V0]
+    current_rank = 1
     for v in vectors[1:]:
-
-        V1 = v - proj(V1, basis)
-        lenV1 = np.sum(V1**2)**0.5
+        V1 = v - proj(v, basis)
+        lenV1 = np.dot(V1,V1)**0.5
         if lenV1 > 0:
-
-            V1 /= lenV1
-            basis.append(tuple(V1)
+            V1 = V1/lenV1
+            if np.linalg.matrix_rank(basis+[V1]) > current_rank:
+                basis.append(V1)
+                current_rank += 1
     return np.matrix(basis).transpose()
 
 
@@ -331,7 +332,7 @@ def primalUndirectedCycle(G):
 
 def proj(a, b):
     # projects vector a onto basis (consisting of a list b of vectors)
-    return np.matrix([b*np.dot(a, bb)/np.dot(bb, bb) for bb in b if np.dot(bb,bb) > 0]).sum(axis=0)
+    return np.array(np.matrix([bb*np.dot(a, bb)/np.dot(bb, bb) for bb in b if np.dot(bb,bb) > 0]).sum(axis=0).tolist()[0])
 
 
 def spanningTree(M, tree_format="edge"):

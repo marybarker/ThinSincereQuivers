@@ -37,7 +37,7 @@ print(list(tsq.primitiveArrows(Q1)))
 print(list(tsq.primitiveArrows(tsq.ToricQuiver([[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]]))))
 
 
-print(tsq.potentialWalls(Q1, tsq.theta(Q1)))
+print(tsq.potentialWalls(Q1))
 
 print(tsq.makeTight(Q1, [-5,-1,2,2,2]))
 

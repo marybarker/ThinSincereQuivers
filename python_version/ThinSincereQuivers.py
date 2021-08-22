@@ -1,7 +1,7 @@
 import graph_tools as gt
 import numpy as np
 from itertools import combinations, chain
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull, HalfspaceIntersection
 
 edgesFromMatrix = gt.edgesFromMatrix
 matrixFromEdges = gt.matrixFromEdges
@@ -49,9 +49,9 @@ class ToricQuiver():
 class Cone():
     def __init__(self, listOfVertices=[]):
         if len(listOfVertices) > 0:
-            self.dim = len(listOfVertices[0])
+            self.dim = np.linalg.matrix_rank(np.matrix(listOfVertices))
             self.hull = ConvexHull(listOfVertices)
-            self.interior_point = (np.matrix(listOfVertices)/len(list_of_vertices)).sum(axis=0).tolist()[0]
+            self.interior_point = (np.matrix(listOfVertices)/len(listOfVertices)).sum(axis=0).tolist()[0]
             self.vertices = set([tuple(x) for x in listOfVertices])
         else:
             self.dim = 0
@@ -67,11 +67,11 @@ class Cone():
         otherEqs = otherCone.hull.equations
         eqs = [x for x in selfEqs if x not in otherEqs] + list(otherEqs)
         interior_point = [0.5*(self.interior_point[i] + otherCone.interior_point[i]) for i in range(self.dim)]
-        hsi = HalfSpaceIntersection(eqs, interior_point)
+        hsi = HalfspaceIntersection(np.array(eqs), np.array(interior_point))
         return Cone(hsi.intersections)
 
     def __str__(self):
-        return ", ".join([str(x) for x in self.vertices])
+        return ", ".join([str(x) for x in sorted(list(self.vertices))])
 
 
 def allSpanningTrees(Q, tree_format="edge"):
@@ -129,23 +129,21 @@ def coneSystem(Q):
         V = [np.array(v) for v in V]
         A = gt.findLowerDimSpace(V)
 
-        # graham schmidt and find_lower_dim_space both transform the 
-        # coneSystem to something that contains the origin. 
-        coneBase = [[np.amin(A)-1 for x in range(len(Vprime[0]))]]
-        lower_dim_trees = [Cone(coneBase + (A*t).tolist()) for t in tree_chambers]
+        lower_dim_trees = [Cone((A*t).transpose().tolist()) for t in tree_chambers]
 
         # find all pairs of cones with full-dimensional interesection
-        aij = [i+j+1 \
-            for i, tci in enumerate(lower_dim_trees) \
+        aij = [[i+j+1 \
             for j, tcj in enumerate(lower_dim_trees[i+1:]) \
-            if (tci.intersection(tcj).dim == cone_dim)
+            if (tci.intersection(tcj).dim == cone_dim)] \
+            for i, tci in enumerate(lower_dim_trees) \
         ]
 
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
         added_to = set([str(t) for t in lower_dim_trees]) 
-        last_list = [(tc, tci) for tci, tc in enumerate(lower_dim_trees)]
+        last_list = [[tc, tci] for tci, tc in enumerate(lower_dim_trees)]
         subsets = list(lower_dim_trees)
+        to_drop = set()
 
         if len(aij) > 1:
             # generate all possible intersections of cones
@@ -157,27 +155,30 @@ def coneSystem(Q):
                 current_list = []
                 for list_entry in last_list:
                     tree_i, i = list_entry
-                    for j in aij[i].tolist():
+                    for j in aij[i]:
                         tree_j = lower_dim_trees[j]
                         tree_ij = tree_i.intersection(tree_j)
                         if tree_ij.dim >= cone_dim:
                             all_empty = False
                             added_to.add(str(tree_ij))
-                            current_list.append((tree_ij, j))
+                            current_list.append([tree_ij, j])
+                            to_drop.add(i)
+                            to_drop.add(j)
                 if all_empty:
-                   break
+                    break
                 else:
-                   last_list = list(currentList)
-                   subsets = subsets + list(zip(*last_list))[0]
+                    last_list = list(current_list)
+                    subsets = subsets + list(list(zip(*last_list))[0])
 
+        print("finished with the all possible intersections bit")
+        print(to_drop, len(subsets))
         to_keep = []
         added_to = set()
         for si in subsets:
             if str(si) not in added_to:
                 contains_something = False
                 for sj in subsets:
-                    if gt.matDiff(si, sj) and 
-                    si.intersection(sj).vertices == sj.vertices:
+                    if si.intersection(sj).vertices == sj.vertices:
                         contains_something = True
                         break
                 if not contains_something:
