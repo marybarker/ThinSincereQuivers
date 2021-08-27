@@ -47,31 +47,64 @@ class ToricQuiver():
 
 
 class Cone():
+
     def __init__(self, listOfVertices=[]):
-        if len(listOfVertices) > 0:
-            self.dim = np.linalg.matrix_rank(np.matrix(listOfVertices))
-            self.hull = ConvexHull(listOfVertices)
-            self.interior_point = (np.matrix(listOfVertices)/len(listOfVertices)).sum(axis=0).tolist()[0]
-            self.vertices = set([tuple(x) for x in listOfVertices])
+        self.dim = 0
+        self.hull = []
+        self.interior_point = None
+        self.vertices = []
+        self.tol=0
+
+        if len(listOfVertices) > 0: # if the set of vertices nonempty
+
+            # if there are enough vertices to form an n-simplex: 
+            if len(listOfVertices) > len(listOfVertices[0]): 
+                self.dim = np.linalg.matrix_rank(np.matrix(listOfVertices))
+                self.hull = ConvexHull(listOfVertices)
+                # ignore interior points in the convex hull
+                self.vertices = [np.array(self.hull.points[x]) for x in self.hull.vertices]
+                self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in self.hull.equations]
+                self.interior_point = ((np.matrix(self.vertices)/len(self.vertices)).sum(axis=0)).tolist()[0]
+                self.tol = 0.001 * min([np.dot(x - y, x - y)**0.5 for ix, x in enumerate(self.vertices) for y in self.vertices[ix+1:]])
+
+
+    def contains_point(self, point):
+        return all([np.dot(n, np.array(point))+o <= 0 for (n,o) in self.eqs])
+
+
+    def joggle_to_interior(self, point, extra_eqs = [], max_its=10000):
+        pt = np.array(point)
+        all_neg = False
+        ctr = 0
+        eqs = self.eqs + extra_eqs
+
+        while not all_neg and ctr < max_its:
+            ctr +=1; all_neg = True
+
+            for (n,o) in eqs:
+                val = np.dot(n, pt) + o
+                if val > -1e-10:
+                    pt = pt - (self.tol + val)*n
+                    all_neg = False
+        if all_neg:
+            return pt
         else:
-            self.dim = 0
-            self.hull = []
-            self.interior_point = None
-            self.vertices = {}
+            print("Error: could not joggle point to interior. Sad day")
+            return np.array([])
+
 
     def intersection(self, otherCone):
         if self.dim != otherCone.dim:
             return Cone()
+        new_pt = self.joggle_to_interior(self.interior_point, extra_eqs = otherCone.eqs)
+        points = HalfspaceIntersection( \
+                np.matrix(self.hull.equations.tolist() + otherCone.hull.equations.tolist()), \
+                new_pt).intersections
+        return Cone(points)
 
-        selfEqs = self.hull.equations
-        otherEqs = otherCone.hull.equations
-        eqs = [x for x in selfEqs if x not in otherEqs] + list(otherEqs)
-        interior_point = [0.5*(self.interior_point[i] + otherCone.interior_point[i]) for i in range(self.dim)]
-        hsi = HalfspaceIntersection(np.array(eqs), np.array(interior_point))
-        return Cone(hsi.intersections)
 
-    def __str__(self):
-        return ", ".join([str(x) for x in sorted(list(self.vertices))])
+    def __repr__(self):
+        return ", ".join([str(x) for x in list(self.vertices)])
 
 
 def allSpanningTrees(Q, tree_format="edge"):
@@ -134,13 +167,19 @@ def coneSystem(Q):
         # find all pairs of cones with full-dimensional interesection
         aij = [[i+j+1 \
             for j, tcj in enumerate(lower_dim_trees[i+1:]) \
-            if (tci.intersection(tcj).dim == cone_dim)] \
+            if (tci.intersection(tcj).dim >= cone_dim)] \
             for i, tci in enumerate(lower_dim_trees) \
         ]
+        for i, tci in enumerate(lower_dim_trees):
+            for j, tcj in enumerate(lower_dim_trees[i+1:]):
+                print("i:", tci.vertices)
+                print("j:", tcj.vertices)
+                print(tci.intersection(tcj).vertices)
+                print(tci.intersection(tcj).dim)
 
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
-        added_to = set([str(t) for t in lower_dim_trees]) 
+        #added_to = set([str(t) for t in lower_dim_trees]) 
         last_list = [[tc, tci] for tci, tc in enumerate(lower_dim_trees)]
         subsets = list(lower_dim_trees)
         to_drop = set()
@@ -148,43 +187,35 @@ def coneSystem(Q):
         if len(aij) > 1:
             # generate all possible intersections of cones
             for ctr in range(len(spanning_trees)):
-                # stopping condition: if all intersections tried in the latest loop iteration are up lower-dim
+                # stopping condition: if all intersections tried in
+                # the latest loop iteration are up lower-dim
                 all_empty = True 
 
-                # create a list of intersecting pairs from intersecting treeChamber elements with lastList elements
+                # create a list of intersecting pairs from intersecting
+                # treeChamber elements with lastList elements
                 current_list = []
                 for list_entry in last_list:
                     tree_i, i = list_entry
+
+                    all_j_failed = True
                     for j in aij[i]:
+
                         tree_j = lower_dim_trees[j]
                         tree_ij = tree_i.intersection(tree_j)
                         if tree_ij.dim >= cone_dim:
+
                             all_empty = False
-                            added_to.add(str(tree_ij))
+                            all_j_failed=False
                             current_list.append([tree_ij, j])
-                            to_drop.add(i)
-                            to_drop.add(j)
+                    if all_j_failed:
+                        subsets.append(tree_i)
                 if all_empty:
                     break
-                else:
-                    last_list = list(current_list)
-                    subsets = subsets + list(list(zip(*last_list))[0])
+        subsets = set([tuple(sorted([tuple(y) for y in x.vertices])) for x in subsets])
 
-        print("finished with the all possible intersections bit")
-        print(to_drop, len(subsets))
-        to_keep = []
-        added_to = set()
-        for si in subsets:
-            if str(si) not in added_to:
-                contains_something = False
-                for sj in subsets:
-                    if si.intersection(sj).vertices == sj.vertices:
-                        contains_something = True
-                        break
-                if not contains_something:
-                    to_keep.append(si)
-                    added_to.add(str(si))
-        return to_keep
+        print(len(subsets))
+
+        return subsets
 
 
 def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
