@@ -49,5 +49,5 @@ Q3 = tsq.ToricQuiver([[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]])
 print(list(tsq.coneSystem(Q3)))
 print(len(list(tsq.coneSystem(Q3))))
 
-print(tsq.mergeOnArrow(Q1, 1, Q1, 0))
+print(tsq.mergeOnArrow(Q1, 5, Q1, 0))
 print(tsq.mergeOnVertex(Q1, 1, Q1, 0))
