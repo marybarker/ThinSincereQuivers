@@ -38,44 +38,8 @@ def allSpanningTrees(M, tree_format="edge"):
             return [range(Q1),[]]
 
 
-
-def coneIntersection(a, b):
-    shared_rays = np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1))
-    print("in coneIntersection, the shared rays so far: ")
-    print((shared_rays,"--",a,"--",b))
-
-    # put a and b in lower dimensions first 
-    aBasis = scipy.linalg.orth(a)
-    bBasis = scipy.linalg.orth(b)
-    aB = aBasis.transpose()*scipy.linalg.inv(aBasis.transpose()*a)
-    bB = bBasis.transpose()*scipy.linalg.inv(bBasis.transpose()*b)
-
-    aDim = np.linalg.matrix_rank(a)
-    bDim = np.linalg.matrix_rank(b)
-
-    aPoints = a.transpose().tolist()
-    bPoints = b.transpose().tolist()
-    aP = (a*aB).transpose().tolist()+[[0 for x in range(aDim)]]
-    bP = (b*bB).transpose().tolist()+[[0 for x in range(bDim)]]
-
-    #aC = ConvexHull(aP)
-    #bC = ConvexHull(bP)
-
-    aH = aC.equations
-    aV = aC.vertices
-    bH = bC.equations
-    bV = bC.vertices
-
-    # first find the points in a that are 'contained' in b
-    aP = [i for i in aV if isInside(aPoints[i], bH)]
-    bP = [i for i in bV if isInside(bPoints[i], aH)]
-
-
-
-
 def edgesFromMatrix(mat):
     return [[r.index(-1), r.index(1)] for r in np.matrix(mat).transpose().tolist()]
-
 
 
 def edgesOutOf(p, edge_list, oriented=False):
@@ -216,15 +180,7 @@ def identicalLists(list1, list2):
 
 
 def intersectionDim(a, b):
-    #return np.linalg.matrix_rank(np.matrix((a[:, None] == b).all(-1).any(1)))
-    #print("dim: intersecting: ", a, b)
-    #print("dim: intersection is:",  np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
     return np.linalg.matrix_rank(np.matrix((np.array(a)[:, None] == np.array(b)).all(-1).any(1)))
-    #nr, nc = a.shape
-    #dtype={'names':['f{}'.format(i) for i in range(nc)],
-    #       'formats':nc * [a.dtype]}
-    #c = np.intersect1d(a.view(dtype), b.view(dtype))
-    #return c.view(a.dtype).reshape(-1, nc)
 
 
 def intSolve(A, b, nonneg=False):

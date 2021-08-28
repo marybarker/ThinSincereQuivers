@@ -68,8 +68,8 @@ class Cone():
                 self.tol = 0.001 * min([np.dot(x - y, x - y)**0.5 for ix, x in enumerate(self.vertices) for y in self.vertices[ix+1:]])
 
 
-    def contains_point(self, point):
-        return all([np.dot(n, np.array(point))+o <= 0 for (n,o) in self.eqs])
+    def contains_point(self, point, tol=0):
+        return all([np.dot(n, np.array(point))+o <= tol for (n,o) in self.eqs])
 
 
     def joggle_to_interior(self, point, extra_eqs = [], max_its=10000):
@@ -105,6 +105,10 @@ class Cone():
 
     def __repr__(self):
         return ", ".join([str(x) for x in list(self.vertices)])
+
+
+    def contains_cone(self, other, tol=0):
+        return all([self.contains_point(x, tol=tol) for x in other.vertices])
 
 
 def allSpanningTrees(Q, tree_format="edge"):
@@ -160,6 +164,7 @@ def coneSystem(Q):
         # find Vertices in C(Q) that define the subchambers
         V = set([tuple(r) for mat in tree_chambers for r in mat.transpose().tolist()])
         V = [np.array(v) for v in V]
+        V = V + [np.zeros(len(V[0]))]
         A = gt.findLowerDimSpace(V)
 
         lower_dim_trees = [Cone((A*t).transpose().tolist()) for t in tree_chambers]
@@ -170,12 +175,6 @@ def coneSystem(Q):
             if (tci.intersection(tcj).dim >= cone_dim)] \
             for i, tci in enumerate(lower_dim_trees) \
         ]
-        for i, tci in enumerate(lower_dim_trees):
-            for j, tcj in enumerate(lower_dim_trees[i+1:]):
-                print("i:", tci.vertices)
-                print("j:", tcj.vertices)
-                print(tci.intersection(tcj).vertices)
-                print(tci.intersection(tcj).dim)
 
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
@@ -205,17 +204,30 @@ def coneSystem(Q):
                         if tree_ij.dim >= cone_dim:
 
                             all_empty = False
-                            all_j_failed=False
+                            all_j_failed = False
                             current_list.append([tree_ij, j])
                     if all_j_failed:
                         subsets.append(tree_i)
                 if all_empty:
                     break
-        subsets = set([tuple(sorted([tuple(y) for y in x.vertices])) for x in subsets])
 
-        print(len(subsets))
+        finest_subsets = []
+        for si, s in enumerate(subsets):
+            contains_others=False
+            for ssi, ss in enumerate(subsets):
+                if (ssi != si) and s.contains_cone(ss, tol=1.0e-10):
+                    contains_others=True
+                    break
+            if not contains_others:
+                finest_subsets.append(tuple([tuple(x) for x in s.vertices]))
 
-        return subsets
+        lookup = {tuple((A*np.matrix(p).transpose()).transpose().tolist()[0]):tuple(p) for p in V}
+
+        finest_subsets = list(set([(lookup[y] for y in x) for x in finest_subsets]))
+        for i, s in enumerate(finest_subsets):
+            print("%d:\n"%i + str(np.matrix(list(s))))
+
+        return finest_subsets
 
 
 def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
