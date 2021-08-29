@@ -1,6 +1,7 @@
 import numpy as np
 import cvxpy as cp
 from itertools import combinations
+from scipy.linalg import qr as QR
 #from pyhull.convex_hull import ConvexHull
 
 
@@ -147,29 +148,13 @@ def findLowerDimSpace(points):
     # that contains the set of points, which should be input
     # in the format of a list of lists
 
-    B = grahamSchmidt(points)
-    d = B.shape[0]
-    return matSolve(x=B.transpose(), b=np.identity(d))
+    if len(points) < len(points[0]):
+        return np.matrix(points).transpose()
 
-
-def grahamSchmidt(vectors):
-    vectors = [np.array(v) for v in vectors]
-
-    # get first vector to begin with and normalize
-    V0 = vectors[0]
-    V0 = V0 / (np.dot(V0,V0)**0.5)
-
-    basis = [V0]
-    current_rank = 1
-    for v in vectors[1:]:
-        V1 = v - proj(v, basis)
-        lenV1 = np.dot(V1,V1)**0.5
-        if lenV1 > 0:
-            V1 = V1/lenV1
-            if np.linalg.matrix_rank(basis+[V1]) > current_rank:
-                basis.append(V1)
-                current_rank += 1
-    return np.matrix(basis).transpose()
+    n = np.linalg.matrix_rank(np.matrix(points))
+    q,r = QR(np.matrix(points).transpose())# pivoting=True)
+    B = q[:,:n]
+    return np.dot(np.linalg.inv(np.dot(B.transpose(),B)),B.transpose())
 
 
 def identicalLists(list1, list2):
