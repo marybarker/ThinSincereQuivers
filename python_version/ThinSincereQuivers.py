@@ -50,10 +50,11 @@ class Cone():
 
     def __init__(self, listOfVertices=[]):
         self.dim = 0
-        self.hull = []
+        self.eqs = []
+        self.hull = None
         self.interior_point = None
-        self.vertices = []
         self.tol=0
+        self.vertices = []
 
         if len(listOfVertices) > 0: # if the set of vertices nonempty
 
@@ -69,6 +70,8 @@ class Cone():
 
 
     def contains_point(self, point, tol=0):
+        if self.dim < 1:
+            return False
         return all([np.dot(n, np.array(point))+o <= tol for (n,o) in self.eqs])
 
 
@@ -89,18 +92,21 @@ class Cone():
         if all_neg:
             return pt
         else:
-            print("Error: could not joggle point to interior. Sad day")
-            return np.array([])
+            return None
 
 
     def intersection(self, otherCone):
-        if self.dim != otherCone.dim:
+        if (self.dim != otherCone.dim) or (self.dim < 1) or (otherCone.dim < 1):
             return Cone()
+
         new_pt = self.joggle_to_interior(self.interior_point, extra_eqs = otherCone.eqs)
-        points = HalfspaceIntersection( \
-                np.matrix(self.hull.equations.tolist() + otherCone.hull.equations.tolist()), \
-                new_pt).intersections
-        return Cone(points)
+        if new_pt is not None:
+            points = HalfspaceIntersection( \
+                    np.matrix(self.hull.equations.tolist() + otherCone.hull.equations.tolist()), \
+                    new_pt).intersections
+            return Cone(list(points))
+
+        return Cone()
 
 
     def __repr__(self):
@@ -159,15 +165,20 @@ def coneSystem(Q):
 
     # create list of cones CT for each tree T
     tree_chambers = list(map(lambda st: qcmt[st[0],:], spanning_trees))
+    primitive_arrows = primitiveArrows(Q)
 
     if len(tree_chambers) > 1:
         # find Vertices in C(Q) that define the subchambers
-        V = set([tuple(r) for mat in tree_chambers for r in mat.transpose().tolist()])
+        vec_to_conebase = -np.matrix(qcmt[primitive_arrows,:]).sum(axis=0).transpose()
+
+        V = set([tuple(r) for mat in tree_chambers for r in mat.tolist()])
         V = [np.array(v) for v in V]
-        V = V + [np.zeros(len(V[0]))]
         A = gt.findLowerDimSpace(V)
 
-        lower_dim_trees = [Cone((A*t).transpose().tolist()) for t in tree_chambers]
+        lower_dim_conebase = np.dot(A,vec_to_conebase).transpose().tolist()
+        lower_dim_trees = [Cone( \
+                              np.dot(A,t.transpose()).transpose().tolist()+lower_dim_conebase) \
+                          for t in tree_chambers]
 
         # find all pairs of cones with full-dimensional interesection
         aij = [[i+j+1 \
@@ -175,15 +186,17 @@ def coneSystem(Q):
             if (tci.intersection(tcj).dim >= cone_dim)] \
             for i, tci in enumerate(lower_dim_trees) \
         ]
+        print("found lower dimensional space and intersections")
 
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
         #added_to = set([str(t) for t in lower_dim_trees]) 
-        last_list = [[tc, tci] for tci, tc in enumerate(lower_dim_trees)]
+        last_list = [[tc, tuple([tci])] for tci, tc in enumerate(lower_dim_trees)]
         subsets = list(lower_dim_trees)
         to_drop = set()
 
         if len(aij) > 1:
+            subsets = []
             # generate all possible intersections of cones
             for ctr in range(len(spanning_trees)):
                 # stopping condition: if all intersections tried in
@@ -194,40 +207,35 @@ def coneSystem(Q):
                 # treeChamber elements with lastList elements
                 current_list = []
                 for list_entry in last_list:
-                    tree_i, i = list_entry
-
-                    all_j_failed = True
+                    tree_i, ii = list_entry
+                    i = ii[0]
                     for j in aij[i]:
-
-                        tree_j = lower_dim_trees[j]
-                        tree_ij = tree_i.intersection(tree_j)
-                        if tree_ij.dim >= cone_dim:
-
-                            all_empty = False
-                            all_j_failed = False
-                            current_list.append([tree_ij, j])
-                    if all_j_failed:
-                        subsets.append(tree_i)
+                        if j > ii[-1]:
+                            tree_j = lower_dim_trees[j]
+                            tree_ij = tree_i.intersection(tree_j)
+                            if tree_ij.dim >= cone_dim:
+                                all_empty = False
+                                to_drop.add(ii)
+                                current_list.append([tree_ij, ii + tuple([j])])
                 if all_empty:
                     break
+                last_list = list(current_list)
+                subsets = subsets + [x for x in last_list if x[1] not in to_drop]
 
-        finest_subsets = []
-        for si, s in enumerate(subsets):
-            contains_others=False
-            for ssi, ss in enumerate(subsets):
-                if (ssi != si) and s.contains_cone(ss, tol=1.0e-10):
-                    contains_others=True
-                    break
-            if not contains_others:
-                finest_subsets.append(tuple([tuple(x) for x in s.vertices]))
+        unique_subs = []
+        all_intersections = [set(x[1]) for x in subsets]
+        added = set()
+        for x in subsets:
+            if (x[1] not in added) and not any([set(x[1]) < y for y in all_intersections]):
+                added.add(x[1])
+                unique_subs.append(np.array(np.round(x[0].vertices, 3)))
+        subsets = unique_subs
 
-        lookup = {tuple((A*np.matrix(p).transpose()).transpose().tolist()[0]):tuple(p) for p in V}
+        lookup = {tuple(np.round(np.dot(A,np.matrix(p).transpose()).transpose().tolist()[0], 3)): tuple(p) \
+                  for p in V + [np.array(vec_to_conebase.transpose().tolist()[0])]}
 
-        finest_subsets = list(set([(lookup[y] for y in x) for x in finest_subsets]))
-        for i, s in enumerate(finest_subsets):
-            print("%d:\n"%i + str(np.matrix(list(s))))
-
-        return finest_subsets
+        #subsets = [[lookup[tuple(x)] for x in y] for y in subsets]
+        return subsets
 
 
 def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
