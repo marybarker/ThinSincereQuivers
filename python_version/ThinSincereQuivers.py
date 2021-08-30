@@ -170,11 +170,12 @@ def coneSystem(Q):
     if len(tree_chambers) > 1:
         # find Vertices in C(Q) that define the subchambers
         vec_to_conebase = -np.matrix(qcmt[primitive_arrows,:]).sum(axis=0).transpose()
-
         V = set([tuple(r) for mat in tree_chambers for r in mat.tolist()])
         V = [np.array(v) for v in V]
-        A = gt.findLowerDimSpace(V)
 
+        # find a basis for the lower-dimensional space that is spanned by the vertices in C(Q)
+        B = gt.findLowerDimSpace(V)
+        A = np.dot(np.linalg.inv(np.dot(B.transpose(),B)),B.transpose())
         lower_dim_conebase = np.dot(A,vec_to_conebase).transpose().tolist()
         lower_dim_trees = [Cone( \
                               np.dot(A,t.transpose()).transpose().tolist()+lower_dim_conebase) \
@@ -186,14 +187,13 @@ def coneSystem(Q):
             if (tci.intersection(tcj).dim >= cone_dim)] \
             for i, tci in enumerate(lower_dim_trees) \
         ]
-        print("found lower dimensional space and intersections")
 
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
         #added_to = set([str(t) for t in lower_dim_trees]) 
         last_list = [[tc, tuple([tci])] for tci, tc in enumerate(lower_dim_trees)]
         subsets = list(lower_dim_trees)
-        to_drop = set()
+        to_drop = set() # short-term deleting to make sure intersections don't get too huge
 
         if len(aij) > 1:
             subsets = []
@@ -222,19 +222,22 @@ def coneSystem(Q):
                 last_list = list(current_list)
                 subsets = subsets + [x for x in last_list if x[1] not in to_drop]
 
+        # now take only the subsets that form a partition of C(Q), without any overlap
         unique_subs = []
         all_intersections = [set(x[1]) for x in subsets]
         added = set()
+        unique_points = set()
         for x in subsets:
             if (x[1] not in added) and not any([set(x[1]) < y for y in all_intersections]):
                 added.add(x[1])
-                unique_subs.append(np.array(np.round(x[0].vertices, 3)))
+                unique_subs.append(np.array(x[0].vertices))
         subsets = unique_subs
 
-        lookup = {tuple(np.round(np.dot(A,np.matrix(p).transpose()).transpose().tolist()[0], 3)): tuple(p) \
-                  for p in V + [np.array(vec_to_conebase.transpose().tolist()[0])]}
-
-        #subsets = [[lookup[tuple(x)] for x in y] for y in subsets]
+        # transform back to higher dimensional space
+        subsets = [np.array([y for y in \
+                   np.round(np.dot(B, x.transpose()).transpose()).transpose() \
+                   if (y.sum() > -1.0e-8)]) \
+                   for x in subsets]
         return subsets
 
 

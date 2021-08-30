@@ -154,7 +154,7 @@ def findLowerDimSpace(points):
     n = np.linalg.matrix_rank(np.matrix(points))
     q,r = QR(np.matrix(points).transpose())# pivoting=True)
     B = q[:,:n]
-    return np.dot(np.linalg.inv(np.dot(B.transpose(),B)),B.transpose())
+    return B#np.dot(np.linalg.inv(np.dot(B.transpose(),B)),B.transpose())
 
 
 def identicalLists(list1, list2):
