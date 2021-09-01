@@ -91,20 +91,32 @@ class Cone():
                     all_neg = False
         if all_neg:
             return pt
-        else:
-            return None
+        return None
 
 
     def intersection(self, otherCone):
         if (self.dim != otherCone.dim) or (self.dim < 1) or (otherCone.dim < 1):
             return Cone()
+        self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x)]
+        other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x)]
 
-        new_pt = self.joggle_to_interior(self.interior_point, extra_eqs = otherCone.eqs)
+        new_pt = None
+        if len(self_points_in_other) > len(other_points_in_self) > 1:
+            pt = np.matrix(self_points_in_other).sum(axis=0).tolist()[0]
+            new_pt = self.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
+
+        elif len(other_points_in_self) > 1:
+            pt = np.matrix(other_points_in_self).sum(axis=0).tolist()[0]
+            new_pt = otherCone.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
+
         if new_pt is not None:
-            points = HalfspaceIntersection( \
-                    np.matrix(self.hull.equations.tolist() + otherCone.hull.equations.tolist()), \
-                    new_pt).intersections
-            return Cone(list(points))
+            try:
+                points = HalfspaceIntersection( \
+                        np.matrix(self.hull.equations.tolist() + otherCone.hull.equations.tolist()), \
+                        new_pt).intersections
+                return Cone(list(points))
+            except:
+                pass
 
         return Cone()
 
