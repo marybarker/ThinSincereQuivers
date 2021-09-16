@@ -247,8 +247,8 @@ def coneSystem(Q):
 
         # transform back to higher dimensional space
         subsets = [np.array([y for y in \
-                   np.round(np.dot(B, x.transpose()).transpose()).transpose() \
-                   if (y.sum() > -1.0e-8)]) \
+                   np.round(np.dot(B, x.transpose())) \
+                   if (y.sum() > -1.0e-10)]) \
                    for x in subsets]
         return subsets
 
