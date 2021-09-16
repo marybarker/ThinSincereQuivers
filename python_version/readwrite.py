@@ -5,7 +5,7 @@ import numpy as np
 def write_arrays_to_file(list_of_arrays, filename="output.json"):
     data = [x.tolist() for x in list_of_arrays]
     with open(filename, "w") as f:
-         json.dump(data, f, ensure_ascii=False)
+         json.dump(data, f, ensure_ascii=False, indent=4)
 
 def read_arrays_from_file(filename):
     with open(filename, "r") as f:

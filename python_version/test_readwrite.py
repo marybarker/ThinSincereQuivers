@@ -8,4 +8,7 @@ fname = "test_json_writing.json"
 write_arrays_to_file(cs, fname)
 
 c2s = read_arrays_from_file(fname)
-print(c2s)
+
+cs = [x.transpose() for x in cs]
+fps = [tsq.flowPolytope(K4, x).transpose() for x in tsq.referenceThetas(cs)]
+write_arrays_to_file(fps, "flow_polytope.json")

@@ -596,7 +596,7 @@ def referenceThetas(CQ):
     rts = []
     for rays in CQ:
         avg = np.array(rays.sum(axis=1)).reshape(-1)
-        rts.append(avg/max(1, np.gcd.reduce(avg)))
+        rts.append(avg/max(1, np.gcd.reduce(avg, dtype='int')))
     return rts
 
 
