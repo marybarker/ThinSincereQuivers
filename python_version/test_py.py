@@ -46,8 +46,10 @@ print(tsq.maximalUnstableSubquivers(b, True))
 print(list(tsq.stableTrees(b, b.weight)))
 
 Q3 = tsq.ToricQuiver([[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]])
-print(list(tsq.coneSystem(Q3)))
-print(len(list(tsq.coneSystem(Q3))))
+cs = tsq.coneSystem(Q3)
+print(list(cs))
+print(len(list(cs)))
+
 
 print(tsq.mergeOnArrow(Q1, 5, Q1, 0))
 print(tsq.mergeOnVertex(Q1, 1, Q1, 0))
@@ -55,3 +57,4 @@ print(tsq.mergeOnVertex(Q1, 1, Q1, 0))
 print(len(list(tsq.coneSystem(Q1))))
 K5 = tsq.ToricQuiver([[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]])
 print(len(list(tsq.coneSystem(K5))))
+

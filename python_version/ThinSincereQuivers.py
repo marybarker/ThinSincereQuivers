@@ -66,7 +66,7 @@ class Cone():
                 self.vertices = [np.array(self.hull.points[x]) for x in self.hull.vertices]
                 self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in self.hull.equations]
                 self.interior_point = ((np.matrix(self.vertices)/len(self.vertices)).sum(axis=0)).tolist()[0]
-                self.tol = 0.001 * min([np.dot(x - y, x - y)**0.5 for ix, x in enumerate(self.vertices) for y in self.vertices[ix+1:]])
+                self.tol = 0.001 * min([np.dot(x - y, x - y) for ix, x in enumerate(self.vertices) for y in self.vertices[ix+1:]])
 
 
     def contains_point(self, point, tol=0):
@@ -77,19 +77,19 @@ class Cone():
 
     def joggle_to_interior(self, point, extra_eqs = [], max_its=10000):
         pt = np.array(point)
-        all_neg = False
+        any_pos = True
         ctr = 0
         eqs = self.eqs + extra_eqs
 
-        while not all_neg and ctr < max_its:
-            ctr +=1; all_neg = True
+        while any_pos and (ctr < max_its):
+            ctr +=1; any_pos = False
 
             for (n,o) in eqs:
                 val = np.dot(n, pt) + o
                 if val > -1e-10:
-                    pt = pt - (self.tol + val)*n
-                    all_neg = False
-        if all_neg:
+                    pt = pt - (self.tol + (2./ctr)*val)*n
+                    any_pos = True
+        if not any_pos:
             return pt
         return None
 
@@ -97,8 +97,8 @@ class Cone():
     def intersection(self, otherCone):
         if (self.dim != otherCone.dim) or (self.dim < 1) or (otherCone.dim < 1):
             return Cone()
-        self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x)]
-        other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x)]
+        self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x, -0)]
+        other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x, -0)]
 
         new_pt = None
         if len(self_points_in_other) > len(other_points_in_self) > 1:
@@ -596,7 +596,7 @@ def referenceThetas(CQ):
     rts = []
     for rays in CQ:
         avg = np.array(rays.sum(axis=1)).reshape(-1)
-        rts.append(avg/max(1, np.gcd.reduce(avg)))
+        rts.append(avg/max(1, np.gcd.reduce(avg, dtype='int')))
     return rts
 
 
