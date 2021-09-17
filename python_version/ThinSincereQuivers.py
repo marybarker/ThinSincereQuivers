@@ -48,7 +48,8 @@ class ToricQuiver():
 
 class Cone():
 
-    def __init__(self, listOfVertices=[]):
+    def __init__(self, listOfVertices=[], coneBase=None):
+        self.base = None
         self.dim = 0
         self.eqs = []
         self.hull = None
@@ -60,6 +61,12 @@ class Cone():
 
             # if there are enough vertices to form an n-simplex: 
             if len(listOfVertices) > len(listOfVertices[0]): 
+                if coneBase is not None:
+                    self.base = np.array(coneBase)
+                    listOfVertices = listOfVertices + [np.array(coneBase)]
+                else:
+                    self.base = listOfVertices[-1]
+
                 self.dim = np.linalg.matrix_rank(np.matrix(listOfVertices))
                 self.hull = ConvexHull(listOfVertices)
                 # ignore interior points in the convex hull
@@ -67,12 +74,14 @@ class Cone():
                 self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in self.hull.equations]
                 self.interior_point = ((np.matrix(self.vertices)/len(self.vertices)).sum(axis=0)).tolist()[0]
                 self.tol = 0.001 * min([np.dot(x - y, x - y) for ix, x in enumerate(self.vertices) for y in self.vertices[ix+1:]])
+                # only keep the equations that define the walls of the cone. That is, the facets that adjoin the base
+                self.eqs = [x for x in self.eqs if (np.dot(x[0], self.base) + x[1]) < 0]
 
 
     def contains_point(self, point, tol=0):
         if self.dim < 1:
             return False
-        return all([np.dot(n, np.array(point))+o <= tol for (n,o) in self.eqs])
+        return all([(np.dot(n, np.array(point))+o <= tol) for (n,o) in self.eqs])
 
 
     def joggle_to_interior(self, point, extra_eqs = [], max_its=10000):
@@ -86,28 +95,36 @@ class Cone():
 
             for (n,o) in eqs:
                 val = np.dot(n, pt) + o
-                if val > -1e-10:
+                if val >= 0:
                     pt = pt - (self.tol + (2./ctr)*val)*n
                     any_pos = True
+        #print(ctr, any_pos)
         if not any_pos:
             return pt
         return None
 
 
-    def intersection(self, otherCone):
+    def intersection(self, otherCone, printout=False, B=None):
         if (self.dim != otherCone.dim) or (self.dim < 1) or (otherCone.dim < 1):
             return Cone()
-        self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x, -0)]
-        other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x, -0)]
+        self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x)]
+        other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x)]
 
         new_pt = None
         if len(self_points_in_other) > len(other_points_in_self) > 1:
-            pt = np.matrix(self_points_in_other).sum(axis=0).tolist()[0]
-            new_pt = self.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
+            pt = ((1.0/len(self_points_in_other))*np.matrix(self_points_in_other).sum(axis=0)).tolist()[0]
+            new_pt = otherCone.joggle_to_interior(pt, extra_eqs = self.eqs)
 
         elif len(other_points_in_self) > 1:
-            pt = np.matrix(other_points_in_self).sum(axis=0).tolist()[0]
-            new_pt = otherCone.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
+            pt = ((1.0/len(other_points_in_self))*np.matrix(other_points_in_self).sum(axis=0)).tolist()[0]
+            new_pt = self.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
+
+        if printout:
+            print("they have %d, %d points in common"%(len(self_points_in_other), len(other_points_in_self)))
+            for p in self_points_in_other:
+                print("..", np.round(np.dot(B, p.transpose())))
+            for p in other_points_in_self:
+                print("...", np.round(np.dot(B, p.transpose())))
 
         if new_pt is not None:
             try:
@@ -117,6 +134,7 @@ class Cone():
                 return Cone(list(points))
             except:
                 pass
+        #print("could not find an intersection for cones")
 
         return Cone()
 
