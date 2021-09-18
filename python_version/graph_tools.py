@@ -152,8 +152,32 @@ def findLowerDimSpace(points):
         return np.matrix(points).transpose()
 
     n = np.linalg.matrix_rank(np.matrix(points))
-    q,r = QR(np.matrix(points).transpose())# pivoting=True)
+    q,r,p = QR(np.matrix(points).transpose(), pivoting=True)
     B = q[:,:n]
+
+    # compare numpy version with integer-value method--just pulling out a set of Linearly independent points
+    # get first nonzero point
+    point0 = points[0]
+    if np.count_nonzero(point0) < 1:
+        for p in points:
+            if np.count_nonzero(p) > 0:
+                point0 = p
+                break
+    # then find a LI set of points
+    LI_vecs = [point0]
+    current_rank = 1
+    for p in points:
+        if np.count_nonzero(p) > 0:
+            current_mat = np.matrix(LI_vecs + [p])
+            if np.linalg.matrix_rank(current_mat) > current_rank:
+                LI_vecs.append(p)
+                current_rank = np.linalg.matrix_rank(current_mat)
+    B = np.matrix(LI_vecs).transpose()
+
+    # finally, compare hand-picked method with manual--where LI points are predetermined
+    LI_vecs = [np.array([0,0,-1,1]), np.array([0,-1,1,0]), np.array([-1,1,0,0])]
+    B = np.matrix(LI_vecs).transpose()
+
     return B
 
 

@@ -1,6 +1,7 @@
 import ThinSincereQuivers as tsq
 import graph_tools as gt
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 
@@ -113,6 +114,8 @@ def view_conesystem_3d():
     # plot the lower dimensional version of the chamber
     ax = plt.axes(projection='3d')
     cb = np.array(lower_dim_conebase[0])
+    cmap = mpl.cm.get_cmap('tab20')
+    cs = [cmap(x/len(lower_dim_trees)) for x in range(len(lower_dim_trees))]
     cbdir = cb / (cb[0]**2 + cb[1]**2 + cb[2]**2)**0.5
     azim = np.round(180*np.arctan2(cbdir[1], cbdir[0])/np.pi)
     elev = np.round(180*np.arctan2(1, cbdir[2])/np.pi)
@@ -121,13 +124,13 @@ def view_conesystem_3d():
     ax.scatter3D([cb[0]], [cb[1]], [cb[2]]) # point showign the base of the cone
     for i, tci in enumerate(lower_dim_trees):
         pts = np.array(tci.vertices).transpose().tolist()
-        ax.plot_trisurf(pts[0], pts[1], pts[2])
+        ax.plot_trisurf(pts[0], pts[1], pts[2], color=cs[i])
 
         pts1 = [[pts[0][x] for x in [0,1,2,0,2,3,0,1,3]], \
                 [pts[1][x] for x in [0,1,2,0,2,3,0,1,3]], \
                 [pts[2][x] for x in [0,1,2,0,2,3,0,1,3]]]
 
-        ax.plot3D(pts1[0], pts1[1], pts1[2])
+        ax.plot3D(pts1[0], pts1[1], pts1[2], color=cs[i])
         ax.set_xlim3d(minv,maxv)
         ax.set_ylim3d(minv,maxv)
         ax.set_zlim3d(minv,maxv)
