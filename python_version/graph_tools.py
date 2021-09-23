@@ -173,11 +173,6 @@ def findLowerDimSpace(points):
                 LI_vecs.append(p)
                 current_rank = np.linalg.matrix_rank(current_mat)
     B = np.matrix(LI_vecs).transpose()
-
-    # finally, compare hand-picked method with manual--where LI points are predetermined
-    LI_vecs = [np.array([0,0,-1,1]), np.array([0,-1,1,0]), np.array([-1,1,0,0])]
-    B = np.matrix(LI_vecs).transpose()
-
     return B
 
 

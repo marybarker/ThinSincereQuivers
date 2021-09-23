@@ -196,14 +196,14 @@ def coneSystem(Q):
 
     if len(tree_chambers) > 1:
         # find Vertices in C(Q) that define the subchambers
-        vec_to_conebase = -np.matrix(qcmt[primitive_arrows,:]).sum(axis=0).transpose()
+        vec_to_conebase = -np.matrix(qcmt[primitive_arrows,:]).sum(axis=0)
         V = set([tuple(r) for mat in tree_chambers for r in mat.tolist()])
         V = [np.array(v) for v in V]
 
         # find a basis for the lower-dimensional space that is spanned by the vertices in C(Q)
         B = gt.findLowerDimSpace(V)
         A = np.dot(np.linalg.inv(np.dot(B.transpose(),B)),B.transpose())
-        lower_dim_conebase = np.dot(A,vec_to_conebase).transpose().tolist()
+        lower_dim_conebase = np.dot(A,vec_to_conebase[0].transpose()).transpose().tolist()
         lower_dim_trees = [Cone( \
                               np.dot(A,t.transpose()).transpose().tolist()+lower_dim_conebase) \
                           for t in tree_chambers]
