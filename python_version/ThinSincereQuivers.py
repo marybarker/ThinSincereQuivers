@@ -73,9 +73,9 @@ class Cone():
                 self.vertices = [np.array(self.hull.points[x]) for x in self.hull.vertices]
                 self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in self.hull.equations]
                 self.interior_point = ((np.matrix(self.vertices)/len(self.vertices)).sum(axis=0)).tolist()[0]
-                self.tol = 0.001 * min([np.dot(x - y, x - y) for ix, x in enumerate(self.vertices) for y in self.vertices[ix+1:]])
+                self.tol = 1.0e-8 * min([np.dot(x - y, x - y) for ix, x in enumerate(self.vertices) for y in self.vertices[ix+1:]])
                 # only keep the equations that define the walls of the cone. That is, the facets that adjoin the base
-                self.eqs = [x for x in self.eqs if (np.dot(x[0], self.base) + x[1]) < 0]
+                self.eqs = [x for x in self.eqs if np.round(np.dot(x[0], self.base) + x[1]) > -1.0e-10]
 
 
     def contains_point(self, point, tol=0):
@@ -98,7 +98,6 @@ class Cone():
                 if val >= 0:
                     pt = pt - (self.tol + (2./ctr)*val)*n
                     any_pos = True
-        #print(ctr, any_pos)
         if not any_pos:
             return pt
         return None
@@ -134,8 +133,6 @@ class Cone():
                 return Cone(list(points))
             except:
                 pass
-        #print("could not find an intersection for cones")
-
         return Cone()
 
 
