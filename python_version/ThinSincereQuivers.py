@@ -5,6 +5,7 @@ from scipy.spatial import ConvexHull, HalfspaceIntersection
 
 edgesFromMatrix = gt.edgesFromMatrix
 matrixFromEdges = gt.matrixFromEdges
+bbox_offset = -10
 
 class ToricQuiver():
 
@@ -60,7 +61,8 @@ class Cone():
         if len(listOfVertices) > 0: # if the set of vertices nonempty
 
             # if there are enough vertices to form an n-simplex: 
-            if len(listOfVertices) > len(listOfVertices[0]): 
+            if len(listOfVertices) > len(listOfVertices[0]) or \
+                    (coneBase is not None and len(listOfVertices) >= len(listOfVertices[0])): 
                 if coneBase is not None:
                     self.base = np.array(coneBase)
                     listOfVertices = listOfVertices + [np.array(coneBase)]
@@ -72,19 +74,22 @@ class Cone():
                 # ignore interior points in the convex hull
                 self.vertices = [np.array(self.hull.points[x]) for x in self.hull.vertices]
                 self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in self.hull.equations]
-                self.interior_point = ((np.matrix(self.vertices)/len(self.vertices)).sum(axis=0)).tolist()[0]
-                self.tol = 1.0e-8 * min([np.dot(x - y, x - y) for ix, x in enumerate(self.vertices) for y in self.vertices[ix+1:]])
                 # only keep the equations that define the walls of the cone. That is, the facets that adjoin the base
-                self.eqs = [x for x in self.eqs if np.round(np.dot(x[0], self.base) + x[1]) > -1.0e-10]
+                self.eqs = [x for x in self.eqs if (np.dot(x[0], self.base) + x[1]) > -1.0e-10]
+                self.hsi_eqs = [np.array(list(x[0])+list(x[1])) for x in self.eqs]
 
 
-    def contains_point(self, point, tol=0):
+    def contains_point(self, point, strictly_interior=False):
         if self.dim < 1:
             return False
-        return all([(np.dot(n, np.array(point))+o <= tol) for (n,o) in self.eqs])
+        if not strictly_interior:
+            if any([np.absolute(x - point).sum() == 0 for x in self.vertices]):
+                return True
+            return all([(np.dot(n, np.array(point))+o <= 0) for (n,o) in self.eqs])
+        return all([(np.dot(n, np.array(point))+o) < -1.0e-10 for (n,o) in self.eqs])
 
 
-    def joggle_to_interior(self, point, extra_eqs = [], max_its=10000):
+    def joggle_to_interior(self, point, tol=0, extra_eqs = [], max_its=10000):
         pt = np.array(point)
         any_pos = True
         ctr = 0
@@ -95,7 +100,7 @@ class Cone():
 
             for (n,o) in eqs:
                 val = np.dot(n, pt) + o
-                if val >= 0:
+                if val >= tol:
                     pt = pt - (self.tol + (2./ctr)*val)*n
                     any_pos = True
         if not any_pos:
@@ -103,37 +108,38 @@ class Cone():
         return None
 
 
-    def intersection(self, otherCone, printout=False, B=None):
+    def intersection(self, otherCone):
         if (self.dim != otherCone.dim) or (self.dim < 1) or (otherCone.dim < 1):
             return Cone()
+        if np.absolute(self.base - otherCone.base).sum() > 0:
+            return Cone()
+
         self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x)]
         other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x)]
 
         new_pt = None
         if len(self_points_in_other) > len(other_points_in_self) > 1:
             pt = ((1.0/len(self_points_in_other))*np.matrix(self_points_in_other).sum(axis=0)).tolist()[0]
-            new_pt = otherCone.joggle_to_interior(pt, extra_eqs = self.eqs)
+            new_pt = self.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
 
         elif len(other_points_in_self) > 1:
             pt = ((1.0/len(other_points_in_self))*np.matrix(other_points_in_self).sum(axis=0)).tolist()[0]
             new_pt = self.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
 
-        if printout:
-            print("they have %d, %d points in common"%(len(self_points_in_other), len(other_points_in_self)))
-            for p in self_points_in_other:
-                print("..", np.round(np.dot(B, p.transpose())))
-            for p in other_points_in_self:
-                print("...", np.round(np.dot(B, p.transpose())))
-
-        if new_pt is not None:
+        to_ret = Cone()
+        if (new_pt is not None) and self.contains_point(new_pt, True) and otherCone.contains_point(new_pt, True):
             try:
+                # add bounding box equation: 
+                bbox_offset = -self.dim - 1
+                bbox = [np.array([1 for x in range(len(self.eqs[0][0]))] + [bbox_offset])]
                 points = HalfspaceIntersection( \
-                        np.matrix(self.hull.equations.tolist() + otherCone.hull.equations.tolist()), \
+                        np.matrix(list(self.hsi_eqs) + list(otherCone.hsi_eqs) + bbox), \
                         new_pt).intersections
-                return Cone(list(points))
+                pts = [x/np.amax(x) for x in points if np.absolute(np.array(x) - self.base).sum() > 0]
+                to_ret = Cone(pts, self.base)
             except:
                 pass
-        return Cone()
+        return to_ret
 
 
     def __repr__(self):
@@ -196,16 +202,17 @@ def coneSystem(Q):
 
     if len(tree_chambers) > 1:
         # find Vertices in C(Q) that define the subchambers
-        vec_to_conebase = -np.matrix(qcmt[primitive_arrows,:]).sum(axis=0)
+        conebase = np.matrix(np.zeros(qcmt.shape[1])).transpose()
         V = set([tuple(r) for mat in tree_chambers for r in mat.tolist()])
         V = [np.array(v) for v in V]
 
         # find a basis for the lower-dimensional space that is spanned by the vertices in C(Q)
-        B = gt.findLowerDimSpace(V)
+        B = gt.findLowerDimBasis(V)
         A = np.dot(np.linalg.inv(np.dot(B.transpose(),B)),B.transpose())
-        lower_dim_conebase = np.dot(A,vec_to_conebase[0].transpose()).transpose().tolist()
+
+        lower_dim_conebase = np.dot(A,conebase).transpose().tolist()[0]
         lower_dim_trees = [Cone( \
-                              np.dot(A,t.transpose()).transpose().tolist()+lower_dim_conebase) \
+                              np.dot(A,t.transpose()).transpose().tolist(), coneBase=lower_dim_conebase) \
                           for t in tree_chambers]
 
         # find all pairs of cones with full-dimensional interesection
@@ -261,10 +268,11 @@ def coneSystem(Q):
         subsets = unique_subs
 
         # transform back to higher dimensional space
-        subsets = [np.array([y for y in \
-                   np.round(np.dot(B, x.transpose())) \
-                   if (y.sum() > -1.0e-10)]) \
+        subsets = [np.matrix([y for y in \
+                   np.round(np.dot(B, x.transpose())).transpose() \
+                   if (np.absolute(y-conebase).sum() > 0)]) \
                    for x in subsets]
+
         return subsets
 
 

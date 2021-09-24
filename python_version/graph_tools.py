@@ -143,7 +143,7 @@ def findCycleDFS(start_v, visited, E):
     return ret_val
 
 
-def findLowerDimSpace(points):
+def findLowerDimBasis(points):
     # find the (hopefully lower dimensional) subspace 
     # that contains the set of points, which should be input
     # in the format of a list of lists
@@ -152,27 +152,27 @@ def findLowerDimSpace(points):
         return np.matrix(points).transpose()
 
     n = np.linalg.matrix_rank(np.matrix(points))
-    q,r,p = QR(np.matrix(points).transpose(), pivoting=True)
+    q,r = QR(np.matrix(points).transpose())
     B = q[:,:n]
 
     # compare numpy version with integer-value method--just pulling out a set of Linearly independent points
-    # get first nonzero point
-    point0 = points[0]
-    if np.count_nonzero(point0) < 1:
-        for p in points:
-            if np.count_nonzero(p) > 0:
-                point0 = p
-                break
-    # then find a LI set of points
-    LI_vecs = [point0]
-    current_rank = 1
-    for p in points:
-        if np.count_nonzero(p) > 0:
-            current_mat = np.matrix(LI_vecs + [p])
-            if np.linalg.matrix_rank(current_mat) > current_rank:
-                LI_vecs.append(p)
-                current_rank = np.linalg.matrix_rank(current_mat)
-    B = np.matrix(LI_vecs).transpose()
+    ## get first nonzero point
+    #point0 = points[0]
+    #if np.count_nonzero(point0) < 1:
+    #    for p in points:
+    #        if np.count_nonzero(p) > 0:
+    #            point0 = p
+    #            break
+    ## then find a LI set of points
+    #LI_vecs = [point0]
+    #current_rank = 1
+    #for p in points:
+    #    if np.count_nonzero(p) > 0:
+    #        current_mat = np.matrix(LI_vecs + [p])
+    #        if np.linalg.matrix_rank(current_mat) > current_rank:
+    #            LI_vecs.append(p)
+    #            current_rank = np.linalg.matrix_rank(current_mat)
+    #B = np.matrix(LI_vecs).transpose()
     return B
 
 
