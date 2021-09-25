@@ -74,18 +74,19 @@ class Cone():
                 # ignore interior points in the convex hull
                 self.vertices = [np.array(self.hull.points[x]) for x in self.hull.vertices]
                 self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in self.hull.equations]
-                # only keep the equations that define the walls of the cone. That is, the facets that adjoin the base
+                # only keep the equations that define the walls of the cone. 
+                # That is, the facets that adjoin the base
                 self.eqs = [x for x in self.eqs if (np.dot(x[0], self.base) + x[1]) > -1.0e-10]
                 self.hsi_eqs = [np.array(list(x[0])+list(x[1])) for x in self.eqs]
 
 
-    def contains_point(self, point, strictly_interior=False):
+    def contains_point(self, point, strictly_interior=False, tol=0):
         if self.dim < 1:
             return False
         if not strictly_interior:
             if any([np.absolute(x - point).sum() == 0 for x in self.vertices]):
                 return True
-            return all([(np.dot(n, np.array(point))+o <= 0) for (n,o) in self.eqs])
+            return all([(np.dot(n, np.array(point))+o <= tol) for (n,o) in self.eqs])
         return all([(np.dot(n, np.array(point))+o) < -1.0e-10 for (n,o) in self.eqs])
 
 
@@ -111,8 +112,10 @@ class Cone():
     def intersection(self, otherCone):
         if (self.dim != otherCone.dim) or (self.dim < 1) or (otherCone.dim < 1):
             return Cone()
-        if np.absolute(self.base - otherCone.base).sum() > 0:
-            return Cone()
+        if self == otherCone or otherCone.contains_cone(self):
+            return self
+        elif self.contains_cone(otherCone):
+            return otherCone
 
         self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x)]
         other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x)]
@@ -130,12 +133,12 @@ class Cone():
         if (new_pt is not None) and self.contains_point(new_pt, True) and otherCone.contains_point(new_pt, True):
             try:
                 # add bounding box equation: 
-                bbox_offset = -self.dim - 1
+                bbox_offset = -self.dim - 3
                 bbox = [np.array([1 for x in range(len(self.eqs[0][0]))] + [bbox_offset])]
                 points = HalfspaceIntersection( \
                         np.matrix(list(self.hsi_eqs) + list(otherCone.hsi_eqs) + bbox), \
                         new_pt).intersections
-                pts = [x/np.amax(x) for x in points if np.absolute(np.array(x) - self.base).sum() > 0]
+                pts = [x for x in points if np.absolute(np.array(x) - self.base).sum() > 0]
                 to_ret = Cone(pts, self.base)
             except:
                 pass
@@ -146,8 +149,13 @@ class Cone():
         return ", ".join([str(x) for x in list(self.vertices)])
 
 
-    def contains_cone(self, other, tol=0):
-        return all([self.contains_point(x, tol=tol) for x in other.vertices])
+    def contains_cone(self, other):
+        return all([self.contains_point(x, tol=self.tol) for x in other.vertices])
+
+    def __eq__(self, other):
+        if len(self.vertices) == len(other.vertices):
+            return all([np.absolute(x - other.vertices[i]).sum() < self.tol for i, x in enumerate(self.vertices)])
+        return False
 
 
 def allSpanningTrees(Q, tree_format="edge"):
@@ -203,6 +211,7 @@ def coneSystem(Q):
     if len(tree_chambers) > 1:
         # find Vertices in C(Q) that define the subchambers
         conebase = np.matrix(np.zeros(qcmt.shape[1])).transpose()
+        conebase = -(10/len(primitive_arrows))*np.matrix(qcmt[primitive_arrows,:].sum(axis=0)).transpose()
         V = set([tuple(r) for mat in tree_chambers for r in mat.tolist()])
         V = [np.array(v) for v in V]
 
@@ -224,7 +233,6 @@ def coneSystem(Q):
 
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
-        #added_to = set([str(t) for t in lower_dim_trees]) 
         last_list = [[tc, tuple([tci])] for tci, tc in enumerate(lower_dim_trees)]
         subsets = list(lower_dim_trees)
         to_drop = set() # short-term deleting to make sure intersections don't get too huge
@@ -243,14 +251,19 @@ def coneSystem(Q):
                 for list_entry in last_list:
                     tree_i, ii = list_entry
                     i = ii[0]
+                    print("interections for %d: "%i, aij[i])
                     for j in aij[i]:
                         if j > ii[-1]:
+                            print("trying: ", ii, j)
                             tree_j = lower_dim_trees[j]
                             tree_ij = tree_i.intersection(tree_j)
+                            print(tree_ij.dim, cone_dim)
                             if tree_ij.dim >= cone_dim:
                                 all_empty = False
+                                print("found an intersection: ", ii, j)
                                 to_drop.add(ii)
                                 current_list.append([tree_ij, ii + tuple([j])])
+                print("and are we now all empty? ", all_empty)
                 if all_empty:
                     break
                 last_list = list(current_list)
@@ -259,11 +272,13 @@ def coneSystem(Q):
         # now take only the subsets that form a partition of C(Q), without any overlap
         unique_subs = []
         all_intersections = [set(x[1]) for x in subsets]
+        print(all_intersections)
         added = set()
         unique_points = set()
         for x in subsets:
             if (x[1] not in added) and not any([set(x[1]) < y for y in all_intersections]):
                 added.add(x[1])
+                print("adding intersection set ", x[1])
                 unique_subs.append(np.array(x[0].vertices))
         subsets = unique_subs
 
@@ -318,7 +333,6 @@ def incInverse(Q, theta, nonneg=True):
     a = Q.incidence_matrix*a
 
     return gt.intSolve(a, theta, nonneg=nonneg)
-
 
 
 def isClosedUnderArrows(V, Q):
