@@ -1,5 +1,7 @@
 import graph_tools as gt
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.linalg import null_space
 from itertools import combinations, chain
 from scipy.spatial import ConvexHull, HalfspaceIntersection
 
@@ -49,46 +51,39 @@ class ToricQuiver():
 
 class Cone():
 
-    def __init__(self, listOfVertices=[], coneBase=None):
-        self.base = None
+    def __init__(self, listOfVertices=[]):
         self.dim = 0
         self.eqs = []
-        self.hull = None
-        self.interior_point = None
+        self.hsi_eqs = []
         self.tol=0
         self.vertices = []
 
         if len(listOfVertices) > 0: # if the set of vertices nonempty
 
             # if there are enough vertices to form an n-simplex: 
-            if len(listOfVertices) > len(listOfVertices[0]) or \
-                    (coneBase is not None and len(listOfVertices) >= len(listOfVertices[0])): 
-                if coneBase is not None:
-                    self.base = np.array(coneBase)
-                    listOfVertices = listOfVertices + [np.array(coneBase)]
-                else:
-                    self.base = listOfVertices[-1]
-
+            if len(listOfVertices) > len(listOfVertices[0]):
+                hull = ConvexHull(listOfVertices)
                 self.dim = np.linalg.matrix_rank(np.matrix(listOfVertices))
-                self.hull = ConvexHull(listOfVertices)
-                # ignore interior points in the convex hull
-                self.vertices = [np.array(self.hull.points[x]) for x in self.hull.vertices]
-                self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in self.hull.equations]
-                # only keep the equations that define the walls of the cone. 
-                # That is, the facets that adjoin the base
-                self.eqs = [x for x in self.eqs if (np.dot(x[0], self.base) + x[1]) > -1.0e-10]
-                self.hsi_eqs = [np.array(list(x[0])+list(x[1])) for x in self.eqs]
 
+                # ignore interior points in the convex hull
+                self.vertices = [np.array(hull.points[x]) for x in hull.vertices]
+                self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in hull.equations]
+                self.hsi_eqs = [vec for vec in hull.equations]
+                self.tol = 1.0e-8 * min([np.dot(x - y, x - y) \
+                        for ix, x in enumerate(self.vertices) \
+                        for y in self.vertices[ix+1:]])
+
+    def contains_cone(self, other):
+        return all([self.contains_point(x, tol=self.tol) for x in other.vertices])
 
     def contains_point(self, point, strictly_interior=False, tol=0):
         if self.dim < 1:
             return False
-        if not strictly_interior:
-            if any([np.absolute(x - point).sum() == 0 for x in self.vertices]):
-                return True
-            return all([(np.dot(n, np.array(point))+o <= tol) for (n,o) in self.eqs])
-        return all([(np.dot(n, np.array(point))+o) < -1.0e-10 for (n,o) in self.eqs])
-
+        if strictly_interior:
+            return all([(np.dot(n, np.array(point))+o) < -1.0e-10 for (n,o) in self.eqs])
+        if any([np.absolute(x - point).sum() <= self.tol for x in self.vertices]):
+            return True
+        return all([(np.dot(n, np.array(point))+o <= tol) for (n,o) in self.eqs])
 
     def joggle_to_interior(self, point, tol=0, extra_eqs = [], max_its=10000):
         pt = np.array(point)
@@ -108,38 +103,33 @@ class Cone():
             return pt
         return None
 
-
     def intersection(self, otherCone):
         if (self.dim != otherCone.dim) or (self.dim < 1) or (otherCone.dim < 1):
             return Cone()
         if self == otherCone or otherCone.contains_cone(self):
-            return self
-        elif self.contains_cone(otherCone):
-            return otherCone
+            return Cone(self.vertices)
+        if self.contains_cone(otherCone):
+            return Cone(otherCone.vertices)
 
-        self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x)]
-        other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x)]
+        self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x, tol=otherCone.tol)]
+        other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x, tol=self.tol)]
 
         new_pt = None
-        if len(self_points_in_other) > len(other_points_in_self) > 1:
+        if len(self_points_in_other) > len(other_points_in_self) > 0:
             pt = ((1.0/len(self_points_in_other))*np.matrix(self_points_in_other).sum(axis=0)).tolist()[0]
             new_pt = self.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
 
-        elif len(other_points_in_self) > 1:
+        elif len(other_points_in_self) > 0:
             pt = ((1.0/len(other_points_in_self))*np.matrix(other_points_in_self).sum(axis=0)).tolist()[0]
-            new_pt = self.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
+            new_pt = otherCone.joggle_to_interior(pt, extra_eqs = self.eqs)
 
         to_ret = Cone()
         if (new_pt is not None) and self.contains_point(new_pt, True) and otherCone.contains_point(new_pt, True):
             try:
-                # add bounding box equation: 
-                bbox_offset = -self.dim - 3
-                bbox = [np.array([1 for x in range(len(self.eqs[0][0]))] + [bbox_offset])]
                 points = HalfspaceIntersection( \
-                        np.matrix(list(self.hsi_eqs) + list(otherCone.hsi_eqs) + bbox), \
+                        np.matrix(list(self.hsi_eqs) + list(otherCone.hsi_eqs)), \
                         new_pt).intersections
-                pts = [x for x in points if np.absolute(np.array(x) - self.base).sum() > 0]
-                to_ret = Cone(pts, self.base)
+                to_ret = Cone(points)
             except:
                 pass
         return to_ret
@@ -147,10 +137,6 @@ class Cone():
 
     def __repr__(self):
         return ", ".join([str(x) for x in list(self.vertices)])
-
-
-    def contains_cone(self, other):
-        return all([self.contains_point(x, tol=self.tol) for x in other.vertices])
 
     def __eq__(self, other):
         if len(self.vertices) == len(other.vertices):
@@ -200,29 +186,15 @@ def chainQuiver(l, flow="default"):
 def coneSystem(Q):
     spanning_trees = allSpanningTrees(Q, tree_format="vertex")
     qcmt = Q.incidence_matrix.transpose()
-
-    Q_dim = qcmt.shape[0] - qcmt.shape[1] + 1
-    cone_dim = qcmt.shape[1] - 1
+    cone_dim = qcmt.shape[1] - 2
 
     # create list of cones CT for each tree T
     tree_chambers = list(map(lambda st: qcmt[st[0],:], spanning_trees))
-    primitive_arrows = primitiveArrows(Q)
 
     if len(tree_chambers) > 1:
-        # find Vertices in C(Q) that define the subchambers
-        conebase = np.matrix(np.zeros(qcmt.shape[1])).transpose()
-        conebase = -(10/len(primitive_arrows))*np.matrix(qcmt[primitive_arrows,:].sum(axis=0)).transpose()
-        V = set([tuple(r) for mat in tree_chambers for r in mat.tolist()])
-        V = [np.array(v) for v in V]
-
-        # find a basis for the lower-dimensional space that is spanned by the vertices in C(Q)
-        B = gt.findLowerDimBasis(V)
-        A = np.dot(np.linalg.inv(np.dot(B.transpose(),B)),B.transpose())
-
-        lower_dim_conebase = np.dot(A,conebase).transpose().tolist()[0]
-        lower_dim_trees = [Cone( \
-                              np.dot(A,t.transpose()).transpose().tolist(), coneBase=lower_dim_conebase) \
-                          for t in tree_chambers]
+        lower_dim_trees, B, first_cols = lowerDimSpaceForCQ(Q, tree_chambers)
+        lower_dim_trees = [Cone(t.tolist())
+                          for t in lower_dim_trees]
 
         # find all pairs of cones with full-dimensional interesection
         aij = [[i+j+1 \
@@ -251,44 +223,38 @@ def coneSystem(Q):
                 for list_entry in last_list:
                     tree_i, ii = list_entry
                     i = ii[0]
-                    print("interections for %d: "%i, aij[i])
                     for j in aij[i]:
                         if j > ii[-1]:
-                            print("trying: ", ii, j)
                             tree_j = lower_dim_trees[j]
                             tree_ij = tree_i.intersection(tree_j)
-                            print(tree_ij.dim, cone_dim)
                             if tree_ij.dim >= cone_dim:
                                 all_empty = False
-                                print("found an intersection: ", ii, j)
                                 to_drop.add(ii)
                                 current_list.append([tree_ij, ii + tuple([j])])
-                print("and are we now all empty? ", all_empty)
                 if all_empty:
                     break
-                last_list = list(current_list)
                 subsets = subsets + [x for x in last_list if x[1] not in to_drop]
+                last_list = list(current_list)
 
         # now take only the subsets that form a partition of C(Q), without any overlap
         unique_subs = []
         all_intersections = [set(x[1]) for x in subsets]
-        print(all_intersections)
         added = set()
         unique_points = set()
         for x in subsets:
             if (x[1] not in added) and not any([set(x[1]) < y for y in all_intersections]):
                 added.add(x[1])
-                print("adding intersection set ", x[1])
                 unique_subs.append(np.array(x[0].vertices))
         subsets = unique_subs
 
+        subsets = [np.matrix([first_cols + list(y) for iy, y in enumerate(x.tolist())]) for x in subsets]
         # transform back to higher dimensional space
-        subsets = [np.matrix([y for y in \
-                   np.round(np.dot(B, x.transpose())).transpose() \
-                   if (np.absolute(y-conebase).sum() > 0)]) \
-                   for x in subsets]
+        subsets = [np.round(np.dot(B, x.transpose())) for x in subsets]
 
-        return subsets
+        # normalize entries again
+        subsets = [np.where(x>0,1,x) for x in subsets]
+        subsets = [np.where(x<-0,-1,x) for x in subsets]
+        return unique(subsets)
 
 
 def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
@@ -394,6 +360,28 @@ def isTight(Q, flow=None):
         return all(list(map(lambda x: len(x) != (num_arrows - 1), maximal_unstable_subs["nonsingletons"])))
     else:
         return len(maxUnstSubs["singletons"]) < 1
+
+
+def lowerDimSpaceForCQ(Q, subchambers):
+    if len(subchambers) > 1:
+        # find Vertices in C(Q) that define the subchambers
+        all_ones = [1 for x in range(Q.incidence_matrix.shape[0])]
+        canonical = list(theta(Q))
+        
+        other_vecs = null_space(np.matrix([canonical, all_ones])).transpose().tolist()
+        B = np.matrix([all_ones] + [canonical] + other_vecs).transpose()
+        A = np.dot(np.linalg.inv(np.dot(B.transpose(),B)),B.transpose())
+
+        V = set([tuple(r) for mat in subchambers for r in mat.tolist()])
+        V = [np.array(v) for v in V]
+
+        lower_dim_V = [np.dot(A, t.transpose()).transpose() for t in subchambers]
+        first_length = lower_dim_V[0][0,1]
+
+        lower_dim_trees = [np.matrix([np.array(y)*(first_length/y[1]) for y in x.tolist()])[:,2:] for x in lower_dim_V]
+        y = lower_dim_V[0].tolist()[0]
+        return lower_dim_trees, B, [y[0],y[1]]
+    return subchambers, np.matrix(), []
 
 
 def makeTight(Q, th):
@@ -585,6 +573,23 @@ def nonstableSubquivers(Q, output_format="subquiver"):
                 yield x
 
 
+def plotChambers(tcs):
+    if tcs[0].shape[1] == 2:
+        xmin = min([min(t[:,0].transpose().tolist()[0]) for t in tcs])
+        xmax = max([max(t[:,0].transpose().tolist()[0]) for t in tcs])
+        ymin = min([min(t[:,1].transpose().tolist()[0]) for t in tcs])
+        ymax = max([max(t[:,1].transpose().tolist()[0]) for t in tcs])
+        plt.xlim(xmin,xmax)
+        plt.ylim(ymin,ymax)
+        for v in tcs:
+            x,y = v.transpose().tolist()
+            plt.fill_between(x+[x[0]],y+[y[0]], alpha=0.4)
+            plt.draw()
+            plt.pause(0.5)
+    elif tcs[0].shape[1] == 3:
+        pass
+
+
 def potentialWalls(Q):
     nv_set = Q.Q0
     num_to_check = int((len(nv_set)+1)/2)
@@ -703,6 +708,20 @@ def threeVertexQuiver(a,b,c, flow="default"):
     return ToricQuiver(edges, flow=flow)
 
 
+def unique(l):
+    # gets unique values for list of matrices or arrays
+    to_ret = []
+    for v in l:
+        can_add = True
+        for w in to_ret:
+            if np.all(v == w):
+                can_add = False
+        if can_add:
+            to_ret.append(v)
+    return to_ret
+
+
+
 def unstableSubquivers(Q, output_format="subquiver"):
     if output_format=="subquiver":
         for x in subquivers(Q):
@@ -718,4 +737,5 @@ def wallType(Qplus, Q):
     tplus = np.where(Q.incidence_matrix[Qplus,:].sum(axis=0) < 0, 1, 0).sum()
     tminus = np.where(Q.incidence_matrix[Qplus,:].sum(axis=0) > 0, 1, 0).sum()
     return (tplus, tminus)
+
 

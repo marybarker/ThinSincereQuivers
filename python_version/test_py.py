@@ -52,8 +52,12 @@ print(list(tsq.stableTrees(b, b.weight)))
 
 Q3 = tsq.ToricQuiver([[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]])
 cs = tsq.coneSystem(Q3)
-print(list(cs))
+for c in cs:
+    print(c)
 print(len(list(cs)))
+lds,B,o = tsq.lowerDimSpaceForCQ(Q3, [c.transpose() for c in cs])
+tsq.plotChambers(lds)
+
 
 
 #print(tsq.mergeOnArrow(Q1, 5, Q1, 0))
@@ -62,4 +66,5 @@ print(len(list(cs)))
 #print(len(list(tsq.coneSystem(Q1))))
 #K5 = tsq.ToricQuiver([[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]])
 #print(len(list(tsq.coneSystem(K5))))
+
 
