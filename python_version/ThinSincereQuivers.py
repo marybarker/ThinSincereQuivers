@@ -195,6 +195,7 @@ def coneSystem(Q):
         lower_dim_trees, B, first_cols = lowerDimSpaceForCQ(Q, tree_chambers)
         lower_dim_trees = [Cone(t.tolist())
                           for t in lower_dim_trees]
+        print("found lower dim trees")
 
         # find all pairs of cones with full-dimensional interesection
         aij = [[i+j+1 \
@@ -202,15 +203,15 @@ def coneSystem(Q):
             if (tci.intersection(tcj).dim >= cone_dim)] \
             for i, tci in enumerate(lower_dim_trees) \
         ]
+        print("found list of nonempty pairwise intersections")
 
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
         last_list = [[tc, tuple([tci])] for tci, tc in enumerate(lower_dim_trees)]
-        subsets = list(lower_dim_trees)
+        subsets = [[tc, tuple([tci])] for tci, tc in enumerate(lower_dim_trees)]
         to_drop = set() # short-term deleting to make sure intersections don't get too huge
 
         if len(aij) > 1:
-            subsets = []
             # generate all possible intersections of cones
             for ctr in range(len(spanning_trees)):
                 # stopping condition: if all intersections tried in
@@ -224,7 +225,7 @@ def coneSystem(Q):
                     tree_i, ii = list_entry
                     i = ii[0]
                     for j in aij[i]:
-                        if j > ii[-1]:
+                        if j > ii[-1] and all([j in aij[k] for k in ii]):
                             tree_j = lower_dim_trees[j]
                             tree_ij = tree_i.intersection(tree_j)
                             if tree_ij.dim >= cone_dim:
@@ -233,9 +234,10 @@ def coneSystem(Q):
                                 current_list.append([tree_ij, ii + tuple([j])])
                 if all_empty:
                     break
-                subsets = subsets + [x for x in last_list if x[1] not in to_drop]
                 last_list = list(current_list)
-
+                subsets = subsets + [x for x in last_list if x[1] not in to_drop]
+        print("found all nonempty intersections")
+        subsets = [x for x in subsets if x[1] not in to_drop]
         # now take only the subsets that form a partition of C(Q), without any overlap
         unique_subs = []
         all_intersections = [set(x[1]) for x in subsets]
@@ -586,8 +588,26 @@ def plotChambers(tcs):
             plt.fill_between(x+[x[0]],y+[y[0]], alpha=0.4)
             plt.draw()
             plt.pause(0.5)
+
     elif tcs[0].shape[1] == 3:
-        pass
+        minv=100
+        maxv=-100
+        for tc in tcs:
+            minv=min(minv, np.amin(tc))
+            maxv=max(maxv, np.amax(tc))
+
+        ax = plt.axes(projection='3d')
+        for i, tci in enumerate(tcs):
+            pts = tci.transpose().tolist()
+            ax.plot_trisurf(pts[0], pts[1], pts[2])
+            pts1 = [[pts[0][x] for x in [0,1,2,0,2,3,0,1,3]], \
+                    [pts[1][x] for x in [0,1,2,0,2,3,0,1,3]], \
+                    [pts[2][x] for x in [0,1,2,0,2,3,0,1,3]]]
+            ax.plot3D(pts1[0], pts1[1], pts1[2])
+            ax.set_xlim3d(minv,maxv)
+            ax.set_ylim3d(minv,maxv)
+            ax.set_zlim3d(minv,maxv)
+            plt.draw()
 
 
 def potentialWalls(Q):
