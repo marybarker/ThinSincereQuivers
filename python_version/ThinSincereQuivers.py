@@ -1,3 +1,4 @@
+import copy
 import graph_tools as gt
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,7 +19,7 @@ class ToricQuiver():
         elif isinstance(graph_obj, np.matrix): # if graph input is an incidence matrix
             self.incidence_matrix = graph_obj
             self.Q1 = edgesFromMatrix(graph_obj)
-        else:#isinstance(graph_obj, ToricQuiver):
+        else:
             self.incidence_matrix = graph_obj.incidence_matrix
             self.Q1 = graph_obj.Q1
             
@@ -63,12 +64,15 @@ class Cone():
             # if there are enough vertices to form an n-simplex: 
             if len(listOfVertices) > len(listOfVertices[0]):
                 hull = ConvexHull(listOfVertices)
-                self.dim = np.linalg.matrix_rank(np.matrix(listOfVertices))
+                hps = copy.copy(hull.points)
+                hvs = copy.copy(hull.vertices)
+                hes = copy.copy(hull.equations)
 
                 # ignore interior points in the convex hull
-                self.vertices = [np.array(hull.points[x]) for x in hull.vertices]
-                self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in hull.equations]
-                self.hsi_eqs = [vec for vec in hull.equations]
+                self.vertices = [np.array(hps[x]) for x in hvs]
+                self.dim = len(self.vertices) - 1
+                self.eqs = [(vec[:self.dim], vec[self.dim:]) for vec in hes]
+                self.hsi_eqs = [vec for vec in hes]
                 self.tol = 1.0e-8 * min([np.dot(x - y, x - y) \
                         for ix, x in enumerate(self.vertices) \
                         for y in self.vertices[ix+1:]])
@@ -85,7 +89,16 @@ class Cone():
             return True
         return all([(np.dot(n, np.array(point))+o <= tol) for (n,o) in self.eqs])
 
-    def joggle_to_interior(self, point, tol=0, extra_eqs = [], max_its=10000):
+    def feasible_point(self, extra_eqs=[]):
+        eqs = np.matrix(self.hsi_eqs + extra_eqs)
+        if (len(extra_eqs) > 0):
+            A = eqs[:,:-1]
+            b = -eqs[:,-1]
+            pt = gt.constrainSolve(A,b.transpose().tolist()[0],"nonpositive")
+            return pt if all([np.dot(n[:-1],pt)+n[-1] <= 0 for n in self.hsi_eqs+extra_eqs]) else None
+        return (1.0/len(self.eqs))*np.array(np.matrix(self.vertices).sum(axis=0).tolist()[0])
+
+    def joggle_to_interior(self, point, tol=0, extra_eqs = [], max_its=1000):
         pt = np.array(point)
         any_pos = True
         ctr = 0
@@ -111,23 +124,12 @@ class Cone():
         if self.contains_cone(otherCone):
             return Cone(otherCone.vertices)
 
-        self_points_in_other = [x for x in self.vertices if otherCone.contains_point(x, tol=otherCone.tol)]
-        other_points_in_self = [x for x in otherCone.vertices if self.contains_point(x, tol=self.tol)]
-
-        new_pt = None
-        if len(self_points_in_other) > len(other_points_in_self) > 0:
-            pt = ((1.0/len(self_points_in_other))*np.matrix(self_points_in_other).sum(axis=0)).tolist()[0]
-            new_pt = self.joggle_to_interior(pt, extra_eqs = otherCone.eqs)
-
-        elif len(other_points_in_self) > 0:
-            pt = ((1.0/len(other_points_in_self))*np.matrix(other_points_in_self).sum(axis=0)).tolist()[0]
-            new_pt = otherCone.joggle_to_interior(pt, extra_eqs = self.eqs)
-
+        new_pt = self.feasible_point(otherCone.hsi_eqs)
         to_ret = Cone()
-        if (new_pt is not None) and self.contains_point(new_pt, True) and otherCone.contains_point(new_pt, True):
+        if (new_pt is not None):
             try:
                 points = HalfspaceIntersection( \
-                        np.matrix(list(self.hsi_eqs) + list(otherCone.hsi_eqs)), \
+                        np.matrix(self.hsi_eqs + otherCone.hsi_eqs), \
                         new_pt).intersections
                 to_ret = Cone(points)
             except:
@@ -270,10 +272,17 @@ def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):
     # vertices of flow polytope correspond to regular flows on spanning trees
     all_trees = allSpanningTrees(Q, tree_format="vertex")
     regular_flows = []
-    for t in all_trees:
-        f = incInverse(Q.subquiver(t[0]), weight, False)
-        if all(f >= 0):
-            regular_flows.append(f)
+    added = set()
+    try:
+        for t in all_trees:
+            f = incInverse(Q.subquiver(t[0]), weight, False)
+            if all(f >= 0):
+                if tuple(f) not in added:
+                    regular_flows.append(f)
+                    added.add(tuple(f))
+    except:
+        # this happens when the preimage of the weight is empty.
+        return np.array([], dtype='int32')
 
     # simplified basis option reduces the dimension to what is strictly necessary.
     # Recall we can represent the polytope in a lower dimensional subspace of R^Q1, 
