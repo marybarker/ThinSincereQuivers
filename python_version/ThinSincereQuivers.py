@@ -95,11 +95,11 @@ class Cone():
         return all([(np.dot(n, np.array(point))+o <= tol) for (n,o) in self.eqs])
 
     def feasible_point(self, extra_eqs=[]):
-        eqs = np.matrix(self.hsi_eqs + extra_eqs)
+        eqs = np.matrix(unique(self.hsi_eqs + extra_eqs))
         if (len(extra_eqs) > 0):
             A = eqs[:,:-1]
             b = -eqs[:,-1]
-            pt = gt.constrainSolve(A,b.transpose().tolist()[0],"nonpositive")
+            pt = gt.constrainSolve(A,b.transpose().tolist()[0])
             return pt if all([np.dot(n[:-1],pt)+n[-1] <= 0 for n in self.hsi_eqs+extra_eqs]) else None
         return (1.0/len(self.vertices))*np.array(np.matrix(self.vertices).sum(axis=0).tolist()[0])
 
@@ -261,7 +261,9 @@ def coneSystem(Q):
         # transform back to higher dimensional space
         subsets = [np.round(np.dot(B, x.transpose())) for x in subsets]
         # scale columns that define the rays so that entries are 0/+1/-1
-        subsets = [x*1/np.amax(x, axis=0) for x in subsets]
+        #subsets = [x*1/np.amax(x, axis=0) for x in subsets]
+        subsets = [np.where(x>0,1,x) for x in subsets]
+        subsets = [np.where(x<-0,-1,x) for x in subsets]
         return unique(subsets)
 
 

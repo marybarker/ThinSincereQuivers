@@ -39,6 +39,16 @@ def allSpanningTrees(M, tree_format="edge"):
             return [range(Q1),[]]
 
 
+def constrainSolve(A, b):
+    nc = A.shape[1]
+    x = cp.Variable(nc)
+    # set up the L2-norm minimization problem
+    prob = cp.Problem(cp.Minimize(cp.norm(A @ x - b, 2)))
+    sol = prob.solve()
+    return np.array(x.value).ravel()
+
+
+
 def edgesFromMatrix(mat):
     return [[r.index(-1), r.index(1)] for r in np.matrix(mat).transpose().tolist()]
 
@@ -188,22 +198,16 @@ def intersectionDim(a, b):
 
 
 def intSolve(A, b, nonneg=False):
-    sgn = "nonnegative" if nonneg else "none"
-    return constrainSolve(A,b,sgn)
-
-def constrainSolve(A, b, sgn="nonnegative"):
     nc = A.shape[1]
     x = cp.Variable(nc, integer=True)
     # set up the L2-norm minimization problem
-    if sgn == "nonnegative":
+    if nonneg:
         prob = cp.Problem(cp.Minimize(cp.norm(A @ x - b, 2)), [x >= 0])
-    elif sgn == "nonpositive":
-        prob = cp.Problem(cp.Minimize(cp.norm(A @ x - b, 2)), [x <= 0])
     else:
         prob = cp.Problem(cp.Minimize(cp.norm(A @ x - b, 2)))
     sol = prob.solve(solver = 'ECOS_BB')
     return np.array(x.value, dtype='int32').ravel()
-
+    return constrainSolve(A,b,sgn)
 
 
 def isAcyclic(mat):
