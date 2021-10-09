@@ -62,8 +62,13 @@ class Cone():
         if len(listOfVertices) > 0: # if the set of vertices nonempty
 
             # if there are enough vertices to form an n-simplex: 
+            hull = None
             if len(listOfVertices) > len(listOfVertices[0]):
-                hull = ConvexHull(listOfVertices)
+                try:
+                    hull = ConvexHull(listOfVertices)
+                except:
+                    pass
+            if hull is not None:
                 hps = copy.copy(hull.points)
                 hvs = copy.copy(hull.vertices)
                 hes = copy.copy(hull.equations)
@@ -96,7 +101,7 @@ class Cone():
             b = -eqs[:,-1]
             pt = gt.constrainSolve(A,b.transpose().tolist()[0],"nonpositive")
             return pt if all([np.dot(n[:-1],pt)+n[-1] <= 0 for n in self.hsi_eqs+extra_eqs]) else None
-        return (1.0/len(self.eqs))*np.array(np.matrix(self.vertices).sum(axis=0).tolist()[0])
+        return (1.0/len(self.vertices))*np.array(np.matrix(self.vertices).sum(axis=0).tolist()[0])
 
     def joggle_to_interior(self, point, tol=0, extra_eqs = [], max_its=1000):
         pt = np.array(point)
@@ -125,16 +130,15 @@ class Cone():
             return Cone(otherCone.vertices)
 
         new_pt = self.feasible_point(otherCone.hsi_eqs)
-        to_ret = Cone()
+        points = []
         if (new_pt is not None):
             try:
                 points = HalfspaceIntersection( \
                         np.matrix(self.hsi_eqs + otherCone.hsi_eqs), \
                         new_pt).intersections
-                to_ret = Cone(points)
             except:
                 pass
-        return to_ret
+        return Cone(points)
 
 
     def __repr__(self):
@@ -197,7 +201,6 @@ def coneSystem(Q):
         lower_dim_trees, B, first_cols = lowerDimSpaceForCQ(Q, tree_chambers)
         lower_dim_trees = [Cone(t.tolist())
                           for t in lower_dim_trees]
-        print("found lower dim trees")
 
         # find all pairs of cones with full-dimensional interesection
         aij = [[i+j+1 \
@@ -205,7 +208,6 @@ def coneSystem(Q):
             if (tci.intersection(tcj).dim >= cone_dim)] \
             for i, tci in enumerate(lower_dim_trees) \
         ]
-        print("found list of nonempty pairwise intersections")
 
         # now add each cone CT to the list of admissable subcones 
         # before adding every possible intersection to the list as well.
@@ -227,6 +229,10 @@ def coneSystem(Q):
                     tree_i, ii = list_entry
                     i = ii[0]
                     for j in aij[i]:
+                        # check that current candidate to intersect with is
+                        # in the nonempty intersection list for each of the 
+                        # subchambers currently intersected together to get 
+                        # the current chamber tree_i (full list is stored as ii)
                         if j > ii[-1] and all([j in aij[k] for k in ii]):
                             tree_j = lower_dim_trees[j]
                             tree_ij = tree_i.intersection(tree_j)
@@ -238,7 +244,7 @@ def coneSystem(Q):
                     break
                 last_list = list(current_list)
                 subsets = subsets + [x for x in last_list if x[1] not in to_drop]
-        print("found all nonempty intersections")
+
         subsets = [x for x in subsets if x[1] not in to_drop]
         # now take only the subsets that form a partition of C(Q), without any overlap
         unique_subs = []
@@ -251,13 +257,11 @@ def coneSystem(Q):
                 unique_subs.append(np.array(x[0].vertices))
         subsets = unique_subs
 
-        subsets = [np.matrix([first_cols + list(y) for iy, y in enumerate(x.tolist())]) for x in subsets]
+        subsets = [np.matrix([first_cols + list(y) for y in x.tolist()]) for x in subsets]
         # transform back to higher dimensional space
         subsets = [np.round(np.dot(B, x.transpose())) for x in subsets]
-
-        # normalize entries again
-        subsets = [np.where(x>0,1,x) for x in subsets]
-        subsets = [np.where(x<-0,-1,x) for x in subsets]
+        # scale columns that define the rays so that entries are 0/+1/-1
+        subsets = [x*1/np.amax(x, axis=0) for x in subsets]
         return unique(subsets)
 
 
@@ -375,23 +379,31 @@ def isTight(Q, flow=None):
 
 def lowerDimSpaceForCQ(Q, subchambers):
     if len(subchambers) > 1:
-        # find Vertices in C(Q) that define the subchambers
+        # we know that the space C(Q) is in the nullspace of 
+        # the vector all 1s, and, also, that the canonical weight 
+        # is in the interior of C(Q). 
         all_ones = [1 for x in range(Q.incidence_matrix.shape[0])]
         canonical = list(theta(Q))
         
+        # find a basis for the nullspace of all_ones and canonical
         other_vecs = null_space(np.matrix([canonical, all_ones])).transpose().tolist()
+        # then our space can be written in a basis of the form [1s, canonical, nullspace]
         B = np.matrix([all_ones] + [canonical] + other_vecs).transpose()
+        # A is the matrix of transformation
         A = np.dot(np.linalg.inv(np.dot(B.transpose(),B)),B.transpose())
 
         V = set([tuple(r) for mat in subchambers for r in mat.tolist()])
         V = [np.array(v) for v in V]
 
         lower_dim_V = [np.dot(A, t.transpose()).transpose() for t in subchambers]
-        first_length = lower_dim_V[0][0,1]
+        first_length = max([x[0,1] for x in lower_dim_V])
 
+        # normalize all of the lower_dim_trees so that the second entry 
+        # (corresponding to the coef of thebasis vector 'canonical') 
+        # is scaled to the same value
         lower_dim_trees = [np.matrix([np.array(y)*(first_length/y[1]) for y in x.tolist()])[:,2:] for x in lower_dim_V]
         y = lower_dim_V[0].tolist()[0]
-        return lower_dim_trees, B, [y[0],y[1]]
+        return lower_dim_trees, B, [y[0], first_length]
     return subchambers, np.matrix(), []
 
 
