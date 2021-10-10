@@ -1,3 +1,4 @@
+import time
 import ThinSincereQuivers as tsq
 import graph_tools as gt
 import numpy as np
@@ -60,11 +61,18 @@ tsq.plotChambers(lds)
 
 
 
-#print(tsq.mergeOnArrow(Q1, 5, Q1, 0))
-#print(tsq.mergeOnVertex(Q1, 1, Q1, 0))
-#
+print(tsq.mergeOnArrow(Q1, 5, Q1, 0))
+print(tsq.mergeOnVertex(Q1, 1, Q1, 0))
+
 #print(len(list(tsq.coneSystem(Q1))))
-#K5 = tsq.ToricQuiver([[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]])
-#print(len(list(tsq.coneSystem(K5))))
 
+K5 = tsq.ToricQuiver([[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]])
+start = time.time()
+cs = tsq.coneSystem(K5)
+end = time.time()
+for c in cs:
+    print(c)
+    print("...")
+print(len(cs))
 
+print("elapsed time: %.3lf"%(end-start))
