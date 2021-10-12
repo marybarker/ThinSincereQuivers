@@ -50,7 +50,7 @@ class ToricQuiver():
         return ToricQuiver(self.incidence_matrix[:,arrows])
 
 
-class Cone():
+class ConvHull():
 
     def __init__(self, listOfVertices=[]):
         self.dim = 0
@@ -99,7 +99,10 @@ class Cone():
         if (len(extra_eqs) > 0):
             A = eqs[:,:-1]
             b = -eqs[:,-1]
-            pt = gt.constrainSolve(A,b.transpose().tolist()[0])
+            try:
+                pt = gt.constrainSolve(A,b.transpose().tolist()[0], eqs.shape[0])
+            except:
+                pt = None
             return pt if all([np.dot(n[:-1],pt)+n[-1] <= 0 for n in self.hsi_eqs+extra_eqs]) else None
         return (1.0/len(self.vertices))*np.array(np.matrix(self.vertices).sum(axis=0).tolist()[0])
 
@@ -121,24 +124,24 @@ class Cone():
             return pt
         return None
 
-    def intersection(self, otherCone):
-        if (self.dim != otherCone.dim) or (self.dim < 1) or (otherCone.dim < 1):
-            return Cone()
-        if self == otherCone or otherCone.contains_cone(self):
-            return Cone(self.vertices)
-        if self.contains_cone(otherCone):
-            return Cone(otherCone.vertices)
+    def intersection(self, otherHull):
+        if (self.dim != otherHull.dim) or (self.dim < 1) or (otherHull.dim < 1):
+            return ConvHull()
+        if self == otherHull or otherHull.contains_cone(self):
+            return ConvHull(self.vertices)
+        if self.contains_cone(otherHull):
+            return ConvHull(otherHull.vertices)
 
-        new_pt = self.feasible_point(otherCone.hsi_eqs)
+        new_pt = self.feasible_point(otherHull.hsi_eqs)
         points = []
         if (new_pt is not None):
             try:
                 points = HalfspaceIntersection( \
-                        np.matrix(self.hsi_eqs + otherCone.hsi_eqs), \
+                        np.matrix(self.hsi_eqs + otherHull.hsi_eqs), \
                         new_pt).intersections
             except:
                 pass
-        return Cone(points)
+        return ConvHull(points)
 
 
     def __repr__(self):
@@ -199,7 +202,7 @@ def coneSystem(Q):
 
     if len(tree_chambers) > 1:
         lower_dim_trees, B, first_cols = lowerDimSpaceForCQ(Q, tree_chambers)
-        lower_dim_trees = [Cone(t.tolist())
+        lower_dim_trees = [ConvHull(t.tolist())
                           for t in lower_dim_trees]
 
         # find all pairs of cones with full-dimensional interesection

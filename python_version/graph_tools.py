@@ -2,7 +2,6 @@ import numpy as np
 import cvxpy as cp
 from itertools import combinations
 from scipy.linalg import qr as QR
-#from pyhull.convex_hull import ConvexHull
 
 
 def allSpanningTrees(M, tree_format="edge"):
@@ -39,12 +38,13 @@ def allSpanningTrees(M, tree_format="edge"):
             return [range(Q1),[]]
 
 
-def constrainSolve(A, b):
+def constrainSolve(A, b, max_iters=10):
     nc = A.shape[1]
     x = cp.Variable(nc)
     # set up the L2-norm minimization problem
     prob = cp.Problem(cp.Minimize(cp.norm(A @ x - b, 2)))
-    sol = prob.solve()
+    #sol = prob.solve(solver)
+    sol = prob.solve(solver = 'ECOS_BB', max_iters=max_iters)
     return np.array(x.value).ravel()
 
 
@@ -207,7 +207,6 @@ def intSolve(A, b, nonneg=False):
         prob = cp.Problem(cp.Minimize(cp.norm(A @ x - b, 2)))
     sol = prob.solve(solver = 'ECOS_BB')
     return np.array(x.value, dtype='int32').ravel()
-    return constrainSolve(A,b,sgn)
 
 
 def isAcyclic(mat):
