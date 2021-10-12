@@ -96,7 +96,7 @@ class ConvHull():
 
     def feasible_point(self, extra_eqs=[]):
         eqs = np.matrix(unique(self.hsi_eqs + extra_eqs))
-        if (len(extra_eqs) > 0):
+        if (eqs.shape[0] > len(self.eqs)):
             A = eqs[:,:-1]
             b = -eqs[:,-1]
             try:
@@ -104,7 +104,7 @@ class ConvHull():
             except:
                 pt = None
             return pt if all([np.dot(n[:-1],pt)+n[-1] <= 0 for n in self.hsi_eqs+extra_eqs]) else None
-        return (1.0/len(self.vertices))*np.array(np.matrix(self.vertices).sum(axis=0).tolist()[0])
+        return (1/len(self.vertices))*np.array(np.matrix(self.vertices).sum(axis=0).tolist()[0])
 
     def joggle_to_interior(self, point, tol=0, extra_eqs = [], max_its=1000):
         pt = np.array(point)
@@ -132,7 +132,14 @@ class ConvHull():
         if self.contains_cone(otherHull):
             return ConvHull(otherHull.vertices)
 
-        new_pt = self.feasible_point(otherHull.hsi_eqs)
+        # first try taking the centroid of the vertices both hulls have in common
+        self_points_in_other = [x for x in self.vertices if otherHull.contains_point(x)]
+        other_points_in_self = [x for x in otherHull.vertices if self.contains_point(x)]
+        mutual_points = unique(self_points_in_other + other_points_in_self)
+        if len(mutual_points) > self.dim:
+            new_pt = (1/len(mutual_points))*np.array(np.matrix(mutual_points).sum(axis=0).tolist()[0])
+        else:
+            new_pt = self.feasible_point(otherHull.hsi_eqs)
         points = []
         if (new_pt is not None):
             try:
