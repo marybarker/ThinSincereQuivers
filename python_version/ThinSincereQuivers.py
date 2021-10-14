@@ -8,7 +8,6 @@ from scipy.spatial import ConvexHull, HalfspaceIntersection
 
 edgesFromMatrix = gt.edgesFromMatrix
 matrixFromEdges = gt.matrixFromEdges
-bbox_offset = -10
 
 class ToricQuiver():
 
@@ -201,6 +200,9 @@ def chainQuiver(l, flow="default"):
 
 def coneSystem(Q):
     spanning_trees = allSpanningTrees(Q, tree_format="vertex")
+    # remove the spanning tree consisting of all primitive arrows (it gives the vertices defining C(Q)
+    primitive_arrows = set(primitiveArrows(Q))
+    spanning_trees = [x for x in spanning_trees if set(x).intersection(primitive_arrows) < primitive_arrows]
     qcmt = Q.incidence_matrix.transpose()
     cone_dim = qcmt.shape[1] - 2
 
@@ -227,9 +229,11 @@ def coneSystem(Q):
 
         if len(aij) > 1:
             # generate all possible intersections of cones
+            print(len(spanning_trees))
             for ctr in range(len(spanning_trees)):
+                print(ctr)
                 # stopping condition: if all intersections tried in
-                # the latest loop iteration are up lower-dim
+                # the latest loop iteration are lower-dim
                 all_empty = True 
 
                 # create a list of intersecting pairs from intersecting
@@ -252,8 +256,12 @@ def coneSystem(Q):
                                 current_list.append([tree_ij, ii + tuple([j])])
                 if all_empty:
                     break
-                last_list = list(current_list)
-                subsets = subsets + [x for x in last_list if x[1] not in to_drop]
+                last_list = copy.copy(current_list)
+                #subsets = subsets + [x for x in last_list if x[1] not in to_drop]
+                subsets = [x for x in subsets if x[1] not in to_drop]
+                for y in last_list:
+                    if y[1] not in to_drop:
+                        subsets.append(y)
 
         subsets = [x for x in subsets if x[1] not in to_drop]
         # now take only the subsets that form a partition of C(Q), without any overlap
@@ -275,6 +283,7 @@ def coneSystem(Q):
         subsets = [np.where(x>0,1,x) for x in subsets]
         subsets = [np.where(x<-0,-1,x) for x in subsets]
         return unique(subsets)
+    return Q.incidence_matrix[:,primitiveArrows(Q)]
 
 
 def flowPolytope(Q, weight=None, polytope_format="simplified_basis"):

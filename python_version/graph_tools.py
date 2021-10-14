@@ -43,7 +43,7 @@ def constrainSolve(A, b, max_iters=10):
     x = cp.Variable(nc)
     # set up the L2-norm minimization problem
     prob = cp.Problem(cp.Minimize(cp.norm(A @ x - b, 2)))
-    #sol = prob.solve(solver)
+    #sol = prob.solve()
     sol = prob.solve(solver = 'ECOS_BB', max_iters=max_iters)
     return np.array(x.value).ravel()
 
