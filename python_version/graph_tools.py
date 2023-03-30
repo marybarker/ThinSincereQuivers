@@ -7,7 +7,7 @@ from scipy.linalg import qr as QR
 def allSpanningTrees(M, tree_format="edge"):
     Q0,Q1 = M.shape
 
-    all_edges = edgesFromMatrix(M)
+    all_edges = tuple([tuple(x) for x in edgesFromMatrix(M)])
     all_nodes = range(Q0)
 
     trees = []
@@ -27,15 +27,15 @@ def allSpanningTrees(M, tree_format="edge"):
 
             if isConnected(all_nodes, edges_kept) and isAcyclic(matrixFromEdges(edges_kept)):
                 if tree_format != "edge":
-                    edges_kept = [i for i in range(Q1) if i not in d_tuple]
+                    edges_kept = tuple([i for i in range(Q1) if i not in d_tuple])
                     edges_removed = d_tuple
-                trees.append([edges_kept, edges_removed])
+                trees.append((edges_kept, edges_removed))
         return trees
     else:
         if tree_format == "edge":
-            return [all_edges, []]
+            return [all_edges, ()]
         else:
-            return [range(Q1),[]]
+            return [range(Q1),()]
 
 
 def constrainSolve(A, b, max_iters=10):
